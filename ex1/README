@@ -3,7 +3,7 @@ Yevgeni Dysin (320884216), Lilach Kelman (305390098)
 EX: 1
 
 FILES:
-Makefile
+Makefile -
 README - This file.
 osm.h
 osm.cpp
