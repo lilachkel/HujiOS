@@ -3,7 +3,7 @@
 //
 
 #include "osm.h"
-
+#include "sys/time.h"
 int osm_init()
 {
     return 0;
@@ -16,7 +16,22 @@ int osm_finalizer()
 
 double osm_operation_time(unsigned int iterations)
 {
-    return 0;
+    struct timeval s, e;
+    int i = 0;
+
+    double timemeasure = 0;
+    for (i; i<iterations ; i++)
+    {
+        gettimeofday(&s, nullptr);
+        1+1;
+        gettimeofday(&e, nullptr);
+        timemeasure += e.tv_usec-s.tv_usec;
+    }
+    if(timemeasure != 0)
+    {
+        return timemeasure/iterations;
+    }
+    return -1;
 }
 
 double osm_function_time(unsigned int iterations)
