@@ -1,9 +1,40 @@
-jenia90, login2
-Yevgeni Dysin (320884216), Student Name2 (ID2)
+jenia90, lilach
+Yevgeni Dysin (320884216), Lilach Kelman (305390098)
 EX: 1
 
 FILES:
+Makefile
+README - This file.
+osm.h
+osm.cpp
 
 REMARKS:
 
 ANSWERS:
+'strace -s 1000 WhatIDo 1' Output:
+1) mkdir("Welcome", 0775)                  = 0
+2) mkdir("Welcome/To", 0775)               = 0
+3) open("Welcome/To/OS2016", O_WRONLY|O_CREAT|O_TRUNC, 0666) = 3
+4) fstat(3, {st_mode=S_IFREG|0644, st_size=0, ...}) = 0
+5) write(3, "
+                        jenia90\nIf you didn't read the course guidelines yet --- do it right now!\n1", 185) = 185
+6) close(3)                                = 0
+7) unlink("Welcome/To/OS2016")             = 0
+8) rmdir("Welcome/To/")                    = 0
+9) rmdir("Welcome/")                       = 0
+10) exit_group(0)                           = ?
+11) +++ exited with 0 +++
+
+Line Descriptions:
+1) Creating new directory with access permissions of read and write named 'Welcome'
+2) Creating new directory with access permissions of read and write named 'To' inside 'Welcome'
+3) Creating a new file named 'OS2016' with write only permissions and returns its file
+descriptor (ID)
+4) These functions return information about a file. It checks if the file is a regular file and
+if it has read and write permissions.
+5) Writes a given string to a file.
+6) Closes the file and destroys its file pointer.
+7) Removes the label of a given file from the file system (deletes the file).
+8) Removes (deletes) the 'To' directory.
+9) Removes (deletes) the 'Welcome' directory.
+10) Exits the current thread and all the threads associated with it's parent process.
