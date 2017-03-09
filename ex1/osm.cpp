@@ -2,6 +2,7 @@
 // Created by jenia90 on 3/8/17.
 //
 
+#include <cstdio>
 #include "osm.h"
 #include "sys/time.h"
 int osm_init()
@@ -22,14 +23,14 @@ double osm_operation_time(unsigned int iterations)
     double timemeasure = 0;
     for (i; i<iterations ; i++)
     {
-        gettimeofday(&s, nullptr);
+        gettimeofday(&s, NULL);
         1+1;
-        gettimeofday(&e, nullptr);
+        gettimeofday(&e, NULL);
         timemeasure += e.tv_usec-s.tv_usec;
     }
     if(timemeasure != 0)
     {
-        return timemeasure/iterations;
+        return (timemeasure*1000)/iterations;
     }
     return -1;
 }
@@ -41,12 +42,45 @@ double osm_function_time(unsigned int iterations)
 
 double osm_syscall_time(unsigned int iterations)
 {
-    return 0;
+    struct timeval s, e;
+    int i = 0;
+
+    double timemeasure = 0;
+    for (i; i<iterations ; i++)
+    {
+        gettimeofday(&s, NULL);
+        OSM_NULLSYSCALL;
+        gettimeofday(&e, NULL);
+        timemeasure += e.tv_usec-s.tv_usec;
+    }
+    if(timemeasure != 0)
+    {
+        return (timemeasure*1000)/iterations;
+    }
+    return -1;
+
 }
 
 double osm_disk_time(unsigned int iterations)
 {
-    return 0;
+    struct timeval s, e;
+    int i = 0;
+
+
+    double timemeasure = 0;
+    for (i; i<iterations ; i++)
+    {
+        gettimeofday(&s, NULL);
+        fopen("someFile", "w");
+        gettimeofday(&e, NULL);
+        timemeasure += e.tv_usec-s.tv_usec;
+    }
+    if(timemeasure != 0)
+    {
+        return (timemeasure*1000)/iterations;
+    }
+    return -1;
+
 }
 
 timeMeasurmentStructure
