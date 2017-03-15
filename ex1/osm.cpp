@@ -1,27 +1,31 @@
-//
-// Created by jenia90 on 3/8/17.
-//
-#define _ISOC11_SOURCE
-
-#include <cstdio>
 #include <fcntl.h>
 #include "osm.h"
 #include <sys/stat.h>
 #include <stdlib.h>
 #include <zconf.h>
-#include <functional>
 #include <sys/time.h>
 #include <malloc.h>
 #include "funcplaceholder.h"
 
+#define MICRO_TO_NANO(x) x * 1000
 
+#define NAME_SIZE 255
+
+char *name;
 int osm_init()
 {
+    name = (char*)malloc(NAME_SIZE);
+    if(!name)
+    {
+        return -1;
+    }
+    gethostname(name, NAME_SIZE);
     return 0;
 }
 
 int osm_finalizer()
 {
+    free(name);
     return 0;
 }
 
@@ -29,11 +33,11 @@ template <typename func>
 double measureRuntime(func op, unsigned int iterations)
 {
     struct timeval s, e;
-    int i = 0;
+    size_t i = 0;
 
     double timemeasure = 0;
     gettimeofday(&s, nullptr);
-    for (i; i < iterations ; i++)
+    for (; i < iterations ; i++)
     {
         op();
     }
@@ -42,7 +46,7 @@ double measureRuntime(func op, unsigned int iterations)
     timemeasure += e.tv_usec - s.tv_usec;
     if(timemeasure != 0)
     {
-        return (timemeasure * 1000) / iterations;
+        return MICRO_TO_NANO(timemeasure) / iterations;
     }
 
     return -1;
@@ -51,11 +55,11 @@ double measureRuntime(func op, unsigned int iterations)
 double osm_operation_time(unsigned int iterations)
 {
     struct timeval s, e;
-    int i = 0;
-
+    size_t i = 0;
     double timemeasure = 0;
+
     gettimeofday(&s, nullptr);
-    for (i; i < iterations ; i+=10)
+    for (; i < iterations ; i+=10)
     {
         i += 0;
         i += 0;
@@ -73,7 +77,7 @@ double osm_operation_time(unsigned int iterations)
     timemeasure += e.tv_usec - s.tv_usec;
     if(timemeasure != 0)
     {
-        return (timemeasure * 1000) / iterations;
+        return MICRO_TO_NANO(timemeasure) / iterations;
     }
 
     return -1;
@@ -86,30 +90,32 @@ double osm_function_time(unsigned int iterations)
 
 double osm_syscall_time(unsigned int iterations)
 {
-    std::function<void ()> f = [] { OSM_NULLSYSCALL; };
-    return measureRuntime(f, iterations);
+    return measureRuntime([] { OSM_NULLSYSCALL; }, iterations);
 }
 
 double osm_disk_time(unsigned int iterations)
 {
+    double time;
     struct stat fi;
     stat("/tmp", &fi);
-    int blksize = fi.st_blksize;
+    size_t blksize = fi.st_blksize;
     char *p = (char *) aligned_alloc(blksize, blksize);
 
-    for (int i = 0; i < blksize; ++i)
-    {
-        p[i] = (char)i;
+    // lets create some data in our write buffer.
+    for (size_t i = 0; i < blksize; ++i) {
+        p[i] = (char) i;
     }
 
-    std::function<void ()> f = [=]
-    {
-        int id = open("/tmp/tik/someKovez", O_CREAT | O_DIRECT | O_SYNC);
-        write(id, p, blksize);
-        close(id);
-    };
+    // lets pass the open/write operation to the measureRuntime function.
+    time = measureRuntime([blksize, p] {
+        int fd = open("/tmp/tik/someKovez", O_CREAT | O_DIRECT | O_SYNC);
+        write(fd, p, blksize);
+        close(fd);
+    }, iterations);
 
-    return measureRuntime(f, iterations);
+    free(p);
+
+    return time;
 }
 
 timeMeasurmentStructure measureTimes(unsigned int operation_iterations,
@@ -119,9 +125,9 @@ timeMeasurmentStructure measureTimes(unsigned int operation_iterations,
 {
 
     timeMeasurmentStructure time_s;
-    time_s.machineName = (char *) malloc(255);
+    time_s.machineName = name;
 
-    gethostname(time_s.machineName, 255);
+    gethostname(time_s.machineName, NAME_SIZE);
     double  iTime = osm_operation_time(operation_iterations),
             fTime = osm_function_time(function_iterations),
             dTime = osm_disk_time(disk_iterations),

@@ -17,10 +17,10 @@ simpletest: simpletest.cpp libosm.a
 	$(CC) $(CFLAGS) simpletest.cpp -L. -losm -o simpletest
 
 tar:
-	tar cvf *.cpp *.h REAMDE Makefile
+	tar cvf ex1.tar  *.cpp *.h README Makefile
 
 clean:
-	rm -rf *.o *.a *.tar simpletest
+	rm -rf *.o *.a *.tar simpletest *.txt
 
 
 
