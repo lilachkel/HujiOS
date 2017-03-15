@@ -1,31 +1,26 @@
 CC=g++
-RANLIB=ranlib
+CFLAGS= -Wall -g -std=c++11
 
-LIBSRC=osm.c
-LIBOBJ=$(LIBSRC:.c=.o)
+default: simpletest
+	./simpletest
 
-INCS=-I.
-CFLAGS = -Wall -g $(INCS)
-LOADLIBES = -L./
+libosm.a: osm.o funcplaceholder.o
+	ar rcs libosm.a osm.o funcplaceholder.o
 
-OSMLIB = libosm.a
-TARGETS = $(OSMLIB)
+osm.o: osm.cpp
+	$(CC) $(CFLAGS) -c osm.cpp
 
-TAR=tar
-TARFLAGS=-cvf
-TARNAME=ex1.tar
-TARSRCS=$(LIBSRC) Makefile README
+funcplaceholder.o: funcplaceholder.cpp
+	$(CC) $(CFLAGS) -c funcplaceholder.cpp
 
-all: $(TARGETS)
-	$(TARGETS): $(LIBOBJ)
-	$(AR) $(ARFLAGS) $@ $^
-	$(RANLIB) $@
-
-clean:
-	$(RM) $(TARGETS) $(OSMLIB) $(OBJ) $(LIBOBJ) *~ *core
-
-depend:
-	makedepend -- $(CFLAGS) -- $(SRC) $(LIBSRC)
+simpletest: simpletest.cpp libosm.a
+	$(CC) $(CFLAGS) simpletest.cpp -L. -losm -o simpletest
 
 tar:
-	$(TAR) $(TARFLAGS) $(TARNAME) $(TARSRCS)
+	tar cvf *.cpp *.h REAMDE Makefile
+
+clean:
+	rm -rf *.o *.a *.tar simpletest
+
+
+
