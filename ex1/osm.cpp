@@ -1,12 +1,20 @@
 //
 // Created by jenia90 on 3/8/17.
 //
+#define _ISOC11_SOURCE
 
 #include <cstdio>
-#include <io.h>
-#include <winsock.h>
+#include <fcntl.h>
 #include "osm.h"
-#include "sys/time.h"
+#include <sys/stat.h>
+#include <stdlib.h>
+#include <zconf.h>
+#include <functional>
+#include <sys/time.h>
+#include <malloc.h>
+#include "funcplaceholder.h"
+
+
 int osm_init()
 {
     return 0;
@@ -24,13 +32,14 @@ double measureRuntime(func op, unsigned int iterations)
     int i = 0;
 
     double timemeasure = 0;
+    gettimeofday(&s, nullptr);
     for (i; i < iterations ; i++)
     {
-        gettimeofday(&s, NULL);
         op();
-        gettimeofday(&e, NULL);
-        timemeasure += e.tv_usec - s.tv_usec;
     }
+    gettimeofday(&e, nullptr);
+
+    timemeasure += e.tv_usec - s.tv_usec;
     if(timemeasure != 0)
     {
         return (timemeasure * 1000) / iterations;
@@ -39,34 +48,68 @@ double measureRuntime(func op, unsigned int iterations)
     return -1;
 }
 
-int dummyFunc(){ return 0; }
-
 double osm_operation_time(unsigned int iterations)
 {
-    return measureRuntime([] ->
-                          { 1 + 1; }, iterations);
+    struct timeval s, e;
+    int i = 0;
+
+    double timemeasure = 0;
+    gettimeofday(&s, nullptr);
+    for (i; i < iterations ; i+=10)
+    {
+        i += 0;
+        i += 0;
+        i += 0;
+        i += 0;
+        i += 0;
+        i += 0;
+        i += 0;
+        i += 0;
+        i += 0;
+        i += 0;
+    }
+    gettimeofday(&e, nullptr);
+
+    timemeasure += e.tv_usec - s.tv_usec;
+    if(timemeasure != 0)
+    {
+        return (timemeasure * 1000) / iterations;
+    }
+
+    return -1;
 }
 
 double osm_function_time(unsigned int iterations)
 {
-    return measureRuntime(dummyFunc, iterations);
+    return measureRuntime(dummyfunc, iterations);
 }
 
 double osm_syscall_time(unsigned int iterations)
 {
-    return measureRuntime([] ->
-                          { OSM_NULLSYSCALL; }, iterations);
+    std::function<void ()> f = [] { OSM_NULLSYSCALL; };
+    return measureRuntime(f, iterations);
 }
 
 double osm_disk_time(unsigned int iterations)
 {
-    // TODO: Finish implementation of this lambda function.
-    return measureRuntime([] ->
-                          {
-                              int id = open("test.txt", 1);
-                              read(id,);
-                          }, iterations);
+    struct stat fi;
+    stat("/tmp", &fi);
+    int blksize = fi.st_blksize;
+    char *p = (char *) aligned_alloc(blksize, blksize);
 
+    for (int i = 0; i < blksize; ++i)
+    {
+        p[i] = (char)i;
+    }
+
+    std::function<void ()> f = [=]
+    {
+        int id = open("/tmp/tik/someKovez", O_CREAT | O_DIRECT | O_SYNC);
+        write(id, p, blksize);
+        close(id);
+    };
+
+    return measureRuntime(f, iterations);
 }
 
 timeMeasurmentStructure measureTimes(unsigned int operation_iterations,
@@ -74,16 +117,19 @@ timeMeasurmentStructure measureTimes(unsigned int operation_iterations,
                                      unsigned int syscall_iterations,
                                      unsigned int disk_iterations)
 {
+
     timeMeasurmentStructure time_s;
+    time_s.machineName = (char *) malloc(255);
+
+    gethostname(time_s.machineName, 255);
     double  iTime = osm_operation_time(operation_iterations),
             fTime = osm_function_time(function_iterations),
             dTime = osm_disk_time(disk_iterations),
             sTime = osm_syscall_time(syscall_iterations),
-            ifTime = iTime == 0 || fTime == 0 ? 0 : iTime / fTime,
-            idTime = iTime == 0 || dTime == 0 ? 0 : iTime / dTime,
-            isTime = iTime == 0 || sTime == 0 ? 0 : iTime / sTime;
+            ifTime = iTime == 0 || fTime == 0 ? 0 : fTime / iTime,
+            idTime = iTime == 0 || dTime == 0 ? 0 : dTime / iTime,
+            isTime = iTime == 0 || sTime == 0 ? 0 : sTime / iTime;
 
-    gethostname(time_s.machineName, 255);
     time_s.functionInstructionRatio = ifTime;
     time_s.functionTimeNanoSecond = fTime;
     time_s.diskTimeNanoSecond = dTime;
