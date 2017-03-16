@@ -3,12 +3,25 @@ Yevgeni Dysin (320884216), Lilach Kelman (305390098)
 EX: 1
 
 FILES:
-Makefile
+Makefile - Make file that supports compiling and running the simpletest and all the associated libraries, cleaning
+and creating tar file with source files.
 README - This file.
-osm.h
-osm.cpp
+osm.cpp - Source code file that contains the implementation of the functions declared in the supplied osm.h header file.
+simpletest.cpp - Main executable file that tests all of the time measurement functions.
+funcplaceholder.h - Header file with declaration of the dummy function for the functions call test.
+funcplaceholder.cpp - Source file with implementation of the dummy function for the functions call test.
 
 REMARKS:
+
+We Implemented all of the functions delcared in the osm.h file and also create a separate source file containing a
+single function to eliminate the possibility where the compiler converts our dummy function call into an inline
+function thus optimizing the call time. Also, to prettify the code and make it more readable we used a template
+function that receives a functor as parameter and then executes it inside the iteration for loop.
+
+We had to copy paste the single instruction calls 10 times inside the for loop to eliminate compiler optimizations.
+
+Finally, for the disk timing test we create a file prior to running the test and then write to it with each iteration
+ a string with the size of exactly one block.
 
 ANSWERS:
 'strace -s 1000 WhatIDo 1' Output:

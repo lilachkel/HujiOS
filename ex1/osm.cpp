@@ -11,21 +11,16 @@
 
 #define NAME_SIZE 255
 
-char *name;
+char name[NAME_SIZE];
+
 int osm_init()
 {
-    name = (char*)malloc(NAME_SIZE);
-    if(!name)
-    {
-        return -1;
-    }
     gethostname(name, NAME_SIZE);
     return 0;
 }
 
 int osm_finalizer()
 {
-    free(name);
     return 0;
 }
 
@@ -108,7 +103,7 @@ double osm_disk_time(unsigned int iterations)
 
     // lets pass the open/write operation to the measureRuntime function.
     time = measureRuntime([blksize, p] {
-        int fd = open("/tmp/tik/someKovez", O_CREAT | O_DIRECT | O_SYNC);
+        int fd = open(TEST_FNAME, O_DIRECT | O_SYNC);
         write(fd, p, blksize);
         close(fd);
     }, iterations);
@@ -127,7 +122,6 @@ timeMeasurmentStructure measureTimes(unsigned int operation_iterations,
     timeMeasurmentStructure time_s;
     time_s.machineName = name;
 
-    gethostname(time_s.machineName, NAME_SIZE);
     double  iTime = osm_operation_time(operation_iterations),
             fTime = osm_function_time(function_iterations),
             dTime = osm_disk_time(disk_iterations),

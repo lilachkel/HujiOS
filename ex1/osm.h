@@ -7,6 +7,8 @@
         "eax", "ebx", "ecx", "edx"*/)
 
 
+#define TEST_FNAME "/tmp/tik/someKovez"
+
 /* Initialization function that the user must call
  * before running any other library function.
  * The function may, for example, allocate memory or

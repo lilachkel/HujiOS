@@ -1,9 +1,6 @@
 #include <iostream>
 #include <fstream>
-#include <string>
 #include "osm.h"
-#include <stdexcept>
-#include <malloc.h>
 
 using namespace std;
 
@@ -24,6 +21,6 @@ int main(int argc, char* argv[])
     myfile << "disk_inst_ratio:" <<  times.diskInstructionRatio << endl;
 
     myfile.close();
-    osm_finalizer();//if you don't have a finalizer in you library mark this line in comment
+    //osm_finalizer();//if you don't have a finalizer in you library mark this line in comment
     return 0;
 }
