@@ -2,7 +2,9 @@ CC=g++
 CFLAGS= -Wall -g -std=c++11
 ADDFLAGS= -DNDEBUG
 
-default: simpletest
+default: libosm.a
+
+all: simpletest
 	mkdir /tmp/tik
 	touch /tmp/tik/someKovez
 	./simpletest
@@ -20,7 +22,7 @@ simpletest: simpletest.cpp libosm.a
 	$(CC) $(CFLAGS) $(ADDFLAGS) simpletest.cpp -L. -losm -o simpletest
 
 tar:
-	tar cvf ex1.tar  *.cpp *.h README Makefile
+	tar cvf ex1.tar  *.cpp funcplaceholder.h README Makefile
 
 clean:
 	rm -rf *.o *.a *.tar simpletest *.txt /tmp/tik
