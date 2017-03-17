@@ -5,8 +5,6 @@ ADDFLAGS= -DNDEBUG
 default: libosm.a
 
 all: simpletest
-	mkdir /tmp/tik
-	touch /tmp/tik/someKovez
 	./simpletest
 
 libosm.a: osm.o funcplaceholder.o
@@ -25,7 +23,4 @@ tar:
 	tar cvf ex1.tar  *.cpp funcplaceholder.h README Makefile
 
 clean:
-	rm -rf *.o *.a *.tar simpletest *.txt /tmp/tik
-
-
-
+	rm -rf *.o *.a *.tar simpletest *.txt

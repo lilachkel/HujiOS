@@ -10,6 +10,7 @@
 #define MICRO_TO_NANO(x) x * 1000
 
 #define NAME_SIZE 255
+#define TEST_FNAME "/tmp/someKovez"
 
 char name[NAME_SIZE];
 
@@ -32,13 +33,22 @@ double measureRuntime(func op, unsigned int iterations)
 
     double timemeasure = 0;
     gettimeofday(&s, nullptr);
-    for (; i < iterations ; i++)
+    for (; i < iterations ; i+=10)
     {
+        op();
+        op();
+        op();
+        op();
+        op();
+        op();
+        op();
+        op();
+        op();
         op();
     }
     gettimeofday(&e, nullptr);
 
-    timemeasure += e.tv_usec - s.tv_usec;
+    timemeasure = e.tv_usec - s.tv_usec;
     if(timemeasure != 0)
     {
         return MICRO_TO_NANO(timemeasure) / iterations;
@@ -94,20 +104,16 @@ double osm_disk_time(unsigned int iterations)
     struct stat fi;
     stat("/tmp", &fi);
     size_t blksize = fi.st_blksize;
-    char *p = (char *) aligned_alloc(blksize, blksize);
+    void *p = aligned_alloc(blksize, blksize);
 
-    // lets create some data in our write buffer.
-    for (size_t i = 0; i < blksize; ++i) {
-        p[i] = (char) i;
-    }
-
-    // lets pass the open/write operation to the measureRuntime function.
-    time = measureRuntime([blksize, p] {
-        int fd = open(TEST_FNAME, O_DIRECT | O_SYNC);
+    int fd = open(TEST_FNAME, O_CREAT | O_DIRECT | O_SYNC | O_WRONLY, 0777);
+    // lets pass the write operation to the measureRuntime function.
+    time = measureRuntime([blksize, fd, p] {
         write(fd, p, blksize);
-        close(fd);
     }, iterations);
 
+    close(fd);
+    remove(TEST_FNAME);
     free(p);
 
     return time;
