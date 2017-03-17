@@ -48,7 +48,7 @@ double measureRuntime(func op, unsigned int iterations)
     }
     gettimeofday(&e, nullptr);
 
-    timemeasure = e.tv_usec - s.tv_usec;
+    timemeasure = abs(e.tv_usec - s.tv_usec);
     if(timemeasure != 0)
     {
         return MICRO_TO_NANO(timemeasure) / iterations;
@@ -79,7 +79,7 @@ double osm_operation_time(unsigned int iterations)
     }
     gettimeofday(&e, nullptr);
 
-    timemeasure += e.tv_usec - s.tv_usec;
+    timemeasure = e.tv_usec - s.tv_usec;
     if(timemeasure != 0)
     {
         return MICRO_TO_NANO(timemeasure) / iterations;

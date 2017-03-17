@@ -4,7 +4,7 @@ ADDFLAGS= -DNDEBUG
 
 default: libosm.a
 
-all: simpletest
+run: simpletest
 	./simpletest
 
 libosm.a: osm.o funcplaceholder.o
