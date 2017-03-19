@@ -8,11 +8,12 @@
 #include "funcplaceholder.h"
 
 #define MICRO_TO_NANO(x) x * 1000
+#define REPEAT(f) f;f;f;f;f;f;f;f;f;f;
 
 #define NAME_SIZE 255
 #define TEST_FNAME "/tmp/someKovez"
 
-char name[NAME_SIZE];
+static char name[NAME_SIZE];
 
 int osm_init()
 {
@@ -35,16 +36,7 @@ double measureRuntime(func op, unsigned int iterations)
     gettimeofday(&s, nullptr);
     for (; i < iterations ; i+=10)
     {
-        op();
-        op();
-        op();
-        op();
-        op();
-        op();
-        op();
-        op();
-        op();
-        op();
+        REPEAT(op());
     }
     gettimeofday(&e, nullptr);
 
@@ -66,16 +58,7 @@ double osm_operation_time(unsigned int iterations)
     gettimeofday(&s, nullptr);
     for (; i < iterations ; i+=10)
     {
-        i += 0;
-        i += 0;
-        i += 0;
-        i += 0;
-        i += 0;
-        i += 0;
-        i += 0;
-        i += 0;
-        i += 0;
-        i += 0;
+        REPEAT(i += 0);
     }
     gettimeofday(&e, nullptr);
 

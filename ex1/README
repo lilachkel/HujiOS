@@ -38,6 +38,12 @@ ANSWERS:
 10) exit_group(0)                           = ?
 11) +++ exited with 0 +++
 
+Program Description:
+Basically it creates a directory and another directory inside that directory. Then, it creates a file with write only
+ permissions and writes the string in line (5) to the file. The program then closes the file and deletes it and the
+ directories it created earlier. Also, it receives a single argument which it then converts to string and append to
+ the default string it writes to the file.
+
 Line Descriptions:
 1) Creating new directory with access permissions of read and write named 'Welcome'
 2) Creating new directory with access permissions of read and write named 'To' inside 'Welcome'
