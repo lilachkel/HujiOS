@@ -4,21 +4,16 @@
 
 #include "Thread.h"
 
-Thread::Thread(int id, void (*job)(void), Thread next) : _id(id),
-                                                         _job(job),
-                                                         _next(next),
-                                                         _isBlocked(false)
+Thread::Thread(int id, void (*job)(void), int stackSize) : _id(id),
+                                                           _job(job),
+                                                           _isBlocked(false),
+                                                           _stackSize(stackSize)
 {}
 
 
 int Thread::GetId()
 {
     return _id;
-}
-
-Thread Thread::GetNext()
-{
-    return _next;
 }
 
 int Thread::Execute()
