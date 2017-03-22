@@ -16,15 +16,17 @@ private:
     bool _isBlocked;
 
 public:
-    Thread(int id, void (*job)(void), int stackSize);
+    Thread(Thread && thread);
+    Thread(const int id, const void (*job)(void), const int stackSize);
+    ~Thread();
 
     /**
      * Gets the TID of this thread
      * @return
      */
-    int GetId();
-    bool GetBlockStatus();
-    void SetBlockStatus(bool isBlocked);
+    int GetId() const;
+    bool GetBlockStatus() const;
+    void SetBlockStatus(const bool isBlocked);
 
     int Execute();
     int Block();
