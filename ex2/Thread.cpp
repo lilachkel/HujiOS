@@ -16,12 +16,14 @@ Thread::Thread(const int id, const void (*job)(void), const int stackSize) :
         _job(job),
         _isBlocked(false),
         _stackSize(stackSize)
-{}
+{
+    Setup();
+}
 
 Thread::~Thread()
 {
     Terminate();
-    delete _job;
+    delete _stack;
 }
 
 
@@ -32,7 +34,7 @@ int Thread::GetId() const
 
 int Thread::Execute()
 {
-    _job();
+
     return 0;
 }
 
@@ -64,6 +66,19 @@ bool Thread::GetBlockStatus() const
 void Thread::SetBlockStatus(const bool isBlocked)
 {
     _isBlocked = isBlocked;
+}
+
+void Thread::Setup()
+{
+    address_t sp, pc;
+    _stack = new char[_stackSize];
+
+    sp = (address_t)_stack + _stackSize - sizeof(address_t);
+    pc = (address_t)_job;
+    sigsetjmp(_env, BUF_VAL);
+    (_env->__jmpbuf)[JB_SP] = translate_address(sp);
+    (_env->__jmpbuf)[JB_PC] = translate_address(pc);
+    sigemptyset(&_env->__saved_mask);
 }
 
 
