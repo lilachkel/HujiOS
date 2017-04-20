@@ -57,3 +57,4 @@ if it has read and write permissions.
 8) Removes (deletes) the 'To' directory.
 9) Removes (deletes) the 'Welcome' directory.
 10) Exits the current thread and all the threads associated with it's parent process.
+

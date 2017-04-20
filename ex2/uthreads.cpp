@@ -32,7 +32,7 @@ int GetNextId()
 int uthread_init(int quantum_usecs)
 {
     _threadCount = 1;
-    _qtime = 1;
+    _qtime = 1; //not the input(quantum_usecs), or is that the counter ?
     return 0;
 }
 
@@ -50,7 +50,9 @@ int uthread_spawn(void (*f)(void))
     return id;
 }
 
-int uthread_terminate(int tid)
+int uthread_terminate(int tid)// free BLOCKED threads(+change there state), delete stack, save ID/TID in '_freeIds'
+// the tid == 0 should be in the READY list?  since we should be the one to terminate tid==0 while we terminate the whole program...
+// if not so how can we tell call 'exit(0) ..? if we do- we dont know what written in tid==0 so how we avoid bugs?
 {
     if(_threads.find(tid) == _threads.end())
     {
@@ -63,7 +65,8 @@ int uthread_terminate(int tid)
     return 0;
 }
 
-int uthread_block(int tid)
+int uthread_block(int tid)// we(the schedule) need to make sure the tid that block itself is the one to release itself+
+
 {
     return 0;
 }

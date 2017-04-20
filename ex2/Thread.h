@@ -5,6 +5,11 @@
 #ifndef PROJECT_THREAD_H
 #define PROJECT_THREAD_H
 
+
+//#define RUNNING = 1
+//#define BLOCKED = 2
+//#define READY = 3
+
 #include "stdlib.h"
 
 
@@ -14,6 +19,10 @@ private:
     int _id, _stackSize;
     void (*_job)(void);
     bool _isBlocked;
+    int _
+    int _quantumsNum; //for 'uthread_get_quantums' functions
+
+//    int _state; //RUNNING, BLOCKED, or READY instead of the  isbloced+isrunning+is ready..?
 
 public:
     Thread(Thread && thread);
