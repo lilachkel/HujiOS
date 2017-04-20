@@ -46,7 +46,7 @@ int Thread::Resume()
     return 0;
 }
 
-int Thread::Sync()
+int Thread::Pause()
 {
     return 0;
 }
@@ -65,5 +65,6 @@ void Thread::SetBlockStatus(const bool isBlocked)
 {
     _isBlocked = isBlocked;
 }
+
 
 

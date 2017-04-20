@@ -10,8 +10,10 @@
 //#define BLOCKED = 2
 //#define READY = 3
 
+#include <setjmp.h>
 #include "stdlib.h"
 
+#define BUF_VAL 1
 
 class Thread
 {
@@ -19,7 +21,7 @@ private:
     int _id, _stackSize;
     void (*_job)(void);
     bool _isBlocked;
-    int _
+    sigjmp_buf _env;
     int _quantumsNum; //for 'uthread_get_quantums' functions
 
 //    int _state; //RUNNING, BLOCKED, or READY instead of the  isbloced+isrunning+is ready..?
@@ -37,11 +39,10 @@ public:
     bool GetBlockStatus() const;
     void SetBlockStatus(const bool isBlocked);
 
-    int Execute();
     int Block();
     int Terminate();
     int Resume();
-    int Sync();
+    int Pause();
 };
 
 

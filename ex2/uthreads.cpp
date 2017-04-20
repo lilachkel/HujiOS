@@ -7,14 +7,20 @@
 #include <queue>
 #include <map>
 #include <list>
+#include <sys/time.h>
+#include <signal.h>
 
 using namespace std;
 
-int _threadCount, _runningTID, _qtime, _quantum_usecs;
+int _threadCount, _runningTID, _qtime;
 queue<int> _freeIds;
-list<int> _roundRobinQueue;
+list<int> _readyQueue, _blockQueue;
 map<int, Thread> _threads;
 
+void timerHandler(int sig)
+{
+
+}
 
 int GetNextId()
 {
@@ -31,7 +37,19 @@ int GetNextId()
 
 int uthread_init(int quantum_usecs)
 {
+    struct sigaction sa;
+    struct itimerval timer;
+
     _threadCount = 1;
+    timer.it_interval.tv_usec = quantum_usecs;
+    timer.it_interval.tv_sec = 0;
+    timer.it_value.tv_sec = 0;
+    timer.it_value.tv_usec = quantum_usecs;
+
+    sa.sa_handler = &timerHandler;
+    if(sigaction(SIGVTALRM, &sa, NULL)) { return -1; }
+    if(setitimer(ITIMER_VIRTUAL, &timer, NULL)) { return -1; }
+
     _qtime = 1; //not the input(quantum_usecs), or is that the counter ?
     return 0;
 }
@@ -46,7 +64,7 @@ int uthread_spawn(void (*f)(void))
 
     _threads[id] = Thread(GetNextId(), f, STACK_SIZE);
     _runningTID = id;
-    _roundRobinQueue.push_back(id);
+    _readyQueue.push_back(id);
     return id;
 }
 
@@ -61,19 +79,19 @@ int uthread_terminate(int tid)// free BLOCKED threads(+change there state), dele
 
     _threads.erase(tid);
     _freeIds.push(tid);
-    _roundRobinQueue.remove(tid);
+    _readyQueue.remove(tid);
     return 0;
 }
 
 int uthread_block(int tid)// we(the schedule) need to make sure the tid that block itself is the one to release itself+
 
 {
-    return 0;
+    return _threads[tid].Block();
 }
 
 int uthread_resume(int tid)
 {
-    return 0;
+    return _threads[tid].Resume();
 }
 
 int uthread_sync(int tid)
@@ -83,10 +101,10 @@ int uthread_sync(int tid)
 
 int uthread_get_tid()
 {
-    return 0;
+    return _runningTID;
 }
 
 int uthread_get_total_quantums()
 {
-    return 0;
+    return _qtime;
 }
