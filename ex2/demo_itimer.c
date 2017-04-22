@@ -23,7 +23,7 @@ int main(void) {
 	struct itimerval timer;
 
 	// Install timer_handler as the signal handler for SIGVTALRM.
-	sa.sa_handler = &timer_handler;
+	sa.sa_handler = &timer_handler;\
 	if (sigaction(SIGVTALRM, &sa,NULL) < 0) {
 		printf("sigaction error.");
 	}

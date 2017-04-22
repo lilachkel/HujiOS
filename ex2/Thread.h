@@ -13,7 +13,7 @@
 #include <setjmp.h>
 #include <signal.h>
 #include "stdlib.h"
-
+https://github.com/jenia90/HujiOS.git
 #define BUF_VAL 1
 
 #ifdef __x86_64__
@@ -59,7 +59,7 @@ address_t translate_address(address_t addr)
 class Thread
 {
 private:
-    int _id, _stackSize;
+    int _id, _stackSize, _quantums;
     void (*_job)(void);
     bool _isBlocked;
     sigjmp_buf _env;
@@ -81,7 +81,10 @@ public:
     int GetId() const;
     bool GetBlockStatus() const;
     void SetBlockStatus(const bool isBlocked);
+    void SaveEnv();
+    void LoadEnv();
 
+    int GetQuantums();
     int Block();
     int Terminate();
     int Resume();
