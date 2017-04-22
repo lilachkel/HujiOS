@@ -62,7 +62,7 @@ int runNext(){// for block case
          // print error &something
          return -1;// every time i check it??
      }
-     int nextThread = GetNextThread()
+     int nextThread = GetNextThread();
      if(nextThread == -1 ){// if there is no more threads in the ready list...?
 
      }
