@@ -63,7 +63,7 @@ int runNext(){// for block case
          return -1;// every time i check it??
      }
      int nextThread = GetNextThread();
-     if(nextThread == -1 ){// if there is no more threads in the ready list...?
+     if(nextThread == -1 ){// if there is no more threads in the ready list..?
 
      }
      _threads[_runningTID].Block();
