@@ -15,7 +15,6 @@ Thread::Thread(const int id, const void (*job)(void), const int stackSize) :
         _id(id),
         _job(job),
         _isBlocked(false),
-        _quantums(0),
         _stackSize(stackSize)
 {
     Setup();
@@ -28,7 +27,7 @@ Thread::~Thread()
 }
 
 
-int Thread::GetId() const
+const int Thread::GetId() const
 {
     return _id;
 }
@@ -41,13 +40,11 @@ int Thread::GetId() const
 void Thread::SaveEnv()
 {
     sigsetjmp(_env, BUF_VAL);
-
 }
 void Thread::LoadEnv()
 {
     _quantums++;
     siglongjmp(_env, BUF_VAL);
-
 }
 
 int Thread::Terminate()
@@ -56,11 +53,6 @@ int Thread::Terminate()
 }
 
 int Thread::Resume()
-{
-    return 0;
-}
-
-int Thread::Pause()
 {
     return 0;
 }
@@ -74,7 +66,7 @@ int Thread::Block()
     return 0;
 }
 
-bool Thread::GetBlockStatus() const
+const bool Thread::GetBlockStatus() const
 {
     return _isBlocked;
 }

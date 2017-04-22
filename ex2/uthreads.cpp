@@ -12,80 +12,87 @@
 
 using namespace std;
 
-int _threadCount, _runningTID, _qtime;
+int _threadCount, _runningTID, _qtime, _currentIndex;
 queue<int> _freeIds;
-list<int> _readyQueue, _blockQueue, runningQueue;
+list<int> _readyQueue, _blockQueue;
 map<int, Thread> _threads;
 struct sigaction sa;
 struct itimerval timer;
 
-int GetNextThread(){
-    int nextTid = -1;
-    if (!_readyQueue.empty()){
-        nextTid = _readyQueue.front();
-        _readyQueue.pop_front();
+int GetNextThread()
+{
+    if (!_readyQueue.empty())
+    {
+        return ++_currentIndex;
     }
-    return nextTid;
+
+    return -1;
 }
+
 void timerHandler(int sig)
 {
-    if (sigprocmask(SIG_BLOCK, &sa.sa_mask, NULL)==-1){
+    if (sigprocmask(SIG_BLOCK, &sa.sa_mask, NULL)==-1)
+    {
         //ERROR
     }
 
-    if(setitimer(ITIMER_VIRTUAL, &timer, NULL)) { //'rest' the timer
+    if(setitimer(ITIMER_VIRTUAL, &timer, NULL))
+    { //'rest' the timer
         // print error &something
-        }
+    }
+
     int nextThread = GetNextThread();
     if(nextThread == -1 ){// if there is no more threads in the ready list...?
 
     }
+
     _readyQueue.push_back(_runningTID);
     _threads[_runningTID].SaveEnv();
     _runningTID = nextThread;
     _threads[_runningTID].LoadEnv();
     _qtime++;
-    if (sigprocmask(SIG_UNBLOCK, &sa.sa_mask, NULL)==-1){
+    if (sigprocmask(SIG_UNBLOCK, &sa.sa_mask, NULL)==-1)
+    {
         //ERROR
     }
-
-
 }
 
 int runNext(){// for block case
-     if (sigprocmask(SIG_BLOCK, &sa.sa_mask, NULL)==-1){
+     if (sigprocmask(SIG_BLOCK, &sa.sa_mask, NULL)==-1)
+     {
          //ERROR
          return -1;// every time i check it??
      }
 
-     if(setitimer(ITIMER_VIRTUAL, &timer, NULL)) { //'rest' the timer
+     if(setitimer(ITIMER_VIRTUAL, &timer, NULL))
+     { //'rest' the timer
          // print error &something
          return -1;// every time i check it??
      }
+
      int nextThread = GetNextThread();
      if(nextThread == -1 ){// if there is no more threads in the ready list..?
 
      }
+
      _threads[_runningTID].Block();
      _blockQueue.push_back(_runningTID);
      _threads.erase(_runningTID);
      _runningTID = nextThread;
      _threads[_runningTID].LoadEnv();
      _qtime++;
-     if (sigprocmask(SIG_UNBLOCK, &sa.sa_mask, NULL)==-1){
 
+     if (sigprocmask(SIG_UNBLOCK, &sa.sa_mask, NULL)==-1)
+     {
          //ERROR
          return -1;// every time i check it??
-
      }
+
     return 0;
-
-
-
  }
 
 
-int GetNextId()
+int GetNextFreeId()
 {
     int id;
     if(_freeIds.size() > 0)
@@ -97,11 +104,12 @@ int GetNextId()
 
     return _threadCount < MAX_THREAD_NUM ? _threadCount++ : -1;
 }
-void (*thread0)(void){}
+
 int uthread_init(int quantum_usecs)
 {
-    _threads[0] = Thread(0,thread0 , 0);
+    // TODO: Add handler for TID 0.
 
+    _currentIndex = 0;
     _threadCount = 1;
     timer.it_interval.tv_usec = quantum_usecs;
     timer.it_interval.tv_sec = 0;
@@ -118,26 +126,27 @@ int uthread_init(int quantum_usecs)
 
 int uthread_spawn(void (*f)(void))
 {
-    if(_threadCount<= MAX_THREAD_NUM){
-        //ERROR
-    }
-    int id = GetNextId();
+    int id = GetNextFreeId();
     if (id == -1)
     {
-        return id;
-    }
-    if (sigprocmask(SIG_BLOCK, &sa.sa_mask, NULL)==-1){
-        //ERROR
+        return -1;
     }
 
-    _threads[id] = Thread(GetNextId(), f, STACK_SIZE);
-//    _runningTID = id; //only created..
+    if (sigprocmask(SIG_BLOCK, &sa.sa_mask, NULL) == -1)
+    {
+        return -1;
+    }
+
+    _threads[id] = Thread(GetNextFreeId(), f, STACK_SIZE);
+    if(_readyQueue.empty()) _runningTID = id;
     _readyQueue.push_back(id);
     _threadCount++;
 
-    if (sigprocmask(SIG_UNBLOCK, &sa.sa_mask, NULL)==-1){
-        //ERROR
+    if (sigprocmask(SIG_UNBLOCK, &sa.sa_mask, NULL) == -1)
+    {
+        return -1;
     }
+
     return id;
 }
 
@@ -159,13 +168,17 @@ int uthread_terminate(int tid)// free BLOCKED threads(+change there state), dele
 int uthread_block(int tid)// we(the schedule) need to make sure the tid that block itself is not the one to release itself+
 
 {
-    if(tid == 0||(_threads.find(tid)==_threads.end())){// trying to block the first thread or there is no such thread
+    if(tid == 0 || _threads.find(tid) == _threads.end())
+    {// trying to block the first thread or there is no such thread
         //ERROR
         return -1;
     }
-    if (_runningTID == tid){
+
+    if (_runningTID == tid)
+    {
         runNext();
     }
+
     return _threads[tid].Block();
 }
 

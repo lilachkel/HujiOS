@@ -12,8 +12,8 @@
 
 #include <setjmp.h>
 #include <signal.h>
-#include "stdlib.h"
-https://github.com/jenia90/HujiOS.git
+#include <utility>
+
 #define BUF_VAL 1
 
 #ifdef __x86_64__
@@ -78,8 +78,8 @@ public:
      * Gets the TID of this thread
      * @return
      */
-    int GetId() const;
-    bool GetBlockStatus() const;
+    const int GetId() const;
+    const bool GetBlockStatus() const;
     void SetBlockStatus(const bool isBlocked);
     void SaveEnv();
     void LoadEnv();
@@ -88,7 +88,6 @@ public:
     int Block();
     int Terminate();
     int Resume();
-    int Pause();
 };
 
 
