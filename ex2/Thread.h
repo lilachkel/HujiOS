@@ -70,7 +70,7 @@ private:
 //    int _state; //RUNNING, BLOCKED, or READY instead of the  isbloced+isrunning+is ready..?
 
 public:
-    Thread(Thread && thread);
+    Thread(int id);
     Thread(const int id, const void (*job)(void), const int stackSize);
     ~Thread();
 

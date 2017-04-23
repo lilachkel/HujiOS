@@ -77,7 +77,7 @@ int runNext(){// for block case
 
      _threads[_runningTID].Block();
      _blockQueue.push_back(_runningTID);
-     _threads.erase(_runningTID);
+     _readyQueue.remove(_runningTID);
      _runningTID = nextThread;
      _threads[_runningTID].LoadEnv();
      _qtime++;
@@ -107,8 +107,6 @@ int GetNextFreeId()
 
 int uthread_init(int quantum_usecs)
 {
-    // TODO: Add handler for TID 0.
-
     _currentIndex = 0;
     _threadCount = 1;
     timer.it_interval.tv_usec = quantum_usecs;
@@ -120,6 +118,7 @@ int uthread_init(int quantum_usecs)
     if(sigaction(SIGVTALRM, &sa, NULL)) { return -1; }
     if(setitimer(ITIMER_VIRTUAL, &timer, NULL)) { return -1; }
 
+    _threads[0] = Thread(0);
     _qtime = 1; //since thread 0 started
     return 0;
 }
@@ -137,7 +136,7 @@ int uthread_spawn(void (*f)(void))
         return -1;
     }
 
-    _threads[id] = Thread(GetNextFreeId(), f, STACK_SIZE);
+    _threads[id] = Thread(id, f, STACK_SIZE);
     if(_readyQueue.empty()) _runningTID = id;
     _readyQueue.push_back(id);
     _threadCount++;

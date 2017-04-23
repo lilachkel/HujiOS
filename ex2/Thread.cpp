@@ -5,10 +5,7 @@
 #include <utility>
 #include "Thread.h"
 
-Thread::Thread(Thread &&thread) : _id(std::move(thread._id)),
-                                  _job(std::move(thread._job)),
-                                  _stackSize(std::move(thread._stackSize)),
-                                  _isBlocked(thread._isBlocked)
+Thread::Thread(int id) : _id(id), _quantums(0), _isBlocked(false)
 {}
 
 Thread::Thread(const int id, const void (*job)(void), const int stackSize) :
@@ -32,11 +29,6 @@ const int Thread::GetId() const
     return _id;
 }
 
-//int Thread::Execute()
-//{
-//
-//    return 0;
-//}
 void Thread::SaveEnv()
 {
     sigsetjmp(_env, BUF_VAL);
