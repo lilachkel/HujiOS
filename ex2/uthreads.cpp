@@ -7,14 +7,26 @@
 #include <queue>
 #include <map>
 #include <list>
+#include <set>
 #include <sys/time.h>
-#include <signal.h>
+
+#define SIGN_BLOCK if (sigprocmask(SIG_BLOCK, &sa.sa_mask, NULL) == -1) \
+{\
+return -1;\
+};
+#define SIGN_UNBLOCK if (sigprocmask(SIG_UNBLOCK, &sa.sa_mask, NULL) == -1) \
+{\
+return -1;\
+};
+#define BLOCK_CASE 'b'
+#define TERMINATE_CASE 't'
 
 using namespace std;
 
 int _threadCount, _runningTID, _qtime;
-queue<int> _freeIds;
-list<int> _readyQueue, _blockQueue;
+set<int> _freeIds;
+list<int> _readyQueue;
+std::map<int,std::list<int>> _blockQueue;
 map<int, Thread> _threads;
 struct sigaction sa;
 struct itimerval timer;
@@ -44,7 +56,7 @@ void timerHandler(int sig)
 {
     if (sigprocmask(SIG_BLOCK, &sa.sa_mask, NULL)==-1)
     {
-        //ERROR
+        //ERROR NO RETURN VALUE
     }
 
     if(setitimer(ITIMER_VIRTUAL, &timer, NULL))
@@ -64,41 +76,68 @@ void timerHandler(int sig)
     _qtime++;
     if (sigprocmask(SIG_UNBLOCK, &sa.sa_mask, NULL)==-1)
     {
-        //ERROR
+
+        //ERROR NO RETURN VALUE
     }
+
+
 }
+/**
+ *
+ * @param tid
+ */
+void TerminateHalper(int tid){
 
-int runNext()
+    int blockedTid;
+    if (_blockQueue.find(tid) != _blockQueue.end()) {//todo: check if i did it right. im toooo tired
+        for (int i = 0; i < _blockQueue[tid].size(); i++) {
+            blockedTid = _blockQueue[tid].front();
+            _blockQueue[tid].pop_front();
+            uthread_resume(blockedTid);
+        }
+        _blockQueue.erase(tid);
+    }
+    _threads[tid].Terminate();
+    _readyQueue.remove(tid);
+    _threads.erase(tid);
+    _freeIds.insert(tid);
+
+}
+/**
+ * Function which is called when a scheduling decision
+ * should be made(running thread block itself, ect...).
+ * @return On success, return 0. On failure, return -1.
+ */
+int runNext(char wantedCase)// i defined char since we use int too mach and maybe will get confused
 {
-     if (sigprocmask(SIG_BLOCK, &sa.sa_mask, NULL)==-1)
+    // alredy at SIGN_UNBLOCK state.
+     if(setitimer(ITIMER_VIRTUAL, &timer, NULL))//'rest' the timer
      {
-         //ERROR
-         return -1;// every time i check it??
-     }
-
-     if(setitimer(ITIMER_VIRTUAL, &timer, NULL))
-     { //'rest' the timer
-         // print error &something
-         return -1;// every time i check it??
+         // print error ?
+         return -1;
      }
 
      int nextThread = GetNextThread();
      if(nextThread == -1 ){// if there is no more threads in the ready list..?
-
+        // call  thread 0? so should thread 0 be in the readyQ all times?...
      }
-
-     _threads[_runningTID].Block();
-     _blockQueue.push_back(_runningTID);
-     _readyQueue.remove(_runningTID);
+    switch(wantedCase) {
+        case BLOCK_CASE:
+            _threads[_runningTID].Block();
+            _readyQueue.remove(_runningTID);
+            break;
+        case TERMINATE_CASE:
+            TerminateHalper(_runningTID);
+            break;
+        default:
+            SIGN_UNBLOCK
+            return -1;
+    }
      _runningTID = nextThread;
      _threads[_runningTID].LoadEnv();
      _qtime++;
 
-     if (sigprocmask(SIG_UNBLOCK, &sa.sa_mask, NULL)==-1)
-     {
-         //ERROR
-         return -1;// every time i check it??
-     }
+    SIGN_UNBLOCK
 
     return 0;
  }
@@ -109,12 +148,14 @@ int runNext()
  */
 int GetNextFreeId()
 {
-    int id;
+
     if(_freeIds.size() > 0)
     {
-        id = _freeIds.front();
-        _freeIds.pop();
-        return id;
+        int newTid = *_freeIds.begin();
+        _freeIds.erase(newTid);
+        return newTid; //need to make sure i did it right! 'set' keep their elements ordered at all times..
+        // the begin sopposed to get the default iter which is ascending order, and... i returnd the pointer...
+        // should be the wanted tid.....
     }
 
     return _threadCount < MAX_THREAD_NUM ? _threadCount++ : -1;
@@ -122,7 +163,6 @@ int GetNextFreeId()
 
 int uthread_init(int quantum_usecs)
 {
-    _currentIndex = 0;
     _threadCount = 1;
     timer.it_interval.tv_usec = quantum_usecs;
     timer.it_interval.tv_sec = 0;
@@ -131,22 +171,24 @@ int uthread_init(int quantum_usecs)
 
     sa.sa_handler = &timerHandler;
     if(sigaction(SIGVTALRM, &sa, NULL)) { return -1; }
+
     if(setitimer(ITIMER_VIRTUAL, &timer, NULL)) { return -1; }
 
     _threads[0] = Thread(0);
     _qtime = 1; //since thread 0 started
     return 0;
 }
-
+/**
+ * This function creates a new thread.
+ * @param f The function which the thread need to perform.
+ * @return On success, return the ID of the created thread.
+ * On failure, return -1.
+ */
 int uthread_spawn(void (*f)(void))
 {
+    SIGN_BLOCK
     int id = GetNextFreeId();
     if (id == -1)
-    {
-        return -1;
-    }
-
-    if (sigprocmask(SIG_BLOCK, &sa.sa_mask, NULL) == -1)
     {
         return -1;
     }
@@ -156,46 +198,77 @@ int uthread_spawn(void (*f)(void))
     _readyQueue.push_back(id);
     _threadCount++;
 
-    if (sigprocmask(SIG_UNBLOCK, &sa.sa_mask, NULL) == -1)
-    {
-        return -1;
-    }
+    SIGN_UNBLOCK
 
     return id;
 }
 
-int uthread_terminate(int tid)
+int uthread_terminate(int tid)// free BLOCKED threads(+change there state), delete stack, save ID/TID in '_freeIds'
+// the tid == 0 should be in the READY list?  since we should be the one to terminate tid==0 while we terminate the whole program...
+// if not so how can we tell call 'exit(0) ..? if we do- we dont know what written
 {
+    SIGN_BLOCK
+
     if(tid == 0 || _threads.find(tid) == _threads.end())
-    {
+    {// trying to block the first thread or there is no such thread
+        sigprocmask(SIG_UNBLOCK, &sa.sa_mask, NULL);
         return -1;
     }
+    if (_runningTID == tid){// scheduling decision
+        if(runNext('t') < 0)
+        {
+            sigprocmask(SIG_UNBLOCK, &sa.sa_mask, NULL);
+            return -1; // or end the process.
+        }
+    }
+    TerminateHalper(tid);
 
-    _threads.erase(tid);
-    _freeIds.push(tid);
-    _readyQueue.remove(tid);
+    SIGN_UNBLOCK
     return 0;
 }
 
-int uthread_block(int tid)// we(the schedule) need to make sure the tid that block itself is not the one to release itself+
-
+/**
+ *
+ * @param tid
+ * @return
+ */
+int uthread_block(int tid)
 {
+    SIGN_BLOCK
+
     if(tid == 0 || _threads.find(tid) == _threads.end())
     {
+        sigprocmask(SIG_UNBLOCK, &sa.sa_mask, NULL);
         return -1;
     }
 
     if (_runningTID == tid)
     {
-        runNext();
+        if(runNext('b') < 0)
+        {
+            sigprocmask(SIG_UNBLOCK, &sa.sa_mask, NULL);
+            return -1;
+        }
     }
+    SIGN_UNBLOCK
 
     return _threads[tid].Block();
 }
 
 int uthread_resume(int tid)
-{
-    return _threads.find(tid) == _threads.end() ? -1 : _threads[tid].Resume();
+{//since we have to push the unblocked thread to the ready list again...
+    SIGN_BLOCK
+    if(_threads.find(tid) == _threads.end())
+    {
+        sigprocmask(SIG_UNBLOCK, &sa.sa_mask, NULL);
+        return  -1 ;
+    }
+    if(_threads[tid].Resume()) // in case the thread was blocked, and his tid is not in readyQ
+    {
+        _readyQueue.push_back(tid);
+    }
+    SIGN_UNBLOCK
+    return 0;
 }
 
 int uthread_sync(int tid)

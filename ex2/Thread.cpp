@@ -41,11 +41,23 @@ void Thread::LoadEnv()
 
 int Thread::Terminate()
 {
+    //You get free! you get free!!! everybody gets free!!! (dont really know how.....)
     return 0;
 }
 
+/**
+ *
+ * @return :
+ * 1 in case the thread was blocked (means we actually changed his status)
+ * 0 in case the thread is in RUNNING or READY state.
+ */
 int Thread::Resume()
 {
+    if (_isBlocked)
+    {
+        _isBlocked = false;
+        return 1;
+    }
     return 0;
 }
 
@@ -53,8 +65,6 @@ int Thread::Block()
 {
     _isBlocked = true;
     SaveEnv();//to block here too?
-
-
     return 0;
 }
 
