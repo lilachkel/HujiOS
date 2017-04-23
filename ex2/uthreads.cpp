@@ -19,16 +19,24 @@ map<int, Thread> _threads;
 struct sigaction sa;
 struct itimerval timer;
 
+/**
+ * Gets next thread ID in queue
+ * @return next thread ID
+ */
 int GetNextThread()
 {
     if (!_readyQueue.empty())
     {
-        return ++_currentIndex;
+        return (++_currentIndex) % (_readyQueue.size() - 1);
     }
 
     return -1;
 }
 
+/**
+ * Function which is called upon SIGVTALRM
+ * @param sig the signal which was called
+ */
 void timerHandler(int sig)
 {
     if (sigprocmask(SIG_BLOCK, &sa.sa_mask, NULL)==-1)
@@ -46,7 +54,6 @@ void timerHandler(int sig)
 
     }
 
-    _readyQueue.push_back(_runningTID);
     _threads[_runningTID].SaveEnv();
     _runningTID = nextThread;
     _threads[_runningTID].LoadEnv();
@@ -57,7 +64,8 @@ void timerHandler(int sig)
     }
 }
 
-int runNext(){// for block case
+int runNext()
+{
      if (sigprocmask(SIG_BLOCK, &sa.sa_mask, NULL)==-1)
      {
          //ERROR
@@ -91,7 +99,10 @@ int runNext(){// for block case
     return 0;
  }
 
-
+/**
+ * Gets the first free id for a new thread.
+ * @return int representing a new ID for a thread; -1 otherwise
+ */
 int GetNextFreeId()
 {
     int id;
@@ -149,11 +160,9 @@ int uthread_spawn(void (*f)(void))
     return id;
 }
 
-int uthread_terminate(int tid)// free BLOCKED threads(+change there state), delete stack, save ID/TID in '_freeIds'
-// the tid == 0 should be in the READY list?  since we should be the one to terminate tid==0 while we terminate the whole program...
-// if not so how can we tell call 'exit(0) ..? if we do- we dont know what written in tid==0 so how we avoid bugs?
+int uthread_terminate(int tid)
 {
-    if(_threads.find(tid) == _threads.end())
+    if(tid == 0 || _threads.find(tid) == _threads.end())
     {
         return -1;
     }
@@ -168,8 +177,7 @@ int uthread_block(int tid)// we(the schedule) need to make sure the tid that blo
 
 {
     if(tid == 0 || _threads.find(tid) == _threads.end())
-    {// trying to block the first thread or there is no such thread
-        //ERROR
+    {
         return -1;
     }
 
@@ -183,7 +191,7 @@ int uthread_block(int tid)// we(the schedule) need to make sure the tid that blo
 
 int uthread_resume(int tid)
 {
-    return _threads[tid].Resume();
+    return _threads.find(tid) == _threads.end() ? -1 : _threads[tid].Resume();
 }
 
 int uthread_sync(int tid)
@@ -202,5 +210,5 @@ int uthread_get_total_quantums()
 }
 int uthread_get_quantums(int tid)
 {
-    return _threads[tid].GetQuantums();
+    return _threads.find(tid) == _threads.end() ? -1 : _threads[tid].GetQuantums();
 }
