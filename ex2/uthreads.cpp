@@ -12,7 +12,7 @@
 
 using namespace std;
 
-int _threadCount, _runningTID, _qtime, _currentIndex;
+int _threadCount, _runningTID, _qtime;
 queue<int> _freeIds;
 list<int> _readyQueue, _blockQueue;
 map<int, Thread> _threads;
@@ -25,12 +25,15 @@ struct itimerval timer;
  */
 int GetNextThread()
 {
+    int nextTid = -1;
+
     if (!_readyQueue.empty())
     {
-        return (++_currentIndex) % (_readyQueue.size() - 1);
+        nextTid = _readyQueue.front();
+        _readyQueue.pop_front();
     }
 
-    return -1;
+    return nextTid;
 }
 
 /**
@@ -54,6 +57,7 @@ void timerHandler(int sig)
 
     }
 
+    _readyQueue.push_back(_runningTID);
     _threads[_runningTID].SaveEnv();
     _runningTID = nextThread;
     _threads[_runningTID].LoadEnv();
