@@ -21,7 +21,9 @@ address_t translate_address(address_t addr)
 }
 
 Thread::Thread() : _id(0), _quantums(1), _isBlocked(false)
-{}
+{
+    Setup();
+}
 
 Thread::Thread(int id, void (*job)(void), const int stackSize) :
         _id(id),
@@ -34,7 +36,7 @@ Thread::Thread(int id, void (*job)(void), const int stackSize) :
 
 Thread::~Thread()
 {
-    Terminate();
+
 }
 
 
@@ -55,14 +57,7 @@ int Thread::SaveEnv()
 
 void Thread::LoadEnv()
 {
-    _quantums++;
     siglongjmp(_env, BUF_VAL);
-}
-
-int Thread::Terminate()
-{
-    //You get free! you get free!!! everybody gets free!!! (dont really know how.....)
-    return 0;
 }
 
 /**

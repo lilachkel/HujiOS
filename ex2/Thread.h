@@ -47,9 +47,9 @@ public:
     int SaveEnv();
     void LoadEnv();
 
+    inline const int IncrementQuanta() { _quantums++; }
     int GetQuantums();
     int Block();
-    int Terminate();
     int Resume();
 };
 
