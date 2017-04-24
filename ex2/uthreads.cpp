@@ -1,4 +1,4 @@
-#define DEBUG
+//#define DEBUG
 
 #include "uthreads.h"
 #include "Thread.h"
@@ -74,10 +74,15 @@ void timerHandler(int sig)
         _readyQueue.push_back(_runningTID);
         _threads[_runningTID]->SaveEnv();
         _runningTID = nextThread;
+        _threads[_runningTID]->IncrementQuanta();
+        _qtime++;
         _threads[_runningTID]->LoadEnv();
     }
-    _threads[_runningTID]->IncrementQuanta();
-    _qtime++;
+    else
+    {
+        _threads[_runningTID]->IncrementQuanta();
+        _qtime++;
+    }
 
 #ifdef DEBUG
     PrintThreadInfo("timer");
