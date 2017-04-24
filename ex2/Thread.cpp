@@ -5,10 +5,26 @@
 #include <utility>
 #include "Thread.h"
 
-Thread::Thread(int id) : _id(id), _quantums(0), _isBlocked(false)
+typedef unsigned long address_t;
+#define JB_SP 6
+#define JB_PC 7
+
+/* A translation is required when using an address of a variable.
+   Use this as a black box in your code. */
+address_t translate_address(address_t addr)
+{
+    address_t ret;
+    asm volatile("xor    %%fs:0x30,%0\n"
+            "rol    $0x11,%0\n"
+    : "=g" (ret)
+    : "0" (addr));
+    return ret;
+}
+
+Thread::Thread() : _id(0), _quantums(1), _isBlocked(false)
 {}
 
-Thread::Thread(const int id, const void (*job)(void), const int stackSize) :
+Thread::Thread( int id, void (*job)(void), const int stackSize) :
         _id(id),
         _job(job),
         _isBlocked(false),
@@ -29,9 +45,14 @@ const int Thread::GetId() const
     return _id;
 }
 
-void Thread::SaveEnv()
+int Thread::SaveEnv()
 {
-    sigsetjmp(_env, BUF_VAL);
+    if(sigsetjmp(_env, BUF_VAL) == BUF_VAL)
+    {
+        return 0;
+    }
+    return -1;
+
 }
 void Thread::LoadEnv()
 {

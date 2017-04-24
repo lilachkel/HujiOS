@@ -86,11 +86,11 @@ void timerHandler(int sig)
  *
  * @param tid
  */
-void TerminateHalper(int tid){
+void TerminateHelper(int tid){
 
     int blockedTid;
     if (_blockQueue.find(tid) != _blockQueue.end()) {//todo: check if i did it right. im toooo tired
-        for (int i = 0; i < _blockQueue[tid].size(); i++) {
+        for (int i = 0; i < (int)_blockQueue[tid].size(); i++) {
             blockedTid = _blockQueue[tid].front();
             _blockQueue[tid].pop_front();
             uthread_resume(blockedTid);
@@ -127,7 +127,7 @@ int runNext(char wantedCase)// i defined char since we use int too mach and mayb
             _readyQueue.remove(_runningTID);
             break;
         case TERMINATE_CASE:
-            TerminateHalper(_runningTID);
+            TerminateHelper(_runningTID);
             break;
         default:
             SIGN_UNBLOCK
@@ -174,7 +174,7 @@ int uthread_init(int quantum_usecs)
 
     if(setitimer(ITIMER_VIRTUAL, &timer, NULL)) { return -1; }
 
-    _threads[0] = Thread(0);
+    _threads[0] = Thread();
     _qtime = 1; //since thread 0 started
     return 0;
 }
@@ -221,7 +221,7 @@ int uthread_terminate(int tid)// free BLOCKED threads(+change there state), dele
             return -1; // or end the process.
         }
     }
-    TerminateHalper(tid);
+    TerminateHelper(tid);
 
     SIGN_UNBLOCK
     return 0;
