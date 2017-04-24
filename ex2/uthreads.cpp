@@ -9,15 +9,10 @@
 #include <list>
 #include <set>
 #include <sys/time.h>
+#include <iostream>
 
-#define SIGN_BLOCK if (sigprocmask(SIG_BLOCK, &sa.sa_mask, NULL) == -1) \
-{\
-return -1;\
-};
-#define SIGN_UNBLOCK if (sigprocmask(SIG_UNBLOCK, &sa.sa_mask, NULL) == -1) \
-{\
-return -1;\
-};
+#define SIGN_BLOCK if (sigprocmask(SIG_BLOCK, &sa.sa_mask, NULL) == -1) { return -1; }
+#define SIGN_UNBLOCK if (sigprocmask(SIG_UNBLOCK, &sa.sa_mask, NULL) == -1) { return -1; }
 #define BLOCK_CASE 'b'
 #define TERMINATE_CASE 't'
 
@@ -26,8 +21,8 @@ using namespace std;
 int _threadCount, _runningTID, _qtime;
 set<int> _freeIds;
 list<int> _readyQueue;
-std::map<int,std::list<int>> _blockQueue;
-map<int, Thread> _threads;
+map<int, std::list<int>> _blockQueue;
+map<int, Thread*> _threads;
 struct sigaction sa;
 struct itimerval timer;
 
@@ -37,9 +32,12 @@ struct itimerval timer;
  */
 int GetNextThread()
 {
+    for(int id: _readyQueue)
+        std::cout << "ready queue: " << id << std::endl;
+
     int nextTid = -1;
 
-    if (!_readyQueue.empty())
+    if (_readyQueue.size() > 0)
     {
         nextTid = _readyQueue.front();
         _readyQueue.pop_front();
@@ -54,55 +52,46 @@ int GetNextThread()
  */
 void timerHandler(int sig)
 {
-    if (sigprocmask(SIG_BLOCK, &sa.sa_mask, NULL)==-1)
-    {
-        //ERROR NO RETURN VALUE
-    }
+    if (sigprocmask(SIG_BLOCK, &sa.sa_mask, NULL) == -1) {}
 
-    if(setitimer(ITIMER_VIRTUAL, &timer, NULL))
-    { //'rest' the timer
-        // print error &something
-    }
+    if (setitimer(ITIMER_VIRTUAL, &timer, NULL)) {}
 
     int nextThread = GetNextThread();
-    if(nextThread == -1 ){// if there is no more threads in the ready list...?
-
-    }
-
+    if (nextThread == -1) return;
+    std::cout << "next thread: " << nextThread << std::endl;
     _readyQueue.push_back(_runningTID);
-    _threads[_runningTID].SaveEnv();
+    _threads[_runningTID]->SaveEnv();
     _runningTID = nextThread;
-    _threads[_runningTID].LoadEnv();
+    _threads[_runningTID]->LoadEnv();
     _qtime++;
-    if (sigprocmask(SIG_UNBLOCK, &sa.sa_mask, NULL)==-1)
-    {
 
-        //ERROR NO RETURN VALUE
-    }
-
-
+    if (sigprocmask(SIG_UNBLOCK, &sa.sa_mask, NULL) == -1) { }
 }
+
 /**
  *
  * @param tid
  */
-void TerminateHelper(int tid){
-
+void TerminateHelper(int tid)
+{
     int blockedTid;
-    if (_blockQueue.find(tid) != _blockQueue.end()) {//todo: check if i did it right. im toooo tired
-        for (int i = 0; i < (int)_blockQueue[tid].size(); i++) {
+    if (_blockQueue.find(tid) != _blockQueue.end())
+    {//todo: check if i did it right. im toooo tired
+        for (int i = 0; i < (int) _blockQueue[tid].size(); i++)
+        {
             blockedTid = _blockQueue[tid].front();
             _blockQueue[tid].pop_front();
             uthread_resume(blockedTid);
         }
         _blockQueue.erase(tid);
     }
-    _threads[tid].Terminate();
-    _readyQueue.remove(tid);
+    _threads[tid]->Terminate();
+    delete _threads[tid];
     _threads.erase(tid);
+    _readyQueue.remove(tid);
     _freeIds.insert(tid);
-
 }
+
 /**
  * Function which is called when a scheduling decision
  * should be made(running thread block itself, ect...).
@@ -111,19 +100,18 @@ void TerminateHelper(int tid){
 int runNext(char wantedCase)// i defined char since we use int too mach and maybe will get confused
 {
     // alredy at SIGN_UNBLOCK state.
-     if(setitimer(ITIMER_VIRTUAL, &timer, NULL))//'rest' the timer
-     {
-         // print error ?
-         return -1;
-     }
+    if (setitimer(ITIMER_VIRTUAL, &timer, NULL))//'rest' the timer
+    {
+        // print error ?
+        return -1;
+    }
 
-     int nextThread = GetNextThread();
-     if(nextThread == -1 ){// if there is no more threads in the ready list..?
-        // call  thread 0? so should thread 0 be in the readyQ all times?...
-     }
-    switch(wantedCase) {
+    int nextThread = GetNextThread();
+    if (nextThread == -1) { return -1; }
+    switch (wantedCase)
+    {
         case BLOCK_CASE:
-            _threads[_runningTID].Block();
+            _threads[_runningTID]->Block();
             _readyQueue.remove(_runningTID);
             break;
         case TERMINATE_CASE:
@@ -133,14 +121,16 @@ int runNext(char wantedCase)// i defined char since we use int too mach and mayb
             SIGN_UNBLOCK
             return -1;
     }
-     _runningTID = nextThread;
-     _threads[_runningTID].LoadEnv();
-     _qtime++;
+
+    _threads[_runningTID]->SaveEnv();
+    _runningTID = nextThread;
+    _threads[_runningTID]->LoadEnv();
+    _qtime++;
 
     SIGN_UNBLOCK
 
     return 0;
- }
+}
 
 /**
  * Gets the first free id for a new thread.
@@ -149,7 +139,7 @@ int runNext(char wantedCase)// i defined char since we use int too mach and mayb
 int GetNextFreeId()
 {
 
-    if(_freeIds.size() > 0)
+    if (_freeIds.size() > 0)
     {
         int newTid = *_freeIds.begin();
         _freeIds.erase(newTid);
@@ -163,21 +153,26 @@ int GetNextFreeId()
 
 int uthread_init(int quantum_usecs)
 {
+    _threads[0] = new Thread();
+    _readyQueue.push_back(0);
+    _qtime = 1; //since thread 0 started
     _threadCount = 1;
+
     timer.it_interval.tv_usec = quantum_usecs;
     timer.it_interval.tv_sec = 0;
     timer.it_value.tv_sec = 0;
     timer.it_value.tv_usec = quantum_usecs;
 
     sa.sa_handler = &timerHandler;
-    if(sigaction(SIGVTALRM, &sa, NULL)) { return -1; }
+    if (sigaction(SIGVTALRM, &sa, NULL))
+    { return -1; }
 
-    if(setitimer(ITIMER_VIRTUAL, &timer, NULL)) { return -1; }
+    if (setitimer(ITIMER_VIRTUAL, &timer, NULL))
+    { return -1; }
 
-    _threads[0] = Thread();
-    _qtime = 1; //since thread 0 started
     return 0;
 }
+
 /**
  * This function creates a new thread.
  * @param f The function which the thread need to perform.
@@ -193,10 +188,9 @@ int uthread_spawn(void (*f)(void))
         return -1;
     }
 
-    _threads[id] = Thread(id, f, STACK_SIZE);
-    if(_readyQueue.empty()) _runningTID = id;
+    _threads[id] = new Thread(id, f, STACK_SIZE);
     _readyQueue.push_back(id);
-    _threadCount++;
+    std::cout <<"new tid: " << id << std::endl; //TODO: Remove!
 
     SIGN_UNBLOCK
 
@@ -209,13 +203,14 @@ int uthread_terminate(int tid)// free BLOCKED threads(+change there state), dele
 {
     SIGN_BLOCK
 
-    if(tid == 0 || _threads.find(tid) == _threads.end())
+    if (tid == 0 || _threads.find(tid) == _threads.end())
     {// trying to block the first thread or there is no such thread
         sigprocmask(SIG_UNBLOCK, &sa.sa_mask, NULL);
         return -1;
     }
-    if (_runningTID == tid){// scheduling decision
-        if(runNext('t') < 0)
+    if (_runningTID == tid)
+    {// scheduling decision
+        if (runNext('t') < 0)
         {
             sigprocmask(SIG_UNBLOCK, &sa.sa_mask, NULL);
             return -1; // or end the process.
@@ -236,7 +231,7 @@ int uthread_block(int tid)
 {
     SIGN_BLOCK
 
-    if(tid == 0 || _threads.find(tid) == _threads.end())
+    if (tid == 0 || _threads.find(tid) == _threads.end())
     {
         sigprocmask(SIG_UNBLOCK, &sa.sa_mask, NULL);
         return -1;
@@ -244,7 +239,7 @@ int uthread_block(int tid)
 
     if (_runningTID == tid)
     {
-        if(runNext('b') < 0)
+        if (runNext('b') < 0)
         {
             sigprocmask(SIG_UNBLOCK, &sa.sa_mask, NULL);
             return -1;
@@ -252,18 +247,18 @@ int uthread_block(int tid)
     }
     SIGN_UNBLOCK
 
-    return _threads[tid].Block();
+    return _threads[tid]->Block();
 }
 
 int uthread_resume(int tid)
 {//since we have to push the unblocked thread to the ready list again...
     SIGN_BLOCK
-    if(_threads.find(tid) == _threads.end())
+    if (_threads.find(tid) == _threads.end())
     {
         sigprocmask(SIG_UNBLOCK, &sa.sa_mask, NULL);
-        return  -1 ;
+        return -1;
     }
-    if(_threads[tid].Resume()) // in case the thread was blocked, and his tid is not in readyQ
+    if (_threads[tid]->Resume()) // in case the thread was blocked, and his tid is not in readyQ
     {
         _readyQueue.push_back(tid);
     }
@@ -285,7 +280,8 @@ int uthread_get_total_quantums()
 {
     return _qtime;
 }
+
 int uthread_get_quantums(int tid)
 {
-    return _threads.find(tid) == _threads.end() ? -1 : _threads[tid].GetQuantums();
+    return _threads.find(tid) == _threads.end() ? -1 : _threads[tid]->GetQuantums();
 }

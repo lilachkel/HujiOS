@@ -13,6 +13,7 @@
 #include <setjmp.h>
 #include <signal.h>
 #include <utility>
+#include "uthreads.h"
 
 #define BUF_VAL 1
 
@@ -25,7 +26,7 @@ private:
     void (*_job)(void);
     bool _isBlocked;
     sigjmp_buf _env;
-    char *_stack;
+    char _stack[STACK_SIZE];
 
     void Setup();
 

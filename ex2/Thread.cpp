@@ -2,7 +2,6 @@
 // Created by jenia90 on 3/22/17.
 //
 
-#include <utility>
 #include "Thread.h"
 
 typedef unsigned long address_t;
@@ -24,7 +23,7 @@ address_t translate_address(address_t addr)
 Thread::Thread() : _id(0), _quantums(1), _isBlocked(false)
 {}
 
-Thread::Thread( int id, void (*job)(void), const int stackSize) :
+Thread::Thread(int id, void (*job)(void), const int stackSize) :
         _id(id),
         _job(job),
         _isBlocked(false),
@@ -36,7 +35,6 @@ Thread::Thread( int id, void (*job)(void), const int stackSize) :
 Thread::~Thread()
 {
     Terminate();
-    delete _stack;
 }
 
 
@@ -47,13 +45,14 @@ const int Thread::GetId() const
 
 int Thread::SaveEnv()
 {
-    if(sigsetjmp(_env, BUF_VAL) == BUF_VAL)
+    if (sigsetjmp(_env, BUF_VAL) == BUF_VAL)
     {
         return 0;
     }
     return -1;
 
 }
+
 void Thread::LoadEnv()
 {
     _quantums++;
@@ -107,16 +106,16 @@ void Thread::SetBlockStatus(const bool isBlocked)
 void Thread::Setup()
 {
     address_t sp, pc;
-    _stack = new char[_stackSize];
 
-    sp = (address_t)_stack + _stackSize - sizeof(address_t);
-    pc = (address_t)_job;
+    sp = (address_t) _stack + _stackSize - sizeof(address_t);
+    pc = (address_t) _job;
 
     sigsetjmp(_env, BUF_VAL);
     (_env->__jmpbuf)[JB_SP] = translate_address(sp);
     (_env->__jmpbuf)[JB_PC] = translate_address(pc);
     sigemptyset(&_env->__saved_mask);
 }
+
 
 
 
