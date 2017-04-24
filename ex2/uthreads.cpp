@@ -1,7 +1,3 @@
-//
-// Created by jenia90 on 3/22/17.
-//
-
 #define DEBUG
 
 #include "uthreads.h"
@@ -52,6 +48,10 @@ int GetNextThread()
         _readyQueue.pop_front();
     }
 
+#ifdef DEBUG
+    PrintThreadInfo("GetNextId: " + to_string(nextTid));
+#endif
+
     return nextTid;
 }
 
@@ -61,15 +61,16 @@ int GetNextThread()
  */
 void timerHandler(int sig)
 {
-    if (sigprocmask(SIG_BLOCK, &sa.sa_mask, NULL) == -1) {}
-
-    //if (setitimer(ITIMER_VIRTUAL, &timer, NULL)) {}
+    sigprocmask(SIG_BLOCK, &sa.sa_mask, NULL);
 
     int nextThread = GetNextThread();
+
+#ifdef DEBUG
+    cout << "running thread: " << _runningTID << " | next thread: " << nextThread << endl;
+#endif
+
     if (nextThread != -1)
     {
-        //std::cout << "next thread: " << nextThread << std::endl; //TODO: REMOVE!
-
         _readyQueue.push_back(_runningTID);
         _threads[_runningTID]->SaveEnv();
         _runningTID = nextThread;
@@ -77,10 +78,12 @@ void timerHandler(int sig)
     }
     _threads[_runningTID]->IncrementQuanta();
     _qtime++;
+
 #ifdef DEBUG
     PrintThreadInfo("timer");
 #endif
-    if (sigprocmask(SIG_UNBLOCK, &sa.sa_mask, NULL) == -1) { }
+
+    sigprocmask(SIG_UNBLOCK, &sa.sa_mask, NULL);
 }
 
 /**
@@ -100,8 +103,10 @@ void TerminateHelper(int tid)
         }
         _blockQueue.erase(tid);
     }
-    delete _threads[tid];
+
+    // TODO: check if the following shit is valid code!
     _threads.erase(tid);
+    delete _threads[tid];
     _readyQueue.remove(tid);
     _freeIds.insert(tid);
 
@@ -117,13 +122,6 @@ void TerminateHelper(int tid)
  */
 int runNext(char wantedCase)// i defined char since we use int too mach and maybe will get confused
 {
-    // alredy at SIGN_UNBLOCK state.
-    if (setitimer(ITIMER_VIRTUAL, &timer, NULL))//'rest' the timer
-    {
-        // print error ?
-        return -1;
-    }
-
     int nextThread = GetNextThread();
     if (nextThread == -1) { return -1; }
     switch (wantedCase)
@@ -173,7 +171,7 @@ int GetNextFreeId()
 
 int uthread_init(int quantum_usecs)
 {
-    _threads[0] = new Thread();
+    _threads[0] = new Thread(STACK_SIZE);
     _qtime = 1; //since thread 0 started
     _threadCount = 1;
 

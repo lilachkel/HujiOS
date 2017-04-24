@@ -13,7 +13,6 @@
 #include <setjmp.h>
 #include <signal.h>
 #include <utility>
-#include "uthreads.h"
 
 #define BUF_VAL 1
 
@@ -26,30 +25,75 @@ private:
     void (*_job)(void);
     bool _isBlocked;
     sigjmp_buf _env;
-    char _stack[STACK_SIZE];
-
-    void Setup();
+    char *_stack;
 
 //    int _state; //RUNNING, BLOCKED, or READY instead of the  isbloced+isrunning+is ready..?
 
 public:
-    Thread();
+    /**
+     * Jobless ctor.
+     * Warning: Should be used for main thread only.
+     * @param stackSize Thread stack size
+     */
+    Thread(int stackSize);
+
+    /**
+     * Thread ctor
+     * @param id Thread ID
+     * @param job function pointer which will be executed by this thread
+     * @param stackSize Thread stack size
+     */
     Thread(int id, void (*job)(void), const int stackSize);
+
+    /**
+     * dtor.
+     */
     ~Thread();
 
     /**
      * Gets the TID of this thread
-     * @return
      */
     const int GetId() const;
+
+    /**
+     * Gets block status of this Thread
+     * @return
+     */
     const bool GetBlockStatus() const;
-    void SetBlockStatus(const bool isBlocked);
+
+    /**
+     * Saves the stack environment for this thread
+     * @return -1 if unsuccessful; 0 otherwise
+     */
     int SaveEnv();
+
+    /**
+     * Restores the stack environment for this thread
+     */
     void LoadEnv();
 
+    /**
+     * Increments the quanta counter
+     * @return current quanta count
+     */
     inline const int IncrementQuanta() { _quantums++; }
+
+    /**
+     * Current quanta count
+     * @return
+     */
     int GetQuantums();
+
+    /**
+     * Blocks the thread
+     * @return 0 if successful; -1 otherwise
+     */
     int Block();
+
+    /**
+     * Unblocks the thread
+     * @return 0 if successful; -1 otherwise
+     */
     int Resume();
 };
 

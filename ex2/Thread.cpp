@@ -20,29 +20,35 @@ address_t translate_address(address_t addr)
     return ret;
 }
 
-Thread::Thread() : _id(0), _quantums(1), _isBlocked(false)
-{
-    Setup();
-}
+Thread::Thread(int stackSize) : _id(0),
+                                _quantums(1),
+                                _isBlocked(false),
+                                _stackSize(stackSize),
+                                _stack(new char[stackSize])
+{}
 
 Thread::Thread(int id, void (*job)(void), const int stackSize) :
         _id(id),
+        _quantums(0),
         _job(job),
         _isBlocked(false),
-        _stackSize(stackSize)
+        _stackSize(stackSize),
+        _stack(new char[stackSize])
 {
-    Setup();
+    address_t sp, pc;
+
+    sp = (address_t) _stack + _stackSize - sizeof(address_t);
+    pc = (address_t) _job;
+
+    sigsetjmp(_env, BUF_VAL);
+    (_env->__jmpbuf)[JB_SP] = translate_address(sp);
+    (_env->__jmpbuf)[JB_PC] = translate_address(pc);
+    sigemptyset(&_env->__saved_mask);
 }
 
 Thread::~Thread()
 {
-
-}
-
-
-const int Thread::GetId() const
-{
-    return _id;
+    delete [] _stack;
 }
 
 int Thread::SaveEnv()
@@ -91,24 +97,6 @@ const bool Thread::GetBlockStatus() const
 int Thread::GetQuantums()
 {
     return _quantums;
-}
-
-void Thread::SetBlockStatus(const bool isBlocked)
-{
-    _isBlocked = isBlocked;
-}
-
-void Thread::Setup()
-{
-    address_t sp, pc;
-
-    sp = (address_t) _stack + _stackSize - sizeof(address_t);
-    pc = (address_t) _job;
-
-    sigsetjmp(_env, BUF_VAL);
-    (_env->__jmpbuf)[JB_SP] = translate_address(sp);
-    (_env->__jmpbuf)[JB_PC] = translate_address(pc);
-    sigemptyset(&_env->__saved_mask);
 }
 
 
