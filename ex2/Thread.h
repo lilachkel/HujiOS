@@ -13,6 +13,8 @@
 #include <setjmp.h>
 #include <signal.h>
 #include <utility>
+#include <list>
+#include <algorithm>
 
 #define BUF_VAL 1
 
@@ -26,6 +28,7 @@ private:
     bool _isBlocked;
     sigjmp_buf _env;
     char *_stack;
+    std::list<int> _blockDeps;
 
 //    int _state; //RUNNING, BLOCKED, or READY instead of the  isbloced+isrunning+is ready..?
 
@@ -89,6 +92,25 @@ public:
      * @return 0 if successful; -1 otherwise
      */
     int Block();
+
+    /**
+     * Adds a TID to a list of threads that block this thread.
+     * @param tid the id of a thread that blocks this thread.
+     */
+    void AddBlockDep(int tid);
+
+    /**
+     * Removes a TID from a list of threads that block this thread.
+     * @param tid the id of a thread that blocks this thread.
+     */
+    void RemoveBlockDep(int tid);
+
+    /**
+     * Checks if a specific thread blocks this thread.
+     * @param tid the thread ID in question.
+     * @return true if blocks; false otherwise
+     */
+    bool IsBlockedBy(int tid);
 
     /**
      * Unblocks the thread

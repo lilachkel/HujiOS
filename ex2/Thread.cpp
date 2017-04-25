@@ -49,6 +49,7 @@ Thread::Thread(int id, void (*job)(void), const int stackSize) :
 Thread::~Thread()
 {
     delete [] _stack;
+    _blockDeps.clear();
 }
 
 int Thread::SaveEnv()
@@ -74,7 +75,7 @@ void Thread::LoadEnv()
  */
 int Thread::Resume()
 {
-    if (_isBlocked)
+    if (_isBlocked && _blockDeps.empty())
     {
         _isBlocked = false;
         return 1;
@@ -85,8 +86,32 @@ int Thread::Resume()
 int Thread::Block()
 {
     _isBlocked = true;
-    SaveEnv();//to block here too?
     return 0;
+}
+
+void Thread::AddBlockDep(int tid)
+{
+    if(!IsBlockedBy(tid))
+        _blockDeps.push_back(tid);
+}
+
+void Thread::RemoveBlockDep(int tid)
+{
+    if (IsBlockedBy(tid))
+        _blockDeps.remove(tid);
+}
+
+bool Thread::IsBlockedBy(int tid)
+{
+    if(_isBlocked)
+    {
+        for(auto id : _blockDeps)
+        {
+            if(id == tid) return true;
+        }
+    }
+
+    return false;
 }
 
 const bool Thread::GetBlockStatus() const
@@ -98,6 +123,7 @@ int Thread::GetQuantums()
 {
     return _quantums;
 }
+
 
 
 

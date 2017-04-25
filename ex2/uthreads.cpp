@@ -4,10 +4,8 @@
 #include "Thread.h"
 #include <queue>
 #include <map>
-#include <list>
 #include <set>
 #include <sys/time.h>
-#include <iostream>
 
 #define SIGN_BLOCK if (sigprocmask(SIG_BLOCK, &sa.sa_mask, NULL) == -1) { return -1; }
 #define SIGN_UNBLOCK if (sigprocmask(SIG_UNBLOCK, &sa.sa_mask, NULL) == -1) { return -1; }
@@ -19,12 +17,12 @@ using namespace std;
 int _threadCount, _runningTID, _qtime;
 set<int> _freeIds;
 list<int> _readyQueue;
-map<int, std::list<int>> _blockQueue;
 map<int, Thread *> _threads;
 struct sigaction sa;
 struct itimerval timer;
 
 #ifdef DEBUG
+#include <iostream>
 void PrintThreadInfo(string op)
 {
     cout << "method: " << op << " | ready queue: ";
@@ -96,21 +94,15 @@ void timerHandler(int sig)
  */
 void TerminateHelper(int tid)
 {
-    int blockedTid;
-    if (_blockQueue.find(tid) != _blockQueue.end())
-    {//todo: check if i did it right. im toooo tired
-        for (int id : _blockQueue[tid])
-        {
-            blockedTid = _blockQueue[tid].front();
-            _blockQueue[tid].pop_front();
-            uthread_resume(blockedTid);
-        }
-        _blockQueue.erase(tid);
+    auto thread = _threads[tid];
+    for (auto &id : _threads)
+    {
+        id.second->RemoveBlockDep(tid);
+        uthread_resume(id.first);
     }
 
-    auto term = _threads[tid];
     _threads.erase(tid);
-    delete term;
+    delete thread;
     _readyQueue.remove(tid);
     _freeIds.insert(tid);
 
@@ -134,6 +126,8 @@ int runNext(char wantedCase)// i defined char since we use int too mach and mayb
         case BLOCK_CASE:
             _threads[_runningTID]->Block();
             _readyQueue.remove(_runningTID);
+            // Next line is weird. Might be problematic!
+            _threads[_runningTID]->AddBlockDep(_runningTID);
             _threads[_runningTID]->SaveEnv();
             break;
         case TERMINATE_CASE:
@@ -166,9 +160,7 @@ int GetNextFreeId()
     {
         int newTid = *_freeIds.begin();
         _freeIds.erase(newTid);
-        return newTid; //need to make sure i did it right! 'set' keep their elements ordered at all times..
-        // the begin sopposed to get the default iter which is ascending order, and... i returnd the pointer...
-        // should be the wanted tid.....
+        return newTid;
     }
 
     return _threadCount < MAX_THREAD_NUM ? _threadCount++ : -1;
@@ -276,13 +268,15 @@ int uthread_block(int tid)
     }
     SIGN_UNBLOCK
 
+    _threads[tid]->AddBlockDep(_runningTID);
+    _threads[tid]->SaveEnv();
     return _threads[tid]->Block();
 }
 
 int uthread_resume(int tid)
 {//since we have to push the unblocked thread to the ready list again...
     SIGN_BLOCK
-    if (_threads.find(tid) == _threads.end())
+    if (tid == 0 || _threads.find(tid) == _threads.end())
     {
         sigprocmask(SIG_UNBLOCK, &sa.sa_mask, NULL);
         return -1;
