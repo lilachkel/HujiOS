@@ -20,7 +20,7 @@ int _threadCount, _runningTID, _qtime;
 set<int> _freeIds;
 list<int> _readyQueue;
 map<int, std::list<int>> _blockQueue;
-map<int, Thread*> _threads;
+map<int, Thread *> _threads;
 struct sigaction sa;
 struct itimerval timer;
 
@@ -75,19 +75,18 @@ void timerHandler(int sig)
         _threads[_runningTID]->SaveEnv();
         _runningTID = nextThread;
         _threads[_runningTID]->IncrementQuanta();
-        _qtime++;
         _threads[_runningTID]->LoadEnv();
     }
     else
     {
         _threads[_runningTID]->IncrementQuanta();
-        _qtime++;
     }
 
 #ifdef DEBUG
     PrintThreadInfo("timer");
 #endif
 
+    _qtime++;
     sigprocmask(SIG_UNBLOCK, &sa.sa_mask, NULL);
 }
 
@@ -109,9 +108,9 @@ void TerminateHelper(int tid)
         _blockQueue.erase(tid);
     }
 
-    // TODO: check if the following shit is valid code!
+    auto term = _threads[tid];
     _threads.erase(tid);
-    delete _threads[tid];
+    delete term;
     _readyQueue.remove(tid);
     _freeIds.insert(tid);
 
@@ -128,7 +127,8 @@ void TerminateHelper(int tid)
 int runNext(char wantedCase)// i defined char since we use int too mach and maybe will get confused
 {
     int nextThread = GetNextThread();
-    if (nextThread == -1) { return -1; }
+    if (nextThread == -1)
+    { return -1; }
     switch (wantedCase)
     {
         case BLOCK_CASE:
@@ -145,9 +145,9 @@ int runNext(char wantedCase)// i defined char since we use int too mach and mayb
     }
 
     _runningTID = nextThread;
-    _threads[_runningTID]->LoadEnv();
-    _threads[_runningTID]->IncrementQuanta();
     _qtime++;
+    _threads[_runningTID]->IncrementQuanta();
+    _threads[_runningTID]->LoadEnv();
 #ifdef DEBUG
     PrintThreadInfo("RunNext");
 #endif
@@ -230,7 +230,7 @@ int uthread_terminate(int tid)// free BLOCKED threads(+change there state), dele
 
     if (tid == 0 || _threads.find(tid) == _threads.end())
     {// trying to block the first thread or there is no such thread
-        if(tid == 0 && _readyQueue.size() == 0)
+        if (tid == 0 && _readyQueue.size() == 0)
         {
             TerminateHelper(tid);
             SIGN_UNBLOCK
@@ -240,14 +240,14 @@ int uthread_terminate(int tid)// free BLOCKED threads(+change there state), dele
         sigprocmask(SIG_UNBLOCK, &sa.sa_mask, NULL);
         return -1;
     }
-     else if (_runningTID == tid)
+
+    else if (_runningTID == tid)
     {// scheduling decision
-        if (runNext('t') == -1)
-        {
-            sigprocmask(SIG_UNBLOCK, &sa.sa_mask, NULL);
-            return -1; // or end the process.
-        }
+        int ret_val = runNext('t');
+        SIGN_UNBLOCK
+        return ret_val;
     }
+
     TerminateHelper(tid);
 #ifdef DEBUG
     PrintThreadInfo("Terminate");
@@ -256,11 +256,6 @@ int uthread_terminate(int tid)// free BLOCKED threads(+change there state), dele
     return 0;
 }
 
-/**
- *
- * @param tid
- * @return
- */
 int uthread_block(int tid)
 {
     SIGN_BLOCK
