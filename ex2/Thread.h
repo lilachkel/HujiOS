@@ -85,7 +85,7 @@ public:
      * Increments the quanta counter
      * @return current quanta count
      */
-    inline const int IncrementQuanta() { _quantums++; }
+    inline const void IncrementQuanta() { _quantums++; }
 
     /**
      * Current quanta count
