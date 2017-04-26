@@ -6,6 +6,7 @@
 #include <map>
 #include <set>
 #include <sys/time.h>
+#include <iostream>
 
 #define SIGN_BLOCK if (sigprocmask(SIG_BLOCK, &sa.sa_mask, NULL) == -1) { return -1; }
 #define SIGN_UNBLOCK if (sigprocmask(SIG_UNBLOCK, &sa.sa_mask, NULL) == -1) { return -1; }
@@ -22,7 +23,6 @@ struct sigaction sa;
 struct itimerval timer;
 
 #ifdef DEBUG
-#include <iostream>
 void PrintThreadInfo(string op)
 {
     cout << "method: " << op << " | ready queue: ";
@@ -51,6 +51,26 @@ int GetNextThread()
 #endif
 
     return nextTid;
+}
+
+/**
+ * Prints an error message to the console.
+ * @param msg the message string to print.
+ */
+void PrintError(bool isSysCall, string msg)
+{
+    if(isSysCall)
+        cout << "system error: " << msg << endl;
+    else
+        cout << "thread library error: " << msg << endl;
+}
+
+void ResumeBlockList(std::list<int>& blockList)
+{
+    for (auto id : blockList)
+    {
+        uthread_resume(id);
+    }
 }
 
 /**
@@ -85,6 +105,8 @@ void timerHandler(int sig)
 #endif
 
     _qtime++;
+    // not sure if Jenia did it right but, lets hope for the best.
+    ResumeBlockList(_threads[_runningTID]->GetBlockList());
     sigprocmask(SIG_UNBLOCK, &sa.sa_mask, NULL);
 }
 
@@ -95,12 +117,7 @@ void timerHandler(int sig)
 void TerminateHelper(int tid)
 {
     auto thread = _threads[tid];
-    for (auto &id : _threads)
-    {
-        id.second->RemoveBlockDep(tid);
-        uthread_resume(id.first);
-    }
-
+    ResumeBlockList(thread->GetBlockList());
     _threads.erase(tid);
     delete thread;
     _readyQueue.remove(tid);
@@ -126,8 +143,6 @@ int runNext(char wantedCase)// i defined char since we use int too mach and mayb
         case BLOCK_CASE:
             _threads[_runningTID]->Block();
             _readyQueue.remove(_runningTID);
-            // Next line is weird. Might be problematic!
-            _threads[_runningTID]->AddBlockDep(_runningTID);
             _threads[_runningTID]->SaveEnv();
             break;
         case TERMINATE_CASE:
@@ -268,9 +283,9 @@ int uthread_block(int tid)
     }
     SIGN_UNBLOCK
 
-    _threads[tid]->AddBlockDep(_runningTID);
     _threads[tid]->SaveEnv();
-    return _threads[tid]->Block();
+    _threads[tid]->Block();
+    return 0;
 }
 
 int uthread_resume(int tid)
@@ -281,8 +296,10 @@ int uthread_resume(int tid)
         sigprocmask(SIG_UNBLOCK, &sa.sa_mask, NULL);
         return -1;
     }
-    if (_threads[tid]->Resume()) // in case the thread was blocked, and his tid is not in readyQ
+
+    if (_threads[tid]->IsBlocked()) // in case the thread was blocked, and his tid is not in readyQ
     {
+        _threads[tid]->Resume();
         _readyQueue.push_back(tid);
     }
     SIGN_UNBLOCK
@@ -291,6 +308,29 @@ int uthread_resume(int tid)
 
 int uthread_sync(int tid)
 {
+    SIGN_BLOCK
+    if(tid == 0 || _threads.find(tid) == _threads.end())
+    {
+        SIGN_UNBLOCK
+        PrintError(false, "wrong TID!");
+        return -1;
+    }
+
+    else if(_runningTID == tid)
+    {
+        SIGN_UNBLOCK
+        PrintError(false, "cannot sync with itself!");
+        return -1;
+    }
+
+    _threads[tid]->AddBlockDep(_runningTID);
+    if(runNext('b') == -1)
+    {
+        SIGN_UNBLOCK
+        return -1;
+    }
+
+    SIGN_UNBLOCK
     return 0;
 }
 

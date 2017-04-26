@@ -30,6 +30,12 @@ private:
     char *_stack;
     std::list<int> _blockDeps;
 
+    /**
+     * Checks if a specific thread blocks this thread.
+     * @param tid the thread ID in question.
+     * @return true if blocks; false otherwise
+     */
+    bool IsBlocking(int tid);
 //    int _state; //RUNNING, BLOCKED, or READY instead of the  isbloced+isrunning+is ready..?
 
 public:
@@ -62,7 +68,7 @@ public:
      * Gets block status of this Thread
      * @return
      */
-    const bool GetBlockStatus() const;
+    inline bool IsBlocked() const { return _isBlocked; }
 
     /**
      * Saves the stack environment for this thread
@@ -85,13 +91,13 @@ public:
      * Current quanta count
      * @return
      */
-    int GetQuantums();
+    inline int GetQuantums() { return _quantums; }
 
     /**
      * Blocks the thread
      * @return 0 if successful; -1 otherwise
      */
-    int Block();
+    inline void Block() { _isBlocked = true; }
 
     /**
      * Adds a TID to a list of threads that block this thread.
@@ -105,18 +111,13 @@ public:
      */
     void RemoveBlockDep(int tid);
 
-    /**
-     * Checks if a specific thread blocks this thread.
-     * @param tid the thread ID in question.
-     * @return true if blocks; false otherwise
-     */
-    bool IsBlockedBy(int tid);
+    inline std::list<int>& GetBlockList() { return _blockDeps; }
 
     /**
      * Unblocks the thread
      * @return 0 if successful; -1 otherwise
      */
-    int Resume();
+    void Resume() { _isBlocked = false;}
 };
 
 

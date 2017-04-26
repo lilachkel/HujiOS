@@ -67,41 +67,19 @@ void Thread::LoadEnv()
     siglongjmp(_env, BUF_VAL);
 }
 
-/**
- *
- * @return :
- * 1 in case the thread was blocked (means we actually changed his status)
- * 0 in case the thread is in RUNNING or READY state.
- */
-int Thread::Resume()
-{
-    if (_isBlocked && _blockDeps.empty())
-    {
-        _isBlocked = false;
-        return 1;
-    }
-    return 0;
-}
-
-int Thread::Block()
-{
-    _isBlocked = true;
-    return 0;
-}
-
 void Thread::AddBlockDep(int tid)
 {
-    if(!IsBlockedBy(tid))
+    if(!IsBlocking(tid))
         _blockDeps.push_back(tid);
 }
 
 void Thread::RemoveBlockDep(int tid)
 {
-    if (IsBlockedBy(tid))
+    if (IsBlocking(tid))
         _blockDeps.remove(tid);
 }
 
-bool Thread::IsBlockedBy(int tid)
+bool Thread::IsBlocking(int tid)
 {
     if(_isBlocked)
     {
@@ -112,16 +90,6 @@ bool Thread::IsBlockedBy(int tid)
     }
 
     return false;
-}
-
-const bool Thread::GetBlockStatus() const
-{
-    return _isBlocked;
-}
-
-int Thread::GetQuantums()
-{
-    return _quantums;
 }
 
 
