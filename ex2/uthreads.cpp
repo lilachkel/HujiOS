@@ -73,6 +73,16 @@ void ResumeBlockList(std::list<int>& blockList)
     }
 }
 
+void TerminateAll()
+{
+    for(auto &t : _threads)
+    {
+        delete t.second;
+    }
+
+    _threads.clear();
+}
+
 /**
  * Function which is called upon SIGVTALRM
  * @param sig the signal which was called
@@ -237,9 +247,9 @@ int uthread_terminate(int tid)// free BLOCKED threads(+change there state), dele
 
     if (tid == 0 || _threads.find(tid) == _threads.end())
     {// trying to block the first thread or there is no such thread
-        if (tid == 0 && _readyQueue.size() == 0)
+        if (tid == 0)
         {
-            TerminateHelper(tid);
+            TerminateAll();
             SIGN_UNBLOCK
             exit(EXIT_SUCCESS);
         }
@@ -309,8 +319,11 @@ int uthread_resume(int tid)
 int uthread_sync(int tid)
 {
     SIGN_BLOCK
-    if(tid == 0 || _threads.find(tid) == _threads.end())
+    if(_runningTID == 0 || _threads.find(tid) == _threads.end())
     {
+#ifdef DEBUG
+        PrintThreadInfo("Sync");
+#endif
         SIGN_UNBLOCK
         PrintError(false, "wrong TID!");
         return -1;

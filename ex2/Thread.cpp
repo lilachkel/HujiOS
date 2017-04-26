@@ -21,18 +21,18 @@ address_t translate_address(address_t addr)
 }
 
 Thread::Thread(int stackSize) : _id(0),
+                                _stackSize(stackSize),
                                 _quantums(1),
                                 _isBlocked(false),
-                                _stackSize(stackSize),
                                 _stack(new char[stackSize])
 {}
 
 Thread::Thread(int id, void (*job)(void), const int stackSize) :
         _id(id),
+        _stackSize(stackSize),
         _quantums(0),
         _job(job),
         _isBlocked(false),
-        _stackSize(stackSize),
         _stack(new char[stackSize])
 {
     address_t sp, pc;
