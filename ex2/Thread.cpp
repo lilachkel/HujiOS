@@ -1,7 +1,3 @@
-//
-// Created by jenia90 on 3/22/17.
-//
-
 #include "Thread.h"
 
 typedef unsigned long address_t;
@@ -54,11 +50,7 @@ Thread::~Thread()
 
 int Thread::SaveEnv()
 {
-    if (sigsetjmp(_env, BUF_VAL) == BUF_VAL)
-    {
-        return 0;
-    }
-    return -1;
+    return sigsetjmp(_env, BUF_VAL);
 
 }
 
@@ -73,12 +65,6 @@ void Thread::AddSyncDep(int tid)
         _syncDeps.push_back(tid);
 }
 
-void Thread::RemoveSyncDep(int tid)
-{
-    if (IsSyncedWith(tid))
-        _syncDeps.remove(tid);
-}
-
 bool Thread::IsSyncedWith(int tid)
 {
     for(auto id : _syncDeps)
@@ -89,7 +75,10 @@ bool Thread::IsSyncedWith(int tid)
     return false;
 }
 
-
-
-
-
+const int Thread::Flags() const
+{
+    if(_isBlocked && !_isSynced) return BLOCKED;
+    if(!_isBlocked && _isSynced) return SYNCED;
+    if(_isBlocked && _isSynced) return BLOCKED_AND_SYNCED;
+    return 0;
+}

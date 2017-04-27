@@ -14,7 +14,7 @@ Thread.o: Thread.cpp
 	$(CC) $(CFLAGS) $(ADDFLAGS) -c Thread.cpp
 
 tar:
-	tar cvf ex2.tar  *.cpp README Makefile
+	tar cvf ex2.tar Thread.h *.cpp README Makefile
 
 clean:
 	rm -rf *.o *.a *.tar
