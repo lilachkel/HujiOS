@@ -49,7 +49,7 @@ Thread::Thread(int id, void (*job)(void), const int stackSize) :
 Thread::~Thread()
 {
     delete [] _stack;
-    _blockDeps.clear();
+    _syncDeps.clear();
 }
 
 int Thread::SaveEnv()
@@ -67,26 +67,23 @@ void Thread::LoadEnv()
     siglongjmp(_env, BUF_VAL);
 }
 
-void Thread::AddBlockDep(int tid)
+void Thread::AddSyncDep(int tid)
 {
-    if(!IsBlocking(tid))
-        _blockDeps.push_back(tid);
+    if(!IsSyncedWith(tid))
+        _syncDeps.push_back(tid);
 }
 
-void Thread::RemoveBlockDep(int tid)
+void Thread::RemoveSyncDep(int tid)
 {
-    if (IsBlocking(tid))
-        _blockDeps.remove(tid);
+    if (IsSyncedWith(tid))
+        _syncDeps.remove(tid);
 }
 
-bool Thread::IsBlocking(int tid)
+bool Thread::IsSyncedWith(int tid)
 {
-    if(_isBlocked)
+    for(auto id : _syncDeps)
     {
-        for(auto id : _blockDeps)
-        {
-            if(id == tid) return true;
-        }
+        if(id == tid) return true;
     }
 
     return false;

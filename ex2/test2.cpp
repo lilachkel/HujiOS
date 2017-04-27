@@ -28,7 +28,7 @@ void thread1()
     uthread_sync(2);
     if (!thread2Executed)
     {
-        printf(RED "ERROR - thread did not wait to sync\n" RESET);
+        printf(RED "ERROR - thread 1 did not wait to sync\n" RESET);
         exit(1);
     }
     printf(GRN "SUCCESS\n" RESET);

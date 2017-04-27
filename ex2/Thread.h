@@ -25,17 +25,17 @@ class Thread
 private:
     int _id, _stackSize, _quantums;
     void (*_job)(void);
-    bool _isBlocked;
+    bool _isBlocked, _isSynced;
     sigjmp_buf _env;
     char *_stack;
-    std::list<int> _blockDeps;
+    std::list<int> _syncDeps;
 
     /**
      * Checks if a specific thread blocks this thread.
      * @param tid the thread ID in question.
      * @return true if blocks; false otherwise
      */
-    bool IsBlocking(int tid);
+    bool IsSyncedWith(int tid);
 //    int _state; //RUNNING, BLOCKED, or READY instead of the  isbloced+isrunning+is ready..?
 
 public:
@@ -64,6 +64,13 @@ public:
      */
     const int GetId() const;
 
+    const int Flags()
+    {
+        if(_isBlocked && !_isSynced) return 1;
+        if(!_isBlocked && _isSynced) return 2;
+        if(_isBlocked && _isSynced) return 3;
+    }
+
     /**
      * Gets block status of this Thread
      * @return
@@ -91,33 +98,31 @@ public:
      * Current quanta count
      * @return
      */
-    inline int GetQuantums() { return _quantums; }
+    inline int GetQuantums() const { return _quantums; }
 
     /**
      * Blocks the thread
      * @return 0 if successful; -1 otherwise
      */
-    inline void Block() { _isBlocked = true; }
+    inline void SetBlock(bool block) { _isBlocked = block; }
+
+    inline bool IsSynced() const { return _isSynced; }
+
+    inline void SetSync(bool sync) { _isSynced = sync; }
 
     /**
      * Adds a TID to a list of threads that block this thread.
      * @param tid the id of a thread that blocks this thread.
      */
-    void AddBlockDep(int tid);
+    void AddSyncDep(int tid);
 
     /**
      * Removes a TID from a list of threads that block this thread.
      * @param tid the id of a thread that blocks this thread.
      */
-    void RemoveBlockDep(int tid);
+    void RemoveSyncDep(int tid);
 
-    inline std::list<int>& GetBlockList() { return _blockDeps; }
-
-    /**
-     * Unblocks the thread
-     * @return 0 if successful; -1 otherwise
-     */
-    void Resume() { _isBlocked = false;}
+    inline std::list<int>& GetSyncList() { return _syncDeps; }
 };
 
 
