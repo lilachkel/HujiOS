@@ -91,7 +91,6 @@ void TerminateAll()
     {
         delete t.second;
     }
-
     _threads.clear();
 }
 
@@ -129,7 +128,7 @@ void timerHandler(int sig)
 }
 
 /**
- * Terminates the given thread after realeasing all the resources allocated to it.
+ * Terminates the given thread after releasing all the resources allocated to it.
  * @param tid thread id
  */
 void TerminateHelper(int tid)
@@ -147,7 +146,7 @@ void TerminateHelper(int tid)
  * should be made(running thread block itself, etc...).
  * @return On success, return 0. On failure, return -1.
  */
-int runNext(char wantedCase)// i defined char since we use int too mach and maybe will get confused
+int runNext(char wantedCase)
 {
     int nextThread = GetNextThread();
 
@@ -271,8 +270,8 @@ int uthread_terminate(int tid)
 
     else if (_threads.find(tid) == _threads.end())
     {
-        SIGN_UNBLOCK
         PrintError(LIB_ERR, TID_NOT_FOUND_ERR);
+        SIGN_UNBLOCK
         return -1;
     }
 
@@ -280,8 +279,8 @@ int uthread_terminate(int tid)
     {// scheduling decision
         if(runNext('t') == -1)
         {
-            SIGN_UNBLOCK
             PrintError(LIB_ERR, TID_SWITCH_ERR);
+            SIGN_UNBLOCK
             return -1;
         }
     }
@@ -383,9 +382,9 @@ int uthread_sync(int tid)
     _threads[tid]->AddSyncDep(_runningTID);
     if(runNext(SYNC_CASE) == -1)
     {
-        PrintError(LIB_ERR, TID_SWITCH_ERR);
+        PrintError(SYS_ERR, TID_SWITCH_ERR);
         SIGN_UNBLOCK
-        return -1;
+        exit(EXIT_FAILURE);
     }
 
     SIGN_UNBLOCK

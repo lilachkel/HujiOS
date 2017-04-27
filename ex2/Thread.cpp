@@ -20,6 +20,7 @@ Thread::Thread(int stackSize) : _id(0),
                                 _stackSize(stackSize),
                                 _quantums(1),
                                 _isBlocked(false),
+                                _isSynced(false),
                                 _stack(new char[stackSize])
 {}
 
@@ -29,6 +30,7 @@ Thread::Thread(int id, void (*job)(void), const int stackSize) :
         _quantums(0),
         _job(job),
         _isBlocked(false),
+        _isSynced(false),
         _stack(new char[stackSize])
 {
     address_t sp, pc;
