@@ -46,7 +46,7 @@ Thread::Thread(int id, void (*job)(void), const int stackSize) :
 
 Thread::~Thread()
 {
-    delete [] _stack;
+    delete[] _stack;
     _syncDeps.clear();
 }
 
@@ -63,15 +63,15 @@ void Thread::LoadEnv()
 
 void Thread::AddSyncDep(int tid)
 {
-    if(!IsSyncedWith(tid))
+    if (!IsSyncedWith(tid))
         _syncDeps.push_back(tid);
 }
 
 bool Thread::IsSyncedWith(int tid)
 {
-    for(auto id : _syncDeps)
+    for (auto id : _syncDeps)
     {
-        if(id == tid) return true;
+        if (id == tid) return true;
     }
 
     return false;
@@ -79,8 +79,8 @@ bool Thread::IsSyncedWith(int tid)
 
 const int Thread::Flags() const
 {
-    if(_isBlocked && !_isSynced) return BLOCKED;
-    if(!_isBlocked && _isSynced) return SYNCED;
-    if(_isBlocked && _isSynced) return BLOCKED_AND_SYNCED;
+    if (_isBlocked && !_isSynced) return BLOCKED;
+    if (!_isBlocked && _isSynced) return SYNCED;
+    if (_isBlocked && _isSynced) return BLOCKED_AND_SYNCED;
     return 0;
 }

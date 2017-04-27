@@ -23,6 +23,7 @@ using namespace std;
 #define SAVE_ENV_ERR "unable to save thread stack."
 #define SIGNAL_MASK_ERR "unable to mask signal."
 #define SIGNAL_UNMASK_ERR "unable to unmask signal"
+
 void PrintError(string kind, string msg);
 
 #define SIGN_BLOCK if(sigprocmask(SIG_BLOCK, &sa.sa_mask, NULL) == -1){\
@@ -87,7 +88,7 @@ void ResumeSyncList(std::list<int> &syncList)
  */
 void TerminateAll()
 {
-    for(auto &t : _threads)
+    for (auto &t : _threads)
     {
         delete t.second;
     }
@@ -108,7 +109,7 @@ void timerHandler(int sig)
     if (nextThread != -1)
     {
         _readyQueue.push_back(_runningTID);
-        if(_threads[_runningTID]->SaveEnv())
+        if (_threads[_runningTID]->SaveEnv())
         {
             PrintError(SYS_ERR, SAVE_ENV_ERR);
             SIGN_UNBLOCK
@@ -155,7 +156,7 @@ int runNext(char wantedCase)
         case BLOCK_CASE:
             _threads[_runningTID]->SetBlock(true);
             _readyQueue.remove(_runningTID);
-            if(_threads[_runningTID]->SaveEnv())
+            if (_threads[_runningTID]->SaveEnv())
             {
                 PrintError(SYS_ERR, SAVE_ENV_ERR);
                 SIGN_UNBLOCK
@@ -165,7 +166,7 @@ int runNext(char wantedCase)
         case SYNC_CASE:
             _threads[_runningTID]->SetSync(true);
             _readyQueue.remove(_runningTID);
-            if(_threads[_runningTID]->SaveEnv())
+            if (_threads[_runningTID]->SaveEnv())
             {
                 PrintError(SYS_ERR, SAVE_ENV_ERR);
                 SIGN_UNBLOCK
@@ -277,7 +278,7 @@ int uthread_terminate(int tid)
 
     else if (_runningTID == tid)
     {// scheduling decision
-        if(runNext('t') == -1)
+        if (runNext('t') == -1)
         {
             PrintError(LIB_ERR, TID_SWITCH_ERR);
             SIGN_UNBLOCK
@@ -301,7 +302,7 @@ int uthread_block(int tid)
         return -1;
     }
 
-    else if(_threads.find(tid) == _threads.end())
+    else if (_threads.find(tid) == _threads.end())
     {
         PrintError(LIB_ERR, TID_NOT_FOUND_ERR);
         SIGN_UNBLOCK
@@ -330,7 +331,7 @@ int uthread_resume(int tid)
 {
     SIGN_BLOCK
 
-    if(_threads.find(tid) == _threads.end())
+    if (_threads.find(tid) == _threads.end())
     {
         PrintError(LIB_ERR, WRONG_TID_ERR);
         SIGN_UNBLOCK
@@ -359,20 +360,20 @@ int uthread_resume(int tid)
 
 int uthread_sync(int tid)
 {
-    if(_runningTID == 0 || _threads.find(tid) == _threads.end())
+    if (_runningTID == 0 || _threads.find(tid) == _threads.end())
     {
         PrintError(LIB_ERR, WRONG_TID_ERR);
         SIGN_UNBLOCK
         return -1;
     }
-    else if(_threads[_runningTID]->IsSynced())
+    else if (_threads[_runningTID]->IsSynced())
     {
         PrintError(LIB_ERR, SYNCED_TID_ERR);
         SIGN_UNBLOCK
         return -1;
     }
 
-    else if(_runningTID == tid)
+    else if (_runningTID == tid)
     {
         PrintError(LIB_ERR, SELF_SYNC_ERR);
         SIGN_UNBLOCK
@@ -380,7 +381,7 @@ int uthread_sync(int tid)
     }
 
     _threads[tid]->AddSyncDep(_runningTID);
-    if(runNext(SYNC_CASE) == -1)
+    if (runNext(SYNC_CASE) == -1)
     {
         PrintError(SYS_ERR, TID_SWITCH_ERR);
         SIGN_UNBLOCK

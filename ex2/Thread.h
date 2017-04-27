@@ -17,7 +17,9 @@ class Thread
 {
 private:
     int _id, _stackSize, _quantums;
+
     void (*_job)(void);
+
     bool _isBlocked, _isSynced;
     sigjmp_buf _env;
     char *_stack;
@@ -66,7 +68,8 @@ public:
      * Gets block status of this Thread
      * @return
      */
-    inline bool IsBlocked() const { return _isBlocked; }
+    inline bool IsBlocked() const
+    { return _isBlocked; }
 
     /**
      * Saves the stack environment for this thread
@@ -83,28 +86,33 @@ public:
      * Increments the quanta counter
      * @return current quanta count
      */
-    inline const void IncrementQuanta() { _quantums++; }
+    inline const void IncrementQuanta()
+    { _quantums++; }
 
     /**
      * Current quanta count
      */
-    inline int GetQuantums() const { return _quantums; }
+    inline int GetQuantums() const
+    { return _quantums; }
 
     /**
      * Sets the state of the block flag
      */
-    inline void SetBlock(bool block) { _isBlocked = block; }
+    inline void SetBlock(bool block)
+    { _isBlocked = block; }
 
     /**
      * Returns the sync flag status
      * @return true if synced; false otherwise.
      */
-    inline bool IsSynced() const { return _isSynced; }
+    inline bool IsSynced() const
+    { return _isSynced; }
 
     /**
      * Sets sync flag state
      */
-    inline void SetSync(bool sync) { _isSynced = sync; }
+    inline void SetSync(bool sync)
+    { _isSynced = sync; }
 
     /**
      * Adds a TID to a list of threads that block this thread.
@@ -116,7 +124,8 @@ public:
      * Gets the list of TID that are synced with this thread..
      * @return ref to the list container.
      */
-    inline std::list<int>&GetSyncList() { return _syncDeps; }
+    inline std::list<int> &GetSyncList()
+    { return _syncDeps; }
 };
 
 #endif //PROJECT_THREAD_H
