@@ -1,14 +1,5 @@
-//
-// Created by jenia90 on 3/22/17.
-//
-
 #ifndef PROJECT_THREAD_H
 #define PROJECT_THREAD_H
-
-
-//#define RUNNING = 1
-//#define BLOCKED = 2
-//#define READY = 3
 
 #include <setjmp.h>
 #include <signal.h>
@@ -18,7 +9,9 @@
 
 #define BUF_VAL 1
 
-
+#define BLOCKED 1
+#define SYNCED 2
+#define BLOCKED_AND_SYNCED 3
 
 class Thread
 {
@@ -36,7 +29,6 @@ private:
      * @return true if blocks; false otherwise
      */
     bool IsSyncedWith(int tid);
-//    int _state; //RUNNING, BLOCKED, or READY instead of the  isbloced+isrunning+is ready..?
 
 public:
     /**
@@ -64,12 +56,11 @@ public:
      */
     const int GetId() const;
 
-    const int Flags()
-    {
-        if(_isBlocked && !_isSynced) return 1;
-        if(!_isBlocked && _isSynced) return 2;
-        if(_isBlocked && _isSynced) return 3;
-    }
+    /**
+     * Gets the sync-block flag of this thread.
+     * @return 1 for blocked but not synced; 2 for synced but not blocked; 3 for synced and blocked.
+     */
+    const int Flags() const;
 
     /**
      * Gets block status of this Thread
@@ -96,18 +87,23 @@ public:
 
     /**
      * Current quanta count
-     * @return
      */
     inline int GetQuantums() const { return _quantums; }
 
     /**
-     * Blocks the thread
-     * @return 0 if successful; -1 otherwise
+     * Sets the state of the block flag
      */
     inline void SetBlock(bool block) { _isBlocked = block; }
 
+    /**
+     * Returns the sync flag status
+     * @return true if synced; false otherwise.
+     */
     inline bool IsSynced() const { return _isSynced; }
 
+    /**
+     * Sets sync flag state
+     */
     inline void SetSync(bool sync) { _isSynced = sync; }
 
     /**
@@ -117,13 +113,10 @@ public:
     void AddSyncDep(int tid);
 
     /**
-     * Removes a TID from a list of threads that block this thread.
-     * @param tid the id of a thread that blocks this thread.
+     * Gets the list of TID that are synced with this thread..
+     * @return ref to the list container.
      */
-    void RemoveSyncDep(int tid);
-
-    inline std::list<int>& GetSyncList() { return _syncDeps; }
+    inline std::list<int>&GetSyncList() { return _syncDeps; }
 };
-
 
 #endif //PROJECT_THREAD_H

@@ -1,5 +1,3 @@
-//#define DEBUG
-
 #include "uthreads.h"
 #include "Thread.h"
 #include <queue>
@@ -8,12 +6,35 @@
 #include <sys/time.h>
 #include <iostream>
 
-#define SIGN_BLOCK if (sigprocmask(SIG_BLOCK, &sa.sa_mask, NULL) == -1) { return -1; }
-#define SIGN_UNBLOCK if (sigprocmask(SIG_UNBLOCK, &sa.sa_mask, NULL) == -1) { return -1; }
+using namespace std;
+
+#define SYS_ERR "system error: "
+#define LIB_ERR "thread library error: "
+
+#define TID_SWITCH_ERR "can't switch to next thread!"
+#define SELF_SYNC_ERR "cannot sync with itself!"
+#define SYNCED_TID_ERR "Trying to sync synced thread!"
+#define WRONG_TID_ERR "wrong TID!"
+#define TID_NOT_FOUND_ERR "TID not found."
+#define MAIN_BLOCK_ERR "cannot block main thread."
+#define MAX_NUM_ERR "maximum number of threads reached."
+#define SIG_ACT_ERR "unable to signal handler"
+#define TIMER_SET_ERR "unable to set timer."
+#define SAVE_ENV_ERR "unable to save thread stack."
+#define SIGNAL_MASK_ERR "unable to mask signal."
+#define SIGNAL_UNMASK_ERR "unable to unmask signal"
+void PrintError(string kind, string msg);
+
+#define SIGN_BLOCK if(sigprocmask(SIG_BLOCK, &sa.sa_mask, NULL) == -1){\
+    PrintError(SYS_ERR, SIGNAL_MASK_ERR);\
+    exit(EXIT_FAILURE);}
+#define SIGN_UNBLOCK if(sigprocmask(SIG_UNBLOCK, &sa.sa_mask, NULL) == -1){\
+    PrintError(SYS_ERR, SIGNAL_UNMASK_ERR);\
+    exit(EXIT_FAILURE);}
 #define BLOCK_CASE 'b'
+#define SYNC_CASE 's'
 #define TERMINATE_CASE 't'
 
-using namespace std;
 
 int _threadCount, _runningTID, _qtime;
 set<int> _freeIds;
@@ -21,30 +42,6 @@ list<int> _readyQueue;
 map<int, Thread *> _threads;
 struct sigaction sa;
 struct itimerval timer;
-
-#ifdef DEBUG
-void PrintThreadInfo(string op)
-{
-    cout << "method: " << op << " | ready queue: ";
-    for(int id: _readyQueue)
-        cout  << id << " ";
-    cout << "\n" << endl;
-//    for(auto t : _threads)
-//    {
-//        cout << "Thread " << t.first << " sync list: ";
-//        if(t.second != NULL)
-//        {
-//            for (auto id : t.second->GetSyncList())
-//            {
-//                cout << id << " ";
-//            }
-//            cout << endl;
-//        }
-//    }
-//
-//    cout << endl;
-}
-#endif
 
 /**
  * Gets next thread ID in queue
@@ -60,10 +57,6 @@ int GetNextThread()
         _readyQueue.pop_front();
     }
 
-#ifdef DEBUG
-    PrintThreadInfo("GetNextId: " + to_string(nextTid));
-#endif
-
     return nextTid;
 }
 
@@ -71,23 +64,27 @@ int GetNextThread()
  * Prints an error message to the console.
  * @param msg the message string to print.
  */
-void PrintError(bool isSysCall, string msg)
+void PrintError(string kind, string msg)
 {
-    if(isSysCall)
-        cout << "system error: " << msg << endl;
-    else
-        cout << "thread library error: " << msg << endl;
+    cerr << kind << msg << endl;
 }
 
-void ResumeSyncList(std::list<int> &blockList)
+/**
+ * Iterates over a list of threads the current thread is synced with and resumes them
+ * @param syncList ref to a list of synced IDs
+ */
+void ResumeSyncList(std::list<int> &syncList)
 {
-    for (auto id : blockList)
+    for (auto id : syncList)
     {
         uthread_resume(id);
     }
-    blockList.clear();
+    syncList.clear();
 }
 
+/**
+ * Terminates all threads and frees the memory.
+ */
 void TerminateAll()
 {
     for(auto &t : _threads)
@@ -104,19 +101,20 @@ void TerminateAll()
  */
 void timerHandler(int sig)
 {
-    sigprocmask(SIG_BLOCK, &sa.sa_mask, NULL);
+    SIGN_BLOCK
 
     int nextThread = GetNextThread();
-
-#ifdef DEBUG
-    cout << "running thread: " << _runningTID << " | next thread: " << nextThread << endl;
-#endif
 
     ResumeSyncList(_threads[_runningTID]->GetSyncList());
     if (nextThread != -1)
     {
         _readyQueue.push_back(_runningTID);
-        _threads[_runningTID]->SaveEnv();
+        if(_threads[_runningTID]->SaveEnv())
+        {
+            PrintError(SYS_ERR, SAVE_ENV_ERR);
+            SIGN_UNBLOCK
+            exit(EXIT_SUCCESS);
+        }
         _runningTID = nextThread;
         _threads[_runningTID]->IncrementQuanta();
         _threads[_runningTID]->LoadEnv();
@@ -126,17 +124,13 @@ void timerHandler(int sig)
         _threads[_runningTID]->IncrementQuanta();
     }
 
-#ifdef DEBUG
-    PrintThreadInfo("timer");
-#endif
-
     _qtime++;
-    sigprocmask(SIG_UNBLOCK, &sa.sa_mask, NULL);
+    SIGN_UNBLOCK
 }
 
 /**
- *
- * @param tid
+ * Terminates the given thread after realeasing all the resources allocated to it.
+ * @param tid thread id
  */
 void TerminateHelper(int tid)
 {
@@ -146,33 +140,38 @@ void TerminateHelper(int tid)
     delete thread;
     _readyQueue.remove(tid);
     _freeIds.insert(tid);
-
-#ifdef DEBUG
-    PrintThreadInfo("Terminator");
-#endif
 }
 
 /**
  * Function which is called when a scheduling decision
- * should be made(running thread block itself, ect...).
+ * should be made(running thread block itself, etc...).
  * @return On success, return 0. On failure, return -1.
  */
 int runNext(char wantedCase)// i defined char since we use int too mach and maybe will get confused
 {
     int nextThread = GetNextThread();
-    if (nextThread == -1)
-    { return -1; }
+
     switch (wantedCase)
     {
         case BLOCK_CASE:
             _threads[_runningTID]->SetBlock(true);
             _readyQueue.remove(_runningTID);
-            _threads[_runningTID]->SaveEnv();
+            if(_threads[_runningTID]->SaveEnv())
+            {
+                PrintError(SYS_ERR, SAVE_ENV_ERR);
+                SIGN_UNBLOCK
+                exit(EXIT_SUCCESS);
+            }
             break;
-        case 's':
+        case SYNC_CASE:
             _threads[_runningTID]->SetSync(true);
             _readyQueue.remove(_runningTID);
-            _threads[_runningTID]->SaveEnv();
+            if(_threads[_runningTID]->SaveEnv())
+            {
+                PrintError(SYS_ERR, SAVE_ENV_ERR);
+                SIGN_UNBLOCK
+                exit(EXIT_SUCCESS);
+            }
             break;
         case TERMINATE_CASE:
             TerminateHelper(_runningTID);
@@ -187,9 +186,6 @@ int runNext(char wantedCase)// i defined char since we use int too mach and mayb
     ResumeSyncList(_threads[_runningTID]->GetSyncList());
     _threads[_runningTID]->IncrementQuanta();
     _threads[_runningTID]->LoadEnv();
-#ifdef DEBUG
-    PrintThreadInfo("RunNext");
-#endif
     SIGN_UNBLOCK
 
     return 0;
@@ -214,7 +210,7 @@ int GetNextFreeId()
 int uthread_init(int quantum_usecs)
 {
     _threads[0] = new Thread(STACK_SIZE);
-    _qtime = 1; //since thread 0 started
+    _qtime = 1;
     _threadCount = 1;
 
     timer.it_interval.tv_usec = quantum_usecs;
@@ -224,13 +220,18 @@ int uthread_init(int quantum_usecs)
 
     sa.sa_handler = &timerHandler;
     if (sigaction(SIGVTALRM, &sa, NULL))
-    { return -1; }
+    {
+        PrintError(SYS_ERR, SIG_ACT_ERR);
+        exit(EXIT_FAILURE);
+    }
 
     if (setitimer(ITIMER_VIRTUAL, &timer, NULL))
-    { return -1; }
-#ifdef DEBUG
-    PrintThreadInfo("Init");
-#endif
+    {
+        PrintError(SYS_ERR, TIMER_SET_ERR);
+        SIGN_UNBLOCK
+        exit(EXIT_FAILURE);
+    }
+
     return 0;
 }
 
@@ -246,22 +247,19 @@ int uthread_spawn(void (*f)(void))
     int id = GetNextFreeId();
     if (id == -1)
     {
+        PrintError(LIB_ERR, MAX_NUM_ERR);
+        SIGN_UNBLOCK
         return -1;
     }
 
     _threads[id] = new Thread(id, f, STACK_SIZE);
     _readyQueue.push_back(id);
-#ifdef DEBUG
-    PrintThreadInfo("Spawn");
-#endif
     SIGN_UNBLOCK
 
     return id;
 }
 
-int uthread_terminate(int tid)// free BLOCKED threads(+change there state), delete stack, save ID/TID in '_freeIds'
-// the tid == 0 should be in the READY list?  since we should be the one to terminate tid==0 while we terminate the whole program...
-// if not so how can we tell call 'exit(0) ..? if we do- we dont know what written
+int uthread_terminate(int tid)
 {
     SIGN_BLOCK
     if (tid == 0)
@@ -272,22 +270,23 @@ int uthread_terminate(int tid)// free BLOCKED threads(+change there state), dele
     }
 
     else if (_threads.find(tid) == _threads.end())
-    {// trying to block the first thread or there is no such thread
-        sigprocmask(SIG_UNBLOCK, &sa.sa_mask, NULL);
+    {
+        SIGN_UNBLOCK
+        PrintError(LIB_ERR, TID_NOT_FOUND_ERR);
         return -1;
     }
 
     else if (_runningTID == tid)
     {// scheduling decision
-        int ret_val = runNext('t');
-        SIGN_UNBLOCK
-        return ret_val;
+        if(runNext('t') == -1)
+        {
+            SIGN_UNBLOCK
+            PrintError(LIB_ERR, TID_SWITCH_ERR);
+            return -1;
+        }
     }
 
     TerminateHelper(tid);
-#ifdef DEBUG
-    PrintThreadInfo("Terminate");
-#endif
     SIGN_UNBLOCK
     return 0;
 }
@@ -296,9 +295,17 @@ int uthread_block(int tid)
 {
     SIGN_BLOCK
 
-    if (tid == 0 || _threads.find(tid) == _threads.end())
+    if (tid == 0)
     {
-        sigprocmask(SIG_UNBLOCK, &sa.sa_mask, NULL);
+        PrintError(LIB_ERR, MAIN_BLOCK_ERR);
+        SIGN_UNBLOCK
+        return -1;
+    }
+
+    else if(_threads.find(tid) == _threads.end())
+    {
+        PrintError(LIB_ERR, TID_NOT_FOUND_ERR);
+        SIGN_UNBLOCK
         return -1;
     }
 
@@ -306,7 +313,8 @@ int uthread_block(int tid)
     {
         if (runNext('b') == -1)
         {
-            sigprocmask(SIG_UNBLOCK, &sa.sa_mask, NULL);
+            PrintError(LIB_ERR, TID_SWITCH_ERR);
+            SIGN_UNBLOCK
             return -1;
         }
     }
@@ -320,61 +328,62 @@ int uthread_block(int tid)
 }
 
 int uthread_resume(int tid)
-{//since we have to push the unblocked thread to the ready list again...
+{
     SIGN_BLOCK
-    if (tid == 0 || _threads.find(tid) == _threads.end())
+
+    if(_threads.find(tid) == _threads.end())
     {
-        sigprocmask(SIG_UNBLOCK, &sa.sa_mask, NULL);
+        PrintError(LIB_ERR, WRONG_TID_ERR);
+        SIGN_UNBLOCK
         return -1;
     }
+
     auto thread = _threads[tid];
     switch (thread->Flags())
     {
-        case 1:
+        case BLOCKED:
             thread->SetBlock(false);
             _readyQueue.push_back(tid);
             break;
-        case 2:
+        case SYNCED:
             thread->SetSync(false);
             _readyQueue.push_back(tid);
             break;
-        case 3:
+        case BLOCKED_AND_SYNCED:
             thread->SetBlock(false);
             break;
     }
+
     SIGN_UNBLOCK
     return 0;
 }
 
 int uthread_sync(int tid)
 {
-    SIGN_BLOCK
-#ifdef DEBUG
-    PrintThreadInfo("Sync");
-#endif
     if(_runningTID == 0 || _threads.find(tid) == _threads.end())
     {
+        PrintError(LIB_ERR, WRONG_TID_ERR);
         SIGN_UNBLOCK
-        PrintError(false, "wrong TID!");
         return -1;
     }
     else if(_threads[_runningTID]->IsSynced())
     {
+        PrintError(LIB_ERR, SYNCED_TID_ERR);
         SIGN_UNBLOCK
-        PrintError(false, "Bleh!");
         return -1;
     }
 
     else if(_runningTID == tid)
     {
+        PrintError(LIB_ERR, SELF_SYNC_ERR);
         SIGN_UNBLOCK
-        PrintError(false, "cannot sync with itself!");
         return -1;
     }
 
     _threads[tid]->AddSyncDep(_runningTID);
-    if(runNext('s') == -1)
+    if(runNext(SYNC_CASE) == -1)
     {
+        PrintError(LIB_ERR, TID_SWITCH_ERR);
         SIGN_UNBLOCK
         return -1;
     }
@@ -395,10 +404,5 @@ int uthread_get_total_quantums()
 
 int uthread_get_quantums(int tid)
 {
-    if(_threads.find(tid) == _threads.end())
-    {
-        return -1;
-    }
-
-    return _threads[tid]->GetQuantums();
+    _threads.find(tid) != _threads.end() ? _threads[tid]->GetQuantums() : -1;
 }
