@@ -1,4 +1,4 @@
-#define DEBUG
+//#define DEBUG
 
 #include "uthreads.h"
 #include "Thread.h"
@@ -311,7 +311,7 @@ int uthread_block(int tid)
         }
     }
 
-    _threads[tid]->SaveEnv();
+    _readyQueue.remove(tid);
     _threads[tid]->SetBlock(true);
 
     SIGN_UNBLOCK
