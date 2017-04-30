@@ -1,0 +1,36 @@
+jenia90, lilach
+Yevgeni Dysin (320884216), Lilach Kelman (305390098)
+EX: 2
+
+FILES:
+Makefile
+
+Thread.h - the thread class.
+Thread.cpp - the thread class implementation.
+uthreads.h -  Static library, creates and maneged user-level threads.
+uthreads.cpp - The Static library implementation.
+
+README - This file.
+
+REMARKS:
+
+
+ANSWERS:
+1.Music player: in this example we have the main thread for handling the UI and few other user-level that handle the
+    music playback or downloading track info.
+
+2. advantages:
+    The Performing operation in one tab won't disrupt other tab performance.
+    Communication is more secure. A website crashing in one of the tabs won't crash the whole application.
+
+    disadvantages:
+    switching tabs is heavy, in case they are implemented with processes(required kernel mode).
+    lack of efficiency: if more then one tab uses same source - they will be loaded multiple times.
+
+3. After typing 'kill <pid>' in the shell terminal using the keyboard (which in turn sends hardware interrupts to the
+ CPU with the appropriate key codes) and pressing Enter (which again sends a hardware interrupt) -
+ the linux shell makes a system call to the process with the SIGTERM signal.
+ This specific signal is captured by the process and the process quits unconditionally.
+
+4. Real time - the time of the "physical world" which is stored inside the RTC module inside the BIOS microchip.
+    Virtual time - the uptime of the application (process).
