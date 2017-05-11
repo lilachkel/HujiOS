@@ -16,6 +16,7 @@ public:
 	virtual ~v1Base() {}
 };
 
+
 //intermediate key and value.
 //the key, value for the Reduce function created by the Map function
 class k2Base {

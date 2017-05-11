@@ -27,3 +27,10 @@
 *.exe
 *.out
 *.app
+.idea/
+cmake-build-debug/
+ex2/Instructions
+ex2/diff.txt
+ex2/ex2sanity/
+ex2/output.txt
+ex2/test.py
