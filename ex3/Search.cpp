@@ -3,13 +3,32 @@
 #include <algorithm>
 #include <iostream>
 #include "MapReduceFramework.h"
+#include "FileNameKey.hpp"
 
 #define FIRST_DIR 2
 #define MIN_ARGS 3
 
 std::vector<std::string> output;
 
+// TODO: Test if it works with the lambda.
+//bool compare(FileNameKey& k1, FileNameKey& k2)
+//{
+//    return k1 < k2;
+//}
 
+class NameMapReduce : MapReduceBase
+{
+    IN_ITEMS_VEC _inItemsVec;
+public:
+    virtual void Map(const k1Base *const key, const v1Base *const val) const final
+    {
+        _inItemsVec.push_back();
+    }
+
+    virtual void Reduce(const k2Base *const key, const V2_VEC &vals) const final
+    {
+    }
+};
 
 void PrintOutput()
 {
@@ -32,13 +51,13 @@ int main(int argn, char ** argv)
         if(!currFile.is_open()) // Check if path is correct
             return EXIT_FAILURE;
 
-
-
         currFile.close();
     }
 
     // Sort the output vector.
-    std::sort(output.begin(), output.end());
+    std::sort(output.begin(), output.end(),
+              [&] (FileNameKey& k1, FileNameKey& k2) { return k1 < k2; }
+        );
     PrintOutput();
 
     return EXIT_SUCCESS;
