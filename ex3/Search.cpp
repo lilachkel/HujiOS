@@ -18,11 +18,14 @@ std::vector<std::string> output;
 
 class NameMapReduce : MapReduceBase
 {
-    IN_ITEMS_VEC _inItemsVec;
 public:
+    IN_ITEMS_VEC _inItemsVec;
+
     virtual void Map(const k1Base *const key, const v1Base *const val) const final
     {
-        _inItemsVec.push_back();
+        auto _key = key;
+        auto _val = val;
+        IN_ITEMS_VEC.push_back(std::make_pair((k1Base *) _key, (v1Base *) _val));
     }
 
     virtual void Reduce(const k2Base *const key, const V2_VEC &vals) const final
@@ -45,11 +48,15 @@ int main(int argn, char ** argv)
         return EXIT_FAILURE;
     }
 
+    auto namer = NameMapReduce();
+
     for(int i = FIRST_DIR; i < argn; i++)
     {
         currFile.open(argv[i]); // Open i-th path
         if(!currFile.is_open()) // Check if path is correct
             return EXIT_FAILURE;
+
+        // TODO: Implement dir iteration
 
         currFile.close();
     }

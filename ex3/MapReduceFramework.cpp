@@ -11,7 +11,7 @@ std::vector<pthread_t> ExecMap;
 std::vector<pthread_t> ExecReduce;
 pthread_t shuffleThread;
 
-std::map pthreadToContainer<pthread_t ,MAP_CONTAINER>;//container of <K2,V2> after the ExecMap job
+std::map<pthread_t, MAP_CONTAINER> pthreadToContainer;//container of <K2,V2> after the ExecMap job
 
 
 void* ExecMapJob(void* mapReduce)
@@ -34,11 +34,11 @@ void* ExecShuffle(void* mapReduce) {
     while (true) {
         sem_wait(&ShuffleSemaphore);
         pthread_t curThreadID = pthread_self();
-        pthreadToContainer.at(curThreadID);
-        pthreadToContainer.at(curThreadID).~vector;// to erase the thread cur container
+        pthreadToContainer[curThreadID];
+        //pthreadToContainer.at(curThreadID).~vector;// TODO: Remove! this isn't needed.
         sem_post(&ShuffleSemaphore);
-        if()
-        {}
+//        if()
+//        {}
 
     }
 }
@@ -81,8 +81,7 @@ OUT_ITEMS_VEC RunMapReduceFramework(MapReduceBase& mapReduce, IN_ITEMS_VEC& item
 
 void Emit2 (k2Base* k2, v2Base* v2)
 {
-
-    pthreadToContainer[pthread_self()].insert(k2, v2);
+    pthreadToContainer[pthread_self()].push_back(std::make_pair(k2, v2));
 
 
 

@@ -23,14 +23,6 @@ public:
      */
     Logger(std::string filename, bool debug = false);
 
-
-    /**
-     * File stream constructor. Creates a logger that logs to a given file stream
-     * @param file file stream we want to write to.
-     * @param debug outputs to console as well as to the file if true.
-     */
-    Logger(std::fstream &file, bool debug = false);
-
     /**
      * Dtor. Closes the file stream.
      */
@@ -52,7 +44,7 @@ public:
     void Log(const std::string msg);
 
     // TODO: Implement override.
-    std::istream& operator>>(const std::istream& is, const std::string msg);
+    //std::istream& operator>>(const std::istream& is, const std::string msg);
 };
 
 

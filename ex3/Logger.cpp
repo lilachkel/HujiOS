@@ -12,14 +12,9 @@ Logger::Logger(std::string filename, bool debug) : _isDebugMode(debug)
     }
 }
 
-Logger::Logger(std::fstream &file, bool debug)
-{
-
-}
-
 Logger::~Logger()
 {
-    _logFile.close()
+    _logFile.close();
 }
 
 void Logger::Log(const std::string msg)
