@@ -17,9 +17,16 @@ Logger::~Logger()
     _logFile.close();
 }
 
-void Logger::Log(const std::string msg)
+void Logger::Log(std::string msg, bool isErr) const
 {
-    if(_isDebugMode)
-        std::cout << msg << std::endl;
-    _logFile << msg << std::endl;
+    if(isErr)
+    {
+        std::cerr << msg << std::endl;
+    }
+    else
+    {
+        if (_isDebugMode)
+            std::cout << msg << std::endl;
+        _logFile << msg << std::endl;
+    }
 }

@@ -4,7 +4,8 @@
 #include "MapReduceClient.h"
 #include <string>
 
-class FileNameKey : k1Base, k2Base, k3Base, v1Base, v2Base, v3Base
+class FileNameKey : public k1Base, public k2Base, public k3Base,
+                    public v1Base, public v2Base, public v3Base
 {
     std::string _data;
 
@@ -13,7 +14,12 @@ public:
     FileNameKey(std::string data) : _data(data) {}
     virtual ~FileNameKey() { _data.clear(); }
 
-    virtual bool operator<(const FileNameKey& other) final
+    inline std::string GetData()const
+    {
+        return _data;
+    }
+
+    inline virtual bool operator<(const FileNameKey& other) final
     {
         return std::string(_data) < std::string(other._data);
     }

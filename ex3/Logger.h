@@ -13,7 +13,7 @@
 class Logger
 {
 private:
-    std::fstream _logFile;
+    std::ofstream _logFile;
     bool _isDebugMode;
 public:
     /**
@@ -29,22 +29,10 @@ public:
     ~Logger();
 
     /**
-     * Setter for the debug field.
-     * @param debug if true the logger will also output to the standard console.
-     */
-    void SetDebug(bool debug)
-    {
-        _isDebugMode = debug;
-    }
-
-    /**
      * Writes the give message to the log file and to the console if _isDebug set to true.
      * @param msg Messages string to output.
      */
-    void Log(const std::string msg);
-
-    // TODO: Implement override.
-    //std::istream& operator>>(const std::istream& is, const std::string msg);
+    void Log(std::string msg, bool isErr = false) const;
 };
 
 
