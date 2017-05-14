@@ -1,7 +1,3 @@
-//
-// Created by jenia90 on 5/11/17.
-//
-
 #ifndef PROJECT_LOGGER_H
 #define PROJECT_LOGGER_H
 
@@ -13,7 +9,7 @@
 class Logger
 {
 private:
-    std::ofstream _logFile;
+    std::fstream _logFile;
     bool _isDebugMode;
 public:
     /**
@@ -22,6 +18,12 @@ public:
      * @param debug outputs to console as well as to the file if true.
      */
     Logger(std::string filename, bool debug = false);
+
+    Logger(const Logger &rhs) = delete;
+
+    Logger(Logger &&rhs);
+
+    Logger &operator=(Logger &&other);
 
     /**
      * Dtor. Closes the file stream.
@@ -32,7 +34,7 @@ public:
      * Writes the give message to the log file and to the console if _isDebug set to true.
      * @param msg Messages string to output.
      */
-    void Log(std::string msg, bool isErr = false) const;
+    void Log(const std::string msg, bool isErr = false);
 };
 
 

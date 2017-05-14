@@ -12,16 +12,18 @@ class FileNameKey : public k1Base, public k2Base, public k3Base,
 public:
     FileNameKey() : _data("") {}
     FileNameKey(std::string data) : _data(data) {}
-    virtual ~FileNameKey() { _data.clear(); }
+
+    ~FileNameKey() override
+    { _data.clear(); }
 
     inline std::string GetData()const
     {
         return _data;
     }
 
-    inline virtual bool operator<(const FileNameKey& other) final
+    virtual bool operator<(const FileNameKey &other) const final
     {
-        return std::string(_data) < std::string(other._data);
+        return _data < other._data;
     }
 };
 
