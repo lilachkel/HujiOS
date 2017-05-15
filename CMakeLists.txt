@@ -1,4 +1,4 @@
-cmake_minimum_required(VERSION 2.6)
+cmake_minimum_required(VERSION 3.5)
 set(CMAKE_CPP_FLAGS "${CMAKE_CPP_FLAGS} -Wall -std=c++11 -pthread")
 
 #ex1
@@ -15,5 +15,5 @@ set(CMAKE_CPP_FLAGS "${CMAKE_CPP_FLAGS} -Wall -std=c++11 -pthread")
 add_library(MapReduceFramework ex3/MapReduceFramework.cpp ex3/MapReduceClient.h ex3/Logger.cpp ex3/Logger.h
         ex3/SearchMapReduce.cpp ex3/FileNameKey.hpp)
 add_executable(Search ex3/Search.cpp)
-target_link_libraries(Search MapReduceFramework)
+target_link_libraries(Search MapReduceFramework -lstdc++fs)
 

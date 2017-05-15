@@ -45,10 +45,10 @@ void SearchMapReduce::Reduce(const k2Base *const key, const V2_VEC &vals) const
     {
         auto _key = dynamic_cast<const FileNameKey *const>(key);
 
-        for (auto val : vals)
+        for (const auto val : vals)
         {
             auto _val = dynamic_cast<const FileNameKey *const>(val);
-            Emit3(_key, _val);
+            Emit3(new FileNameKey(_key->GetData()), new FileNameKey(_val->GetData()));
         }
     }
     catch (std::exception &e)
