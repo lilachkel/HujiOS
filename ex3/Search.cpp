@@ -25,7 +25,8 @@ void PrintOutput()
 
 int main(int argn, char **argv)
 {
-    if (argn < MIN_ARGS)
+
+        if (argn < MIN_ARGS)
     {
         std::cerr << "Usage: <substring to search> <folder, separated by space>" << std::endl;
         return EXIT_FAILURE;

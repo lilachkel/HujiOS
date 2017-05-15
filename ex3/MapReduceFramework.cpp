@@ -7,7 +7,8 @@ std::vector<pthread_t> ExecMap;
 //std::vector<pthread_t> ExecReduce;
 std::map<pthread_t ,MAP_CONTAINER> pthreadToContainer;//container of <K2,V2> after the ExecMap job
 std::map<k2Base*, V2_VEC> shuffledList;
-typedef std::vector<SHUFFLED_ITEM> Shuffle_vec;
+std::vector<SHUFFLED_ITEM> Shuffle_vec;
+std::map<pthread_t,pthread_mutex_t> MapContainer_mutex;
 
 int popIndex;
 bool StupidVar;
@@ -80,17 +81,29 @@ void* ExecShuffle(void* mapReduce) {
             }
 
 
+
             return nullptr;
         }
         for (std::map<pthread_t ,MAP_CONTAINER>::iterator it=pthreadToContainer.begin(); it!=pthreadToContainer.end(); ++it)
         {
-            if (it->second.size()<=0)
+            if (it->second.size()<=0)// not lock by mutex since the case which it gets the 'wrong' results-
+                // the 'post' call called by other thread -  check if true
             {
                 continue;//search the first not-empty container and breaks
                 // - since the semaphore counts the not-empty threads-
                 // should 'work' on 1 container for each 'post'
             }
-            while (it->second.size()>0) {
+
+            pthread_mutex_lock(&MapContainer_mutex[it->first]);
+            for(int cont=10 ; cont>0 ;cont--)//checks the shuffle wont 'over do' and shuffle more then 10 items
+                // (means the semaphore is +1)
+            {
+                if(it->second.size()<=0)// case the thread took less then 10 items - supposed to happen ones!
+                    // TODO: check if it happens once (max for 1 thread )
+                {
+                    pthread_mutex_unlock(&MapContainer_mutex[it->first]);
+                    break;
+                }
                 MAP_ITEM &p = it->second.back();
                 try {
                     shuffledList.at(p.first).push_back(p.second);
@@ -99,6 +112,7 @@ void* ExecShuffle(void* mapReduce) {
                 }
                 it->second.pop_back();
             }
+            pthread_mutex_unlock(&MapContainer_mutex[it->first]);
             break;
         }
     }
@@ -110,6 +124,8 @@ OUT_ITEMS_VEC RunMapReduceFramework(MapReduceBase& mapReduce, IN_ITEMS_VEC& item
     _mapReduce = &mapReduce;
     pthread_mutex_init(&pthreadToContainer_mutex, NULL);
     pthread_mutex_init(&popIndex_mutex, NULL);
+    sem_init(&ShuffleSemaphore, 0 ,0);// the first 0 is correct?
+
     popIndex = (int)itemsVec.size();// no need to lock since there are no threads yet..
 
 
@@ -126,10 +142,11 @@ OUT_ITEMS_VEC RunMapReduceFramework(MapReduceBase& mapReduce, IN_ITEMS_VEC& item
             exit(1);//destroy all threads+ map pthreadToContainer?
         }
         pthreadToContainer[ExecMap[i]] = std::vector<MAP_ITEM>();
-
+        pthread_mutex_t mut;
+        pthread_mutex_init(&mut, NULL);
+        MapContainer_mutex[ExecMap[i]] = mut;
     }
 
-    sem_init(&ShuffleSemaphore, 0 ,0);// the first 0 is correct?
     StupidVar = false;
 
     if(pthread_create(&shuffleThread, NULL, ExecShuffle,  NULL)!= 0 )
@@ -142,7 +159,10 @@ OUT_ITEMS_VEC RunMapReduceFramework(MapReduceBase& mapReduce, IN_ITEMS_VEC& item
     pthread_mutex_destroy(&pthreadToContainer_mutex);          //TODO: destroy now??
     for(int i = 0; i<multiThreadLevel;i++)
     {
+        pthread_mutex_t mu = MapContainer_mutex[ExecMap[i]];// ExecMap[i] gives me the thread ?
         pthread_join(ExecMap[i],NULL);
+        pthread_mutex_destroy(&mu);
+
     }
     StupidVar = true;
     sem_post(&ShuffleSemaphore);
@@ -163,8 +183,9 @@ OUT_ITEMS_VEC RunMapReduceFramework(MapReduceBase& mapReduce, IN_ITEMS_VEC& item
 
 void Emit2 (k2Base* k2, v2Base* v2)
 {
-
+    pthread_mutex_lock(&MapContainer_mutex[pthread_self()]);
     pthreadToContainer[pthread_self()].push_back(std::make_pair(k2, v2));
+    pthread_mutex_unlock(&MapContainer_mutex[pthread_self()]);
     sem_post(&ShuffleSemaphore);
 }
 void Emit3 (k3Base*, v3Base*)
