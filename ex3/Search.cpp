@@ -7,8 +7,6 @@
 #include "Logger.h"
 #include "SearchMapReduce.h"
 
-namespace fs = std::experimental::filesystem;
-
 #define SEARCH_STR 1
 #define FIRST_DIR 2
 #define MIN_ARGS 3
@@ -27,7 +25,6 @@ void PrintOutput()
 
 int main(int argn, char **argv)
 {
-    std::fstream currFile;
     if (argn < MIN_ARGS)
     {
         std::cerr << "Usage: <substring to search> <folder, separated by space>" << std::endl;
@@ -36,7 +33,7 @@ int main(int argn, char **argv)
 
     // Get the logger and finder ready
     Logger logger = Logger(".MapReduceFrameworkLog", true);
-    SearchMapReduce finder = SearchMapReduce(argv[SEARCH_STR], logger);
+    SearchMapReduce finder = SearchMapReduce(argv[SEARCH_STR], std::move(logger));
 
     try
     {
@@ -55,11 +52,6 @@ int main(int argn, char **argv)
         std::cerr << e.what() << std::endl;
         return EXIT_FAILURE;
     }
-
-    // Sort the output vector.
-//    std::sort(_output.begin(), _output.end(),
-//              [&](FileNameKey &k1, FileNameKey &k2) { return k1 < k2; }
-//    );
 
     PrintOutput();
 
