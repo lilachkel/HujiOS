@@ -1,7 +1,3 @@
-//
-// Created by jenia90 on 5/11/17.
-//
-
 #ifndef PROJECT_LOGGER_H
 #define PROJECT_LOGGER_H
 
@@ -23,13 +19,11 @@ public:
      */
     Logger(std::string filename, bool debug = false);
 
+    Logger(const Logger &rhs) = delete;
 
-    /**
-     * File stream constructor. Creates a logger that logs to a given file stream
-     * @param file file stream we want to write to.
-     * @param debug outputs to console as well as to the file if true.
-     */
-    Logger(std::fstream &file, bool debug = false);
+    Logger(Logger &&rhs);
+
+    Logger &operator=(Logger &&other);
 
     /**
      * Dtor. Closes the file stream.
@@ -37,22 +31,10 @@ public:
     ~Logger();
 
     /**
-     * Setter for the debug field.
-     * @param debug if true the logger will also output to the standard console.
-     */
-    void SetDebug(bool debug)
-    {
-        _isDebugMode = debug;
-    }
-
-    /**
      * Writes the give message to the log file and to the console if _isDebug set to true.
      * @param msg Messages string to output.
      */
-    void Log(const std::string msg);
-
-    // TODO: Implement override.
-    std::istream& operator>>(const std::istream& is, const std::string msg);
+    void Log(const std::string msg, bool isErr = false);
 };
 
 
