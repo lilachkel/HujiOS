@@ -5,8 +5,10 @@ IN_ITEMS_VEC _itemsVec;
 MapReduceBase* _mapReduce;
 std::vector<pthread_t> ExecMap;
 //std::vector<pthread_t> ExecReduce;
-std::map pthreadToContainer<pthread_t ,MAP_CONTAINER>;//container of <K2,V2> after the ExecMap job
-std::map shuffledList<k2Base*, V2_VEC>;
+std::map<pthread_t ,MAP_CONTAINER> pthreadToContainer;//container of <K2,V2> after the ExecMap job
+std::map<k2Base*, V2_VEC> shuffledList;
+typedef std::vector<SHUFFLED_ITEM> Shuffle_vec;
+
 int popIndex;
 bool StupidVar;
 pthread_mutex_t pthreadToContainer_mutex;
@@ -62,6 +64,7 @@ void* ExecReduceJob(void* mapReduce)
 }
 
 void* ExecShuffle(void* mapReduce) {
+
     int i = 0;
     while (true)
     {
@@ -69,25 +72,34 @@ void* ExecShuffle(void* mapReduce) {
         sem_getvalue(&ShuffleSemaphore, &i);
         if(StupidVar && i==0)
         {
-            for(auto _key : shuffledList.begin())
+            for (std::map<k2Base*, V2_VEC>::const_iterator _key = shuffledList.cbegin(); _key != shuffledList.cend() ; _key++)
             {
-                _key
+                Shuffle_vec.push_back(std::make_pair(_key->first,_key->second));// pushes a new pair?
+                // delete such new objects i created?
+                shuffledList.erase(_key);// check the iterator support the deletion
             }
+
 
             return nullptr;
         }
         for (std::map<pthread_t ,MAP_CONTAINER>::iterator it=pthreadToContainer.begin(); it!=pthreadToContainer.end(); ++it)
         {
+            if (it->second.size()<=0)
+            {
+                continue;//search the first not-empty container and breaks
+                // - since the semaphore counts the not-empty threads-
+                // should 'work' on 1 container for each 'post'
+            }
             while (it->second.size()>0) {
                 MAP_ITEM &p = it->second.back();
                 try {
                     shuffledList.at(p.first).push_back(p.second);
                 } catch (const std::out_of_range &e) {
-                    shuffledList[p.first] = V2_VEC();
-                    shuffledList.at(p.first).push_back(p.second);
+                    shuffledList[p.first].push_back(p.second);
                 }
                 it->second.pop_back();
             }
+            break;
         }
     }
 }
@@ -113,7 +125,7 @@ OUT_ITEMS_VEC RunMapReduceFramework(MapReduceBase& mapReduce, IN_ITEMS_VEC& item
 //            pthread_mutex_destroy(&popIndex_mutex);
             exit(1);//destroy all threads+ map pthreadToContainer?
         }
-        pthreadToContainer[ExecMap[i]] = MAP_CONTAINER();
+        pthreadToContainer[ExecMap[i]] = std::vector<MAP_ITEM>();
 
     }
 
@@ -151,7 +163,8 @@ OUT_ITEMS_VEC RunMapReduceFramework(MapReduceBase& mapReduce, IN_ITEMS_VEC& item
 
 void Emit2 (k2Base* k2, v2Base* v2)
 {
-    pthreadToContainer[pthread_self()].insert(k2, v2);
+
+    pthreadToContainer[pthread_self()].push_back(std::make_pair(k2, v2));
     sem_post(&ShuffleSemaphore);
 }
 void Emit3 (k3Base*, v3Base*)
