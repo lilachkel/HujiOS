@@ -25,7 +25,7 @@ pthread_mutex_t popIndex_mutex;
 pthread_t shuffleThread;
 sem_t ShuffleSemaphore;
 
-Logger _logger;
+Logger _logger = Logger(".MapReduceFrameworkLog", true);
 
 
 void *ExecMapJob(void *mapReduce)
@@ -77,21 +77,20 @@ void *ExecReduceJob(void *mapReduce)
 void *ExecShuffle(void *mapReduce)
 {
 
-    int i = 0;
+    int sem_val = 0;
     while (true)
     {
         sem_wait(&ShuffleSemaphore);
-        sem_getvalue(&ShuffleSemaphore, &i);
-        if (StupidVar && i == 0)
+        sem_getvalue(&ShuffleSemaphore, &sem_val);
+        if (StupidVar && sem_val == 0)
         {
-
             for (auto &_key : shuffledList)
             {
                 Shuffle_vec.push_back(std::make_pair(_key.first, _key.second));// pushes a new pair?
                 // delete such new objects i created?
                 shuffledList.erase(_key.first);// check the iterator support the deletion
             }
-
+            shuffledList.clear();//maybe not?
 
             return nullptr;
         }
@@ -121,7 +120,8 @@ void *ExecShuffle(void *mapReduce)
                     shuffledList.at(p.first).push_back(p.second);
                 } catch (const std::out_of_range &e)
                 {
-                    shuffledList[p.first].push_back(p.second);
+                    shuffledList[p.first] = std::vector();
+                    shuffledList.at(p.first).push_back(p.second);
                 }
                 it.second.pop_back();
             }
@@ -176,8 +176,8 @@ OUT_ITEMS_VEC RunMapReduceFramework(MapReduceBase &mapReduce, IN_ITEMS_VEC &item
         pthread_mutex_t mu = MapContainer_mutex[ExecMap[i]];// ExecMap[i] gives me the thread ?
         pthread_join(ExecMap[i], NULL);
         pthread_mutex_destroy(&mu);
-
     }
+    MapContainer_mutex.clear();//memory and ect
     StupidVar = true;
     sem_post(&ShuffleSemaphore);
     pthread_join(shuffleThread, NULL);
@@ -194,9 +194,9 @@ OUT_ITEMS_VEC RunMapReduceFramework(MapReduceBase &mapReduce, IN_ITEMS_VEC &item
 
 void Emit2(k2Base *k2, v2Base *v2)
 {
-    pthread_mutex_lock(&MapContainer_mutex[pthread_self()]);
+    pthread_mutex_lock(&(MapContainer_mutex[pthread_self()]));
     pthreadToContainer[pthread_self()].push_back(std::make_pair(k2, v2));
-    pthread_mutex_unlock(&MapContainer_mutex[pthread_self()]);
+    pthread_mutex_unlock(&(MapContainer_mutex[pthread_self()]));
     sem_post(&ShuffleSemaphore);
 }
 
