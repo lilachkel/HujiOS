@@ -17,7 +17,7 @@ public:
      * @param filename file name of the log file
      * @param debug outputs to console as well as to the file if true.
      */
-    Logger(std::string filename, bool debug = false);
+    Logger(std::string filename = ".MapReduceFrameworkLog", bool debug = false);
 
     Logger(const Logger &rhs) = delete;
 
