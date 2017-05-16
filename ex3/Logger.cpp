@@ -1,3 +1,4 @@
+#include <libltdl/lt_system.h>
 #include "Logger.h"
 
 //

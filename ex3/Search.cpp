@@ -2,6 +2,7 @@
 #include <fstream>
 #include <algorithm>
 #include <iostream>
+#include <libltdl/lt_system.h>
 #include "MapReduceFramework.h"
 #include "FileNameKey.hpp"
 #include "Logger.h"
@@ -25,7 +26,6 @@ void PrintOutput(OUT_ITEMS_VEC &output)
 
 int main(int argn, char **argv)
 {
-
         if (argn < MIN_ARGS)
     {
         std::cerr << "Usage: <substring to search> <folder, separated by space>" << std::endl;
@@ -43,9 +43,12 @@ int main(int argn, char **argv)
         {
             _inputVec.push_back({new FileNameKey(std::string(argv[i])), nullptr});
         }
-    }
 
-    OUT_ITEMS_VEC _outputVec = RunMapReduceFramework(finder, _inputVec, MULTI_THREAD_LEVEL, true);
+    }
+//    std::cout << "gdsgfzsads\n";
+
+
+    OUT_ITEMS_VEC _outputVec = RunMapReduceFramework(finder, _inputVec, MULTI_THREAD_LEVEL, true);//multi 10???
 
     PrintOutput(_outputVec);
 

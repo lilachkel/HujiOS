@@ -4,7 +4,8 @@ void SearchMapReduce::Map(const k1Base *const key, const v1Base *const val) cons
 {
     try
     {
-        auto _key = dynamic_cast<const FileNameKey *const>(key);
+//        std::cout << key <<
+        const FileNameKey *const _key = dynamic_cast<const FileNameKey *const>(key);
         auto path = fs::path(_key->GetData());
         const fs::directory_iterator end{};
 

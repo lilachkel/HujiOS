@@ -3,6 +3,7 @@
 #include <semaphore.h>
 #include "MapReduceFramework.h"
 #include "Logger.h"
+#include "FileNameKey.hpp"
 
 IN_ITEMS_VEC _itemsVec;
 MapReduceBase *_mapReduce;
@@ -60,6 +61,8 @@ void *ExecMapJob(void *mapReduce)
         }
         for (; i >= 0; i--)
         {
+            std::cout << _itemsVec[chunk_ind].first << std::endl;
+//            std::cout << "gdsgfzsads\n";
             _mapReduce->Map(_itemsVec[chunk_ind].first, _itemsVec[chunk_ind].second);
             chunk_ind -= 1;
         }
@@ -120,7 +123,7 @@ void *ExecShuffle(void *mapReduce)
                     shuffledList.at(p.first).push_back(p.second);
                 } catch (const std::out_of_range &e)
                 {
-                    shuffledList[p.first] = std::vector();
+                    shuffledList[p.first] = V2_VEC();
                     shuffledList.at(p.first).push_back(p.second);
                 }
                 it.second.pop_back();
@@ -141,13 +144,16 @@ OUT_ITEMS_VEC RunMapReduceFramework(MapReduceBase &mapReduce, IN_ITEMS_VEC &item
     sem_init(&ShuffleSemaphore, 0, 0);// the first 0 is correct?
 
     popIndex = (int) itemsVec.size();// no need to lock since there are no threads yet..
+//    std::cout << "here" << " ";
 
-
+//    ExecMap =
     pthread_mutex_lock(&pthreadToContainer_mutex);
     // to create the map threads which starts with 2 lines of lock and unlock pthreadToContainer_mutex
     for (int i = 0; i < multiThreadLevel; i++)//if itemsVec size is <10
     {
-        if (pthread_create(&ExecMap[i], NULL, ExecMapJob, NULL) != 0)
+        pthread_t thre;
+
+        if (pthread_create(&thre, NULL, ExecMapJob, NULL) != 0)
         {
 //            print an error message : "MapReduceFramework Failure: FUNCTION_NAME failed.", where FUNCTION_NAME is the
 //            name of the library call that was failed [e.g. "new"].
@@ -155,6 +161,7 @@ OUT_ITEMS_VEC RunMapReduceFramework(MapReduceBase &mapReduce, IN_ITEMS_VEC &item
 //            pthread_mutex_destroy(&popIndex_mutex);
             exit(EXIT_FAILURE);//destroy all threads+ map pthreadToContainer?
         }
+        ExecMap.push_back(thre);
         pthreadToContainer[ExecMap[i]] = std::vector<MAP_ITEM>();
         pthread_mutex_t mut;
         pthread_mutex_init(&mut, NULL);
@@ -182,6 +189,17 @@ OUT_ITEMS_VEC RunMapReduceFramework(MapReduceBase &mapReduce, IN_ITEMS_VEC &item
     sem_post(&ShuffleSemaphore);
     pthread_join(shuffleThread, NULL);
     sem_destroy(&ShuffleSemaphore);
+    for (SHUFFLED_ITEM pair:Shuffle_vec)
+    {
+        auto _key = dynamic_cast<const FileNameKey *const>(pair.first);
+        std::cout << _key->GetData() << " ";
+        for(v2Base* v:pair.second)
+        {
+            auto _val = dynamic_cast<const FileNameKey *const>(v);
+            std::cout << _val->GetData() << " ";
+        }
+
+    }
     //starts the reduce part
     for (int i = 0; i < multiThreadLevel; i++)//after the map work
     {
