@@ -21,22 +21,6 @@ void SearchMapReduce::Map(const k1Base *const key, const v1Base *const val) cons
     }
     catch (std::exception &e)
     { throw e; }
-
-// TODO: Test if this experimental shit works.
-//        DIR* dir;
-//        struct dirent* ent;
-//        if((dir = opendir(_dir.c_str())) != NULL)
-//        {
-//            while((ent = readdir(dir)) != NULL)
-//            {
-//
-//            }
-//            closedir(dir);
-//        }
-//        else
-//        {
-//            _logger.Log("invalid directory");
-//        }
 }
 
 void SearchMapReduce::Reduce(const k2Base *const key, const V2_VEC &vals) const
@@ -53,5 +37,4 @@ void SearchMapReduce::Reduce(const k2Base *const key, const V2_VEC &vals) const
     }
     catch (std::exception &e)
     { throw e; }
-
 }
