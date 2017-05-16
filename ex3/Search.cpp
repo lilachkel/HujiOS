@@ -23,10 +23,26 @@ void PrintOutput(OUT_ITEMS_VEC &output)
     std::cout << std::endl;
 }
 
+/**
+ * Release all resources allocated to the input and output vectors.
+ * @tparam T IN_ITEMS_VEC or OUT_ITEMS_VEC.
+ * @param v item vector.
+ */
+template<typename T>
+void PointerDestroyer(T &v)
+{
+    for (auto &p : v)
+    {
+        delete p.first;
+        delete p.second;
+    }
+    v.clear();
+}
+
 int main(int argn, char **argv)
 {
 
-        if (argn < MIN_ARGS)
+    if (argn < MIN_ARGS)
     {
         std::cerr << "Usage: <substring to search> <folder, separated by space>" << std::endl;
         return EXIT_FAILURE;
@@ -48,6 +64,9 @@ int main(int argn, char **argv)
     OUT_ITEMS_VEC _outputVec = RunMapReduceFramework(finder, _inputVec, MULTI_THREAD_LEVEL, true);
 
     PrintOutput(_outputVec);
+
+    PointerDestroyer(_inputVec);
+    PointerDestroyer(_outputVec);
 
     return EXIT_SUCCESS;
 }

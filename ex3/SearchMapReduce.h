@@ -11,7 +11,7 @@ namespace fs = std::experimental::filesystem;
 class SearchMapReduce : public MapReduceBase
 {
     std::string _searchStr;
-    Logger _logger;
+    Logger _logger; // TODO: check usage
 public:
     SearchMapReduce(std::string searchStr, Logger &&logger) : _searchStr(searchStr), _logger(std::move(logger))
     {}
