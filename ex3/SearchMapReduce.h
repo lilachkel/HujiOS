@@ -8,7 +8,7 @@
 
 namespace fs = std::experimental::filesystem;
 
-class SearchMapReduce : MapReduceBase
+class SearchMapReduce : public MapReduceBase
 {
     std::string _searchStr;
     Logger _logger;

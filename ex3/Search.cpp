@@ -11,15 +11,15 @@
 #define FIRST_DIR 2
 #define MIN_ARGS 3
 
-std::vector<std::string> _output;
+#define MULTI_THREAD_LEVEL 10
 
 /**
  * Prints the output vector.
  */
-void PrintOutput()
+void PrintOutput(OUT_ITEMS_VEC &output)
 {
-    for (auto i : _output)
-        std::cout << i << " ";
+    for (auto &i : output)
+        std::cout << i.first << " ";
     std::cout << std::endl;
 }
 
@@ -35,26 +35,19 @@ int main(int argn, char **argv)
     // Get the logger and finder ready
     Logger logger = Logger(".MapReduceFrameworkLog", true);
     SearchMapReduce finder = SearchMapReduce(argv[SEARCH_STR], std::move(logger));
+    IN_ITEMS_VEC _inputVec;
 
-    try
+    for (int i = FIRST_DIR; i < argn; i++)
     {
-        for (int i = FIRST_DIR; i < argn; i++)
+        if (fs::is_directory(std::string(argv[i])) && !fs::is_empty(std::string(argv[i])))
         {
-            if (fs::is_directory(std::string(argv[i])) && !fs::is_empty(std::string(argv[i])))
-            {
-                k1Base *dir = new FileNameKey(argv[i]);
-                finder.Map(dir, nullptr);
-                delete dir;
-            }
+            _inputVec.push_back({new FileNameKey(std::string(argv[i])), nullptr});
         }
     }
-    catch (std::exception &e)
-    {
-        std::cerr << e.what() << std::endl;
-        return EXIT_FAILURE;
-    }
 
-    PrintOutput();
+    OUT_ITEMS_VEC _outputVec = RunMapReduceFramework(finder, _inputVec, MULTI_THREAD_LEVEL, true);
+
+    PrintOutput(_outputVec);
 
     return EXIT_SUCCESS;
 }
