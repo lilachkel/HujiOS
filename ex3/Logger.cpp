@@ -32,7 +32,7 @@ Logger &Logger::operator=(Logger &&other)
     return *this;
 }
 
-std::string GetTimeString()
+std::string Logger::GetTimeString()
 {
     time_t rawtime;
     struct tm *timeinfo;

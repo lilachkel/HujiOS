@@ -269,7 +269,7 @@ void InitReduceJobs(int multiThreadLevel)
 }
 
 template<typename Func>
-double MeasureTime(Func op, int multiThreadLevel,)
+double MeasureTime(Func op, int multiThreadLevel)
 {
     struct timeval s, e;
     size_t i = 0;
