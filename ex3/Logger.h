@@ -4,6 +4,7 @@
 #include <ostream>
 #include <iostream>
 #include <fstream>
+#include <list>
 
 
 class Logger
@@ -35,6 +36,9 @@ public:
      * @param msg Messages string to output.
      */
     void Log(const std::string msg, bool isErr = false);
+
+    template <typename ...Args>
+    void Debug(const std::string method, const std::string location, Args ... args);
 };
 
 
