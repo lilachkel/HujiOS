@@ -1,8 +1,6 @@
+#include <vector>
 #include "Logger.h"
 
-//
-// Created by jenia90 on 5/11/17.
-//
 Logger::Logger(Logger &&rhs) : _logFile(std::move(rhs._logFile)), _isDebugMode(rhs._isDebugMode)
 {
     rhs._logFile.close();
@@ -44,4 +42,17 @@ void Logger::Log(const std::string msg, bool isErr)
             std::cout << msg << std::endl;
         _logFile << msg << std::endl;
     }
+}
+
+template <typename ...Args>
+void Debug(const std::string method, const std::string location, Args ... args)
+{
+    std::cout << "Method: " << method;
+    std::cout << " | Location: " << location;
+    std::cout << "Args: " << std::endl;
+    for (const auto a : {args...})
+    {
+        std::cout << " | " << a << " " << std::endl;
+    }
+    std::cout << std::endl;
 }

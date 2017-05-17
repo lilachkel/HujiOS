@@ -25,18 +25,18 @@ void PrintOutput(OUT_ITEMS_VEC &output)
 
 /**
  * Release all resources allocated to the input and output vectors.
- * @tparam T IN_ITEMS_VEC or OUT_ITEMS_VEC.
- * @param v item vector.
+ * @tparam Container IN_ITEMS_VEC or OUT_ITEMS_VEC.
+ * @param c item vector.
  */
-template<typename T>
-void PointerDestroyer(T &v)
+template<typename Container>
+void PointerDestroyer(Container &c)
 {
-    for (auto &p : v)
+    for (auto &p : c)
     {
         delete p.first;
         delete p.second;
     }
-    v.clear();
+    c.clear();
 }
 
 int main(int argn, char **argv)
@@ -48,9 +48,7 @@ int main(int argn, char **argv)
         return EXIT_FAILURE;
     }
 
-    // Get the logger and finder ready
-    Logger logger = Logger(".MapReduceFrameworkLog", true);
-    SearchMapReduce finder = SearchMapReduce(argv[SEARCH_STR], std::move(logger));
+    SearchMapReduce finder = SearchMapReduce(argv[SEARCH_STR]);
     IN_ITEMS_VEC _inputVec;
 
     for (int i = FIRST_DIR; i < argn; i++)
