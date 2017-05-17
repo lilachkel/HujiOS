@@ -243,15 +243,17 @@ void InitShuffleJob(int multiThreadLevel)
 
 void InitReduceJobs(int multiThreadLevel)
 {
-    popIndex = (int) _shuffleVec.size();
+    popIndex = (int) _shuffleVec.size()-1;
     pthread_mutex_lock(&pthreadToContainer_mutex);
     for (int i = 0; i < multiThreadLevel; i++)
     {
-        if (pthread_create(&ExecReduce[i], NULL, ExecReduceJob, NULL) != 0)
+        pthread_t thre;
+        if (pthread_create(&thre, NULL, ExecReduceJob, NULL) != 0)
         {
             _logger.Log("Failed to create new threads.", true);
             exit(EXIT_FAILURE);
         }
+        ExecReduce.push_back(thre);
 
         _reducersContainer[ExecReduce[i]] = OUT_ITEMS_VEC();
         pthread_mutex_t m;
