@@ -2,7 +2,6 @@
 #include <fstream>
 #include <algorithm>
 #include <iostream>
-#include <libltdl/lt_system.h>
 #include "MapReduceFramework.h"
 #include "FileNameKey.hpp"
 #include "Logger.h"
@@ -24,17 +23,32 @@ void PrintOutput(OUT_ITEMS_VEC &output)
     std::cout << std::endl;
 }
 
+/**
+ * Release all resources allocated to the input and output vectors.
+ * @tparam Container IN_ITEMS_VEC or OUT_ITEMS_VEC.
+ * @param c item vector.
+ */
+template<typename Container>
+void PointerDestroyer(Container &c)
+{
+    for (auto &p : c)
+    {
+        delete p.first;
+        delete p.second;
+    }
+    c.clear();
+}
+
 int main(int argn, char **argv)
 {
-        if (argn < MIN_ARGS)
+
+    if (argn < MIN_ARGS)
     {
         std::cerr << "Usage: <substring to search> <folder, separated by space>" << std::endl;
         return EXIT_FAILURE;
     }
 
-    // Get the logger and finder ready
-    Logger logger = Logger(".MapReduceFrameworkLog", true);
-    SearchMapReduce finder = SearchMapReduce(argv[SEARCH_STR], std::move(logger));
+    SearchMapReduce finder = SearchMapReduce(argv[SEARCH_STR]);
     IN_ITEMS_VEC _inputVec;
 
     for (int i = FIRST_DIR; i < argn; i++)
@@ -43,14 +57,14 @@ int main(int argn, char **argv)
         {
             _inputVec.push_back({new FileNameKey(std::string(argv[i])), nullptr});
         }
-
     }
-//    std::cout << "gdsgfzsads\n";
 
-
-    OUT_ITEMS_VEC _outputVec = RunMapReduceFramework(finder, _inputVec, MULTI_THREAD_LEVEL, true);//multi 10???
+    OUT_ITEMS_VEC _outputVec = RunMapReduceFramework(finder, _inputVec, MULTI_THREAD_LEVEL, true);
 
     PrintOutput(_outputVec);
+
+    PointerDestroyer(_inputVec);
+    PointerDestroyer(_outputVec);
 
     return EXIT_SUCCESS;
 }

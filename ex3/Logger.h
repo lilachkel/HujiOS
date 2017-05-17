@@ -4,6 +4,7 @@
 #include <ostream>
 #include <iostream>
 #include <fstream>
+#include <list>
 
 
 class Logger
@@ -17,7 +18,7 @@ public:
      * @param filename file name of the log file
      * @param debug outputs to console as well as to the file if true.
      */
-    Logger(std::string filename = ".MapReduceFrameworkLog", bool debug = false);
+    Logger(std::string filename, bool debug = false);
 
     Logger(const Logger &rhs) = delete;
 
@@ -35,6 +36,9 @@ public:
      * @param msg Messages string to output.
      */
     void Log(const std::string msg, bool isErr = false);
+
+    template <typename ...Args>
+    void Debug(const std::string method, const std::string location, Args ... args);
 };
 
 

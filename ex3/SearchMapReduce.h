@@ -11,9 +11,8 @@ namespace fs = std::experimental::filesystem;
 class SearchMapReduce : public MapReduceBase
 {
     std::string _searchStr;
-    Logger _logger;
 public:
-    SearchMapReduce(std::string searchStr, Logger &&logger) : _searchStr(searchStr), _logger(std::move(logger))
+    SearchMapReduce(std::string searchStr) : _searchStr(searchStr)
     {}
 
     void virtual Map(const k1Base *const key, const v1Base *const val) const;
