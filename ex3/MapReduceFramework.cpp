@@ -1,9 +1,11 @@
 
 #include <map>
 #include <semaphore.h>
+#include <unordered_map>
 #include "MapReduceFramework.h"
 #include "Logger.h"
-#include "FileNameKey.hpp"
+
+#define DEBUG true
 
 IN_ITEMS_VEC _itemsVec;
 OUT_ITEMS_VEC _outputVec;
@@ -13,25 +15,24 @@ std::vector<pthread_t> ExecReduce;
 
 typedef std::pair<k2Base *, v2Base *> MAP_ITEM;
 typedef std::pair<k2Base *, V2_VEC> SHUFFLED_ITEM;
-typedef std::pair<k3Base *, v3Base *> REDUCE_ITEM;
 typedef std::vector<MAP_ITEM> MAP_CONTAINER;
-
-std::map<pthread_t, MAP_CONTAINER> _pthreadToContainer;//container of <K2,V2> after the ExecMap job
-std::map<pthread_t, OUT_ITEMS_VEC> _reducers;
-std::map<k2Base *, V2_VEC> _shuffledList;
 std::vector<SHUFFLED_ITEM> _shuffleVec;
-std::map<pthread_t, pthread_mutex_t> _mapContainerMutexes;
-std::map<pthread_t, pthread_mutex_t> _reduceContainerMutexes;
+
+std::unordered_map<pthread_t, MAP_CONTAINER> _pthreadToContainer;//container of <K2,V2> after the ExecMap job
+std::unordered_map<pthread_t, OUT_ITEMS_VEC> _reducersContainer;
+std::unordered_map<k2Base *, V2_VEC> _shuffledList;
+std::unordered_map<pthread_t, pthread_mutex_t> _mapContainerMutexes;
+std::unordered_map<pthread_t, pthread_mutex_t> _reduceContainerMutexes;
 
 int popIndex;
 bool StupidVar;
 pthread_mutex_t pthreadToContainer_mutex;
 pthread_mutex_t popIndex_mutex;
-pthread_mutex_t _reducersMutex;
+pthread_mutex_t _outputVecMutex;
 pthread_t shuffleThread;
 sem_t ShuffleSemaphore;
 
-Logger _logger = Logger(".MapReduceFrameworkLog", true);
+Logger _logger = Logger(".MapReduceFrameworkLog", DEBUG);
 
 
 void *ExecMapJob(void *mapReduce)
@@ -72,25 +73,52 @@ void *ExecMapJob(void *mapReduce)
             chunk_ind -= 1;
         }
     }
-
-
 }
 
 void *ExecReduceJob(void *mapReduce)
 {
-    pthread_mutex_lock(&_reducersMutex);
-    pthread_mutex_unlock(&_reducersMutex);
-
+    // TODO: Add print.
+    pthread_mutex_lock(&_outputVecMutex);
+    pthread_mutex_unlock(&_outputVecMutex);
     int chunkIdx;
 
     while (true)
     {
+        int i;
+        pthread_mutex_lock(&popIndex_mutex);
+        if (popIndex == -1)
+        {
+            pthread_mutex_unlock(&popIndex_mutex);
+            pthread_exit(nullptr);
+        }
 
+        chunkIdx = popIndex;
+        if (popIndex - 10 > 0)
+        {
+            popIndex -= 10;
+            pthread_mutex_unlock(&popIndex_mutex);
+            i = 10;
+        }
+
+        else
+        {
+            i = chunkIdx - popIndex;
+            popIndex = -1;
+            pthread_mutex_unlock(&popIndex_mutex);
+        }
+
+        for (; i >= 0; i--)
+        {
+            _mapReduce->Reduce(_shuffleVec[chunkIdx].first, _shuffleVec[chunkIdx].second);
+            chunkIdx -= 1;
+        }
     }
+    // TODO: Add print.
 }
 
 void *ExecShuffle(void *mapReduce)
 {
+    // TODO: Add print.
     int sem_val = 0;
     while (true)
     {
@@ -128,11 +156,13 @@ void *ExecShuffle(void *mapReduce)
                     pthread_mutex_unlock(&_mapContainerMutexes[it.first]);
                     break;
                 }
+
                 MAP_ITEM &p = it.second.back();
                 try
                 {
-                    _shuffledList.at(p.first).push_back(p.second);
-                } catch (const std::out_of_range &e)
+                    _shuffledList[p.first].push_back(p.second);
+                }
+                catch (const std::out_of_range &e)
                 {
                     _shuffledList[p.first] = V2_VEC();
                     _shuffledList[p.first].push_back(p.second);
@@ -143,31 +173,12 @@ void *ExecShuffle(void *mapReduce)
             break;
         }
     }
+    // TODO: Add print.
 }
 
-void DestroyKeys()
+void InitMapJobs(int multiThreadLevel)
 {
-    for(auto &item : _pthreadToContainer)
-    {
-        for(auto &key : item.second)
-        {
-            delete key.first;
-            delete key.second;
-        }
-    }
-}
-
-OUT_ITEMS_VEC RunMapReduceFramework(MapReduceBase &mapReduce, IN_ITEMS_VEC &itemsVec,
-                                    int multiThreadLevel, bool autoDeleteV2K2)
-{
-    _itemsVec = itemsVec;
-    _mapReduce = &mapReduce;
-    pthread_mutex_init(&pthreadToContainer_mutex, NULL);
-    pthread_mutex_init(&popIndex_mutex, NULL);
-    sem_init(&ShuffleSemaphore, 0, 0);// the first 0 is correct?
-
-    popIndex = (int) itemsVec.size()-1;// no need to lock since there are no threads yet..
-
+    popIndex = (int) _itemsVec.size() - 1;// no need to lock since there are no threads yet..
 
     pthread_mutex_lock(&pthreadToContainer_mutex);
     // to create the map threads which starts with 2 lines of lock and unlock pthreadToContainer_mutex
@@ -188,7 +199,10 @@ OUT_ITEMS_VEC RunMapReduceFramework(MapReduceBase &mapReduce, IN_ITEMS_VEC &item
         pthread_mutex_init(&mut, NULL);
         _mapContainerMutexes[ExecMap[i]] = mut;
     }
+}
 
+void InitShuffleJob(int multiThreadLevel)
+{
     StupidVar = false;
 
     if (pthread_create(&shuffleThread, NULL, ExecShuffle, NULL) != 0)
@@ -221,17 +235,76 @@ OUT_ITEMS_VEC RunMapReduceFramework(MapReduceBase &mapReduce, IN_ITEMS_VEC &item
 //        }
 //
 //    }
+}
 
-    //starts the reduce part
-    for (int i = 0; i < multiThreadLevel; i++)//after the map work
+void InitReduceJobs(int multiThreadLevel)
+{
+    popIndex = (int) _shuffleVec.size();
+    pthread_mutex_lock(&pthreadToContainer_mutex);
+    for (int i = 0; i < multiThreadLevel; i++)
     {
-        // TODO: Create threads and execute them
+        if (pthread_create(&ExecReduce[i], NULL, ExecReduceJob, NULL) != 0)
+        {
+            //TODO: print error
+            exit(EXIT_FAILURE);
+        }
+
+        _reducersContainer[ExecReduce[i]] = OUT_ITEMS_VEC();
+        pthread_mutex_t m;
+        pthread_mutex_init(&m, NULL);
+        _reduceContainerMutexes[ExecReduce[i]] = m;
     }
 
-    if (autoDeleteV2K2) DestroyKeys();
-    _pthreadToContainer.clear();
+    pthread_mutex_unlock(&pthreadToContainer_mutex);
+    for (int i = 0; i < multiThreadLevel; i++)//after the map work
+    {
+        pthread_mutex_t m = _reduceContainerMutexes[ExecReduce[i]];
+        pthread_join(ExecReduce[i], NULL);
+        pthread_mutex_destroy(&m);
+    }
+}
 
-    return std::vector<OUT_ITEM>();
+void DestroyK2V2()
+{
+    for (auto &item : _pthreadToContainer)
+    {
+        for (auto &key : item.second)
+        {
+            delete key.first;
+            delete key.second;
+        }
+    }
+}
+
+OUT_ITEMS_VEC RunMapReduceFramework(MapReduceBase &mapReduce, IN_ITEMS_VEC &itemsVec,
+                                    int multiThreadLevel, bool autoDeleteV2K2)
+{
+    _itemsVec = itemsVec;
+    _mapReduce = &mapReduce;
+    pthread_mutex_init(&pthreadToContainer_mutex, NULL);
+    pthread_mutex_init(&popIndex_mutex, NULL);
+    sem_init(&ShuffleSemaphore, 0, 0);// the first 0 is correct?
+
+    //region Perform MapReduce
+    // Initiate the Mapping phase
+    InitMapJobs(multiThreadLevel);
+
+    //Initiate the Shuffle phase
+    InitShuffleJob(multiThreadLevel);
+
+    //Initiate the Reduce phase
+    InitReduceJobs(multiThreadLevel);
+    //endregion
+
+    //region Destruction
+    pthread_mutex_destroy(&pthreadToContainer_mutex);          //TODO: destroy now??
+
+    if (autoDeleteV2K2) DestroyK2V2();
+    _pthreadToContainer.clear();
+    //endregion
+    // TODO: Add end print.
+
+    return _outputVec;
 }
 
 void Emit2(k2Base *k2, v2Base *v2)
@@ -242,9 +315,9 @@ void Emit2(k2Base *k2, v2Base *v2)
     sem_post(&ShuffleSemaphore);
 }
 
-void Emit3(k3Base * k3, v3Base *v3)
+void Emit3(k3Base *k3, v3Base *v3)
 {
     pthread_mutex_lock(&(_reduceContainerMutexes[pthread_self()]));
-    _reducers[pthread_self()].push_back({k3, v3});
+    _reducersContainer[pthread_self()].push_back({k3, v3});
     pthread_mutex_unlock(&(_reduceContainerMutexes[pthread_self()]));
 }
