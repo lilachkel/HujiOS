@@ -1,4 +1,6 @@
 #include <vector>
+#include <ctime>
+#include <iomanip>
 #include "Logger.h"
 
 Logger::Logger(Logger &&rhs) : _logFile(std::move(rhs._logFile)), _isDebugMode(rhs._isDebugMode)
@@ -30,14 +32,47 @@ Logger &Logger::operator=(Logger &&other)
     return *this;
 }
 
-void Logger::Log(const std::string msg, bool isErr)
+std::string GetTimeString()
 {
+    time_t rawtime;
+    struct tm *timeinfo;
+    char buffer[80];
+
+    time(&rawtime);
+    timeinfo = localtime(&rawtime);
+
+    strftime(buffer, sizeof(buffer), "%d-%m-%Y %I:%M:%S", timeinfo);
+    std::string str(buffer);
+
+    return str;
+}
+
+void Logger::Log(const std::string arg, bool isErr, DataType dataType)
+{
+    auto t = std::time(nullptr);
+    auto tm = *std::localtime(&t);
+
+    std::string msg;
+
     if (isErr)
     {
-        std::cerr << msg << std::endl;
+        std::cerr << "error in: " << arg << std::endl;
     }
+
     else
     {
+        switch (dataType)
+        {
+            case ThreadInit:
+                msg = ("Thread " + arg + " created [" + GetTimeString() + "]");
+                break;
+            case ThreadDeath:
+                msg = ("Thread " + arg + " terminated [" + GetTimeString() + "]");
+                break;
+            case General:
+                msg = arg;
+                break;
+        }
         if (_isDebugMode)
             std::cout << msg << std::endl;
         _logFile << msg << std::endl;

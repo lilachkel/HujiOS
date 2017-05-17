@@ -2,6 +2,7 @@
 #include <map>
 #include <semaphore.h>
 #include <unordered_map>
+#include <sys/time.h>
 #include "MapReduceFramework.h"
 #include "Logger.h"
 
@@ -37,6 +38,7 @@ Logger _logger = Logger(".MapReduceFrameworkLog", DEBUG);
 
 void *ExecMapJob(void *mapReduce)
 {
+    _logger.Log("ExecMap", false, _logger.ThreadInit);
     pthread_mutex_lock(&pthreadToContainer_mutex);
     pthread_mutex_unlock(&pthreadToContainer_mutex);
     int chunk_ind;
@@ -48,6 +50,7 @@ void *ExecMapJob(void *mapReduce)
         if (popIndex == -1)
         {
             pthread_mutex_unlock(&popIndex_mutex);
+            _logger.Log("ExecMap", false, _logger.ThreadDeath);
             return nullptr;
         }
         chunk_ind = popIndex;
@@ -73,11 +76,12 @@ void *ExecMapJob(void *mapReduce)
             chunk_ind -= 1;
         }
     }
+    _logger.Log("ExecMap", false, _logger.ThreadDeath);
 }
 
 void *ExecReduceJob(void *mapReduce)
 {
-    // TODO: Add print.
+    _logger.Log("ExecReduce", false, _logger.ThreadInit);
     pthread_mutex_lock(&_outputVecMutex);
     pthread_mutex_unlock(&_outputVecMutex);
     int chunkIdx;
@@ -89,6 +93,7 @@ void *ExecReduceJob(void *mapReduce)
         if (popIndex == -1)
         {
             pthread_mutex_unlock(&popIndex_mutex);
+            _logger.Log("ExecDeath", false, _logger.ThreadDeath);
             pthread_exit(nullptr);
         }
 
@@ -113,12 +118,11 @@ void *ExecReduceJob(void *mapReduce)
             chunkIdx -= 1;
         }
     }
-    // TODO: Add print.
 }
 
 void *ExecShuffle(void *mapReduce)
 {
-    // TODO: Add print.
+    _logger.Log("ExecShuffle", false, _logger.ThreadInit);
     int sem_val = 0;
     while (true)
     {
@@ -134,6 +138,7 @@ void *ExecShuffle(void *mapReduce)
             }
             _shuffledList.clear();//maybe not?
 
+            _logger.Log("ExecShuffle", false, _logger.ThreadDeath);
             return nullptr;
         }
         for (auto &it : _pthreadToContainer)
@@ -173,7 +178,6 @@ void *ExecShuffle(void *mapReduce)
             break;
         }
     }
-    // TODO: Add print.
 }
 
 void InitMapJobs(int multiThreadLevel)
@@ -245,7 +249,7 @@ void InitReduceJobs(int multiThreadLevel)
     {
         if (pthread_create(&ExecReduce[i], NULL, ExecReduceJob, NULL) != 0)
         {
-            //TODO: print error
+            _logger.Log("Failed to create new threads.", true);
             exit(EXIT_FAILURE);
         }
 
@@ -264,6 +268,19 @@ void InitReduceJobs(int multiThreadLevel)
     }
 }
 
+template<typename Func>
+double MeasureTime(Func op, int multiThreadLevel,)
+{
+    struct timeval s, e;
+    size_t i = 0;
+
+    gettimeofday(&s, nullptr);
+    op(multiThreadLevel);
+    gettimeofday(&e, nullptr);
+
+    return e.tv_usec - s.tv_usec;
+}
+
 void DestroyK2V2()
 {
     for (auto &item : _pthreadToContainer)
@@ -276,9 +293,13 @@ void DestroyK2V2()
     }
 }
 
+
 OUT_ITEMS_VEC RunMapReduceFramework(MapReduceBase &mapReduce, IN_ITEMS_VEC &itemsVec,
                                     int multiThreadLevel, bool autoDeleteV2K2)
 {
+    _logger.Log("RunMapReduceFramework started with " + std::to_string(multiThreadLevel) +
+                " threads", false, _logger.ThreadDeath);
+
     _itemsVec = itemsVec;
     _mapReduce = &mapReduce;
     pthread_mutex_init(&pthreadToContainer_mutex, NULL);
@@ -287,13 +308,12 @@ OUT_ITEMS_VEC RunMapReduceFramework(MapReduceBase &mapReduce, IN_ITEMS_VEC &item
 
     //region Perform MapReduce
     // Initiate the Mapping phase
-    InitMapJobs(multiThreadLevel);
-
-    //Initiate the Shuffle phase
-    InitShuffleJob(multiThreadLevel);
+    _logger.Log(" Map and Shuffle took " +
+                std::to_string(MeasureTime(InitMapJobs, multiThreadLevel) +
+                               MeasureTime(InitShuffleJob, multiThreadLevel)) + " ns");
 
     //Initiate the Reduce phase
-    InitReduceJobs(multiThreadLevel);
+    _logger.Log("Reduce took " + std::to_string(MeasureTime(InitReduceJobs, multiThreadLevel)) + " ns");
     //endregion
 
     //region Destruction
@@ -302,7 +322,7 @@ OUT_ITEMS_VEC RunMapReduceFramework(MapReduceBase &mapReduce, IN_ITEMS_VEC &item
     if (autoDeleteV2K2) DestroyK2V2();
     _pthreadToContainer.clear();
     //endregion
-    // TODO: Add end print.
+    _logger.Log("RunMapReduceFramework finished");
 
     return _outputVec;
 }

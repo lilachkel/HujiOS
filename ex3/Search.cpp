@@ -3,8 +3,7 @@
 #include <algorithm>
 #include <iostream>
 #include "MapReduceFramework.h"
-#include "FileNameKey.hpp"
-#include "Logger.h"
+#include "FileNameKey.cpp"
 #include "SearchMapReduce.h"
 
 #define SEARCH_STR 1

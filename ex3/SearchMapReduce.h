@@ -3,7 +3,7 @@
 
 #include "MapReduceFramework.h"
 #include "Logger.h"
-#include "FileNameKey.hpp"
+#include "FileNameKey.cpp"
 #include <experimental/filesystem>
 
 namespace fs = std::experimental::filesystem;

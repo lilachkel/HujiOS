@@ -2,19 +2,22 @@ CC=g++
 CFLAGS= -Wall -g -std=c++11
 ADDFLAGS= -DNDEBUG
 
-default: libuthreads.a
+default: Search
 
-libuthreads.a: uthreads.o Thread.o
-	ar rcs libuthreads.a uthreads.o Thread.o
+MapReduceFramework.a: MapReduceFramework.o Logger.o
+	ar rcs MapReduceFramework.a MapReduceFramework.o Logger.o
 
-uthreads.o: uthreads.cpp
-	$(CC) $(CFLAGS) $(ADDFLAGS) -c uthreads.cpp
+MapReduceFramework.o: MapReduceFramework.cpp Logger.cpp
+	$(CC) $(CFLAGS) $(ADDFLAGS) -c MapReduceFramework.cpp Logger.cpp
 
-Thread.o: Thread.cpp
-	$(CC) $(CFLAGS) $(ADDFLAGS) -c Thread.cpp
+SearchMapReduce.o: SearchMapReduce.cpp FileNameKey.cpp
+	$(CC) $(CFLAGS) $(ADDFLAGS) -c SearchMapReduce.cpp FileNameKey.cpp
+
+Search: Search.cpp SearchMapReduce.o MapReduceFramework.a
+	$(CC) $(CFLAGS) $(ADDFLAGS) SearchMapReduce.o FileNameKey.o Search.cpp MapReduceFramework.a -lstdc++fs -lpthread -o Search
 
 tar:
-	tar cvf ex2.tar Thread.h *.cpp README Makefile
+	tar cvf ex2.tar FileNameKey.cpp *.cpp README Makefile
 
 clean:
 	rm -rf *.o *.a *.tar
