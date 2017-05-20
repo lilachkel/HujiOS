@@ -12,8 +12,8 @@ add_library(Thread ex2/Thread.cpp)
 target_link_libraries(uthreads Thread)
 
 #ex3
-add_library(MapReduceFramework ex3/MapReduceFramework.cpp ex3/Logger.cpp)
-add_library(SearchMapReduce ex3/SearchMapReduce.cpp ex3/FileNameKey.cpp)
+add_library(MapReduceFramework ex3/MapReduceFramework.cpp)
+add_library(SearchMapReduce ex3/SearchMapReduce.cpp ex3/FileNameKey.hpp ex3/MapReduceClient.h)
 add_executable(Search ex3/Search.cpp)
 target_link_libraries(Search MapReduceFramework SearchMapReduce -lstdc++fs -pthread)
 

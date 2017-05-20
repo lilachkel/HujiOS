@@ -4,7 +4,6 @@ void SearchMapReduce::Map(const k1Base *const key, const v1Base *const val) cons
 {
     try
     {
-//        std::cout << key <<
         const FileNameKey *const _key = dynamic_cast<const FileNameKey *const>(key);
         auto path = fs::path(_key->GetData());
         const fs::directory_iterator end{};
@@ -14,9 +13,7 @@ void SearchMapReduce::Map(const k1Base *const key, const v1Base *const val) cons
             auto file = iter->path().filename().string();
             if (file.find(_searchStr) != std::string::npos)
             {
-                auto k2 = FileNameKey(iter->path());
-                auto v2 = FileNameKey(file);
-                Emit2(&k2, &v2);
+                Emit2(new FileNameKey(iter->path()), new FileNameKey(file));
             }
         }
     }

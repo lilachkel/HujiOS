@@ -2,8 +2,7 @@
 #define PROJECT_SEARCHMAPREDUCE_H
 
 #include "MapReduceFramework.h"
-#include "Logger.h"
-#include "FileNameKey.cpp"
+#include "FileNameKey.hpp"
 #include <experimental/filesystem>
 
 namespace fs = std::experimental::filesystem;

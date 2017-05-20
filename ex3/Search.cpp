@@ -1,9 +1,7 @@
-#include "stdlib.h"
 #include <fstream>
 #include <algorithm>
 #include <iostream>
 #include "MapReduceFramework.h"
-#include "FileNameKey.cpp"
 #include "SearchMapReduce.h"
 
 #define SEARCH_STR 1

@@ -1,12 +1,16 @@
 
 #include <map>
 #include <semaphore.h>
+#include <pthread.h>
 #include <unordered_map>
 #include <sys/time.h>
+#include <fstream>
+#include <iostream>
 #include "MapReduceFramework.h"
-#include "Logger.h"
 
-#define DEBUG true
+#define NANO_TO_SEC(x) x / 1000
+#define LOG_THREAD_CREATION(t) _log << "Thread " << t << " created [" + GetTimeString() + "]" << std::endl;
+#define LOG_THREAD_TERMINATION(t) _log << "Thread " << t << " terminated [" + GetTimeString() + "]" << std::endl;
 
 IN_ITEMS_VEC _itemsVec;
 OUT_ITEMS_VEC _outputVec;
@@ -33,96 +37,146 @@ pthread_mutex_t _outputVecMutex;
 pthread_t shuffleThread;
 sem_t ShuffleSemaphore;
 
-Logger _logger = Logger(".MapReduceFrameworkLog", DEBUG);
+std::ofstream _log;
+
+void QuitWithError(std::string msg)
+{
+    std::cerr << msg << std::endl;
+    _log.close();
+    exit(EXIT_FAILURE);
+}
+
+template<typename Func>
+std::pair<long, double> MeasureTime(Func op, int multiThreadLevel)
+{
+    struct timeval s, e;
+
+    gettimeofday(&s, nullptr);
+    op(multiThreadLevel);
+    gettimeofday(&e, nullptr);
+
+    return {e.tv_sec - s.tv_sec, NANO_TO_SEC(e.tv_usec - s.tv_usec)};
+}
+
+std::string GetTimeString()
+{
+    time_t rawtime;
+    struct tm *timeinfo;
+    char buffer[80];
+
+    time(&rawtime);
+    timeinfo = localtime(&rawtime);
+
+    strftime(buffer, sizeof(buffer), "%d-%m-%Y %I:%M:%S", timeinfo);
+    std::string str(buffer);
+
+    return str;
+}
 
 
 void *ExecMapJob(void *mapReduce)
 {
-    _logger.Log("ExecMap", false, _logger.ThreadInit);
-    pthread_mutex_lock(&pthreadToContainer_mutex);
+    LOG_THREAD_CREATION("ExecMap")
+    if(pthread_mutex_trylock(&pthreadToContainer_mutex) != 0)
+        throw "Failed to lock pthread container mutex";
+
     pthread_mutex_unlock(&pthreadToContainer_mutex);
     int chunk_ind;
 
     while (true)
     {
         int i;
-        pthread_mutex_lock(&popIndex_mutex);
-        if (popIndex == -1)
+        if (pthread_mutex_trylock(&popIndex_mutex) == 0)
         {
-            pthread_mutex_unlock(&popIndex_mutex);
-            _logger.Log("ExecMap", false, _logger.ThreadDeath);
-            return nullptr;
-        }
-        chunk_ind = popIndex;
-        if (popIndex - 10 > 0)
-        {
-            popIndex -= 10;
-            pthread_mutex_unlock(&popIndex_mutex);
-            i = 10;
+            if (popIndex == -1)
+            {
+                pthread_mutex_unlock(&popIndex_mutex);
+                LOG_THREAD_TERMINATION("ExecMap")
+                pthread_exit(nullptr);
+            }
+            chunk_ind = popIndex;
+            if (popIndex - 10 > 0)
+            {
+                popIndex -= 10;
+                pthread_mutex_unlock(&popIndex_mutex);
+                i = 10;
+            }
+            else
+            {
+                i = chunk_ind - popIndex;
+                popIndex = -1;
+                pthread_mutex_unlock(&popIndex_mutex);// did it twice and not
+                // under the ifelse since i wanted to unlock the mutex before i change 'i' to -1,
+                // so that other threads will continue
+            }
+            for (; i >= 0; i--)
+            {
+                std::cout << _itemsVec[chunk_ind].first << std::endl;
+//            std::cout << "gdsgfzsads\n";
+                _mapReduce->Map(_itemsVec[chunk_ind].first, _itemsVec[chunk_ind].second);
+                chunk_ind -= 1;
+            }
         }
         else
-        {
-            i = chunk_ind - popIndex;
-            popIndex = -1;
-            pthread_mutex_unlock(&popIndex_mutex);// did it twice and not
-            // under the ifelse since i wanted to unlock the mutex before i change 'i' to -1,
-            // so that other threads will continue
-        }
-        for (; i >= 0; i--)
-        {
-            std::cout << _itemsVec[chunk_ind].first << std::endl;
-//            std::cout << "gdsgfzsads\n";
-            _mapReduce->Map(_itemsVec[chunk_ind].first, _itemsVec[chunk_ind].second);
-            chunk_ind -= 1;
-        }
+            throw "Failed to lock popIndex mutex";
     }
-    _logger.Log("ExecMap", false, _logger.ThreadDeath);
+
+    // TODO: where should i print?
+    // _log << "Thread ExecMap terminated [" + GetTimeString() + "]" << std::endl;
 }
 
 void *ExecReduceJob(void *mapReduce)
 {
-    _logger.Log("ExecReduce", false, _logger.ThreadInit);
-    pthread_mutex_lock(&_outputVecMutex);
+    LOG_THREAD_CREATION("ExecReduce")
+    if (pthread_mutex_trylock(&_outputVecMutex) != 0)
+    {
+        throw "Failed to lock output vector mutex";
+    }
     pthread_mutex_unlock(&_outputVecMutex);
     int chunkIdx;
 
     while (true)
     {
         int i;
-        pthread_mutex_lock(&popIndex_mutex);
-        if (popIndex == -1)
+        if (pthread_mutex_trylock(&popIndex_mutex) == 0)
         {
-            pthread_mutex_unlock(&popIndex_mutex);
-            _logger.Log("ExecDeath", false, _logger.ThreadDeath);
-            pthread_exit(nullptr);
-        }
+            if (popIndex == -1)
+            {
+                pthread_mutex_unlock(&popIndex_mutex);
+                LOG_THREAD_TERMINATION("ExecReduce")
+                pthread_exit(nullptr);
+            }
 
-        chunkIdx = popIndex;
-        if (popIndex - 10 > 0)
-        {
-            popIndex -= 10;
-            pthread_mutex_unlock(&popIndex_mutex);
-            i = 10;
-        }
+            chunkIdx = popIndex;
+            if (popIndex - 10 > 0)
+            {
+                popIndex -= 10;
+                pthread_mutex_unlock(&popIndex_mutex);
+                i = 10;
+            }
 
+            else
+            {
+                i = chunkIdx - popIndex;
+                popIndex = -1;
+                pthread_mutex_unlock(&popIndex_mutex);
+            }
+
+            for (; i >= 0; i--)
+            {
+                _mapReduce->Reduce(_shuffleVec[chunkIdx].first, _shuffleVec[chunkIdx].second);
+                chunkIdx -= 1;
+            }
+        }
         else
-        {
-            i = chunkIdx - popIndex;
-            popIndex = -1;
-            pthread_mutex_unlock(&popIndex_mutex);
-        }
-
-        for (; i >= 0; i--)
-        {
-            _mapReduce->Reduce(_shuffleVec[chunkIdx].first, _shuffleVec[chunkIdx].second);
-            chunkIdx -= 1;
-        }
+            throw "Failed to lock popindex mutex";
     }
 }
 
 void *ExecShuffle(void *mapReduce)
 {
-    _logger.Log("ExecShuffle", false, _logger.ThreadInit);
+    LOG_THREAD_CREATION("ExecShuffle")
+
     int sem_val = 0;
     while (true)
     {
@@ -138,8 +192,8 @@ void *ExecShuffle(void *mapReduce)
             }
             _shuffledList.clear();//maybe not?
 
-            _logger.Log("ExecShuffle", false, _logger.ThreadDeath);
-            return nullptr;
+            LOG_THREAD_TERMINATION("ExecShuffle")
+            pthread_exit(nullptr);
         }
         for (auto &it : _pthreadToContainer)
         {
@@ -151,31 +205,35 @@ void *ExecShuffle(void *mapReduce)
                 // should 'work' on 1 container for each 'post'
             }
 
-            pthread_mutex_lock(&_mapContainerMutexes[it.first]);
-            for (int cont = 10; cont > 0; cont--)//checks the shuffle wont 'over do' and shuffle more then 10 items
-                // (means the semaphore is +1)
+            if (pthread_mutex_trylock(&_mapContainerMutexes[it.first]) == 0)
             {
-                if (it.second.size() <= 0)// case the thread took less then 10 items - supposed to happen ones!
-                    // TODO: check if it happens once (max for 1 thread )
+                for (int cont = 10; cont > 0; cont--)//checks the shuffle wont 'over do' and shuffle more then 10 items
+                    // (means the semaphore is +1)
                 {
-                    pthread_mutex_unlock(&_mapContainerMutexes[it.first]);
-                    break;
-                }
+                    if (it.second.size() <= 0)// case the thread took less then 10 items - supposed to happen ones!
+                        // TODO: check if it happens once (max for 1 thread )
+                    {
+                        pthread_mutex_unlock(&_mapContainerMutexes[it.first]);
+                        break;
+                    }
 
-                MAP_ITEM &p = it.second.back();
-                try
-                {
-                    _shuffledList[p.first].push_back(p.second);
+                    MAP_ITEM &p = it.second.back();
+                    try
+                    {
+                        _shuffledList[p.first].push_back(p.second);
+                    }
+                    catch (const std::out_of_range &e)
+                    {
+                        _shuffledList[p.first] = V2_VEC();
+                        _shuffledList[p.first].push_back(p.second);
+                    }
+                    it.second.pop_back();
                 }
-                catch (const std::out_of_range &e)
-                {
-                    _shuffledList[p.first] = V2_VEC();
-                    _shuffledList[p.first].push_back(p.second);
-                }
-                it.second.pop_back();
+                pthread_mutex_unlock(&_mapContainerMutexes[it.first]);
+                break;
             }
-            pthread_mutex_unlock(&_mapContainerMutexes[it.first]);
-            break;
+            else
+                throw "Failed to lock one of the map container mutexes.";
         }
     }
 }
@@ -184,25 +242,29 @@ void InitMapJobs(int multiThreadLevel)
 {
     popIndex = (int) _itemsVec.size() - 1;// no need to lock since there are no threads yet..
 
-    pthread_mutex_lock(&pthreadToContainer_mutex);
-    // to create the map threads which starts with 2 lines of lock and unlock pthreadToContainer_mutex
-    for (int i = 0; i < multiThreadLevel; i++)//if itemsVec size is <10
+    if (pthread_mutex_trylock(&pthreadToContainer_mutex) == 0)
     {
-        pthread_t thre;
-        if (pthread_create(&thre, NULL, ExecMapJob, NULL) != 0)
+        // to create the map threads which starts with 2 lines of lock and unlock pthreadToContainer_mutex
+        for (int i = 0; i < multiThreadLevel; i++)//if itemsVec size is <10
         {
+            pthread_t thre;
+            if (pthread_create(&thre, NULL, ExecMapJob, NULL) != 0)
+            {
 //            print an error message : "MapReduceFramework Failure: FUNCTION_NAME failed.", where FUNCTION_NAME is the
 //            name of the library call that was failed [e.g. "new"].
 //            pthread_mutex_destroy(&pthreadToContainer_mutex);
 //            pthread_mutex_destroy(&popIndex_mutex);
-            exit(EXIT_FAILURE);//destroy all threads+ map pthreadToContainer?
+                //destroy all threads+ map pthreadToContainer?
+                QuitWithError("Failed to create Map threads.");
+            }
+            ExecMap.push_back(thre);
+            _pthreadToContainer[ExecMap[i]] = std::vector<MAP_ITEM>();
+            pthread_mutex_t mut;
+            pthread_mutex_init(&mut, NULL);
+            _mapContainerMutexes[ExecMap[i]] = mut;
         }
-        ExecMap.push_back(thre);
-        _pthreadToContainer[ExecMap[i]] = std::vector<MAP_ITEM>();
-        pthread_mutex_t mut;
-        pthread_mutex_init(&mut, NULL);
-        _mapContainerMutexes[ExecMap[i]] = mut;
     }
+    else throw "Cannot lock pthreadContainer mutex for Map jobs";
 }
 
 void InitShuffleJob(int multiThreadLevel)
@@ -213,7 +275,7 @@ void InitShuffleJob(int multiThreadLevel)
     {
 //        pthread_mutex_destroy(&pthreadToContainer_mutex);
 //        pthread_mutex_destroy(&popIndex_mutex);
-        exit(EXIT_FAILURE);//destroy all threads+ map pthreadToContainer?
+        QuitWithError("Failed to create shuffle thread.");
     }
     pthread_mutex_unlock(&pthreadToContainer_mutex);
     pthread_mutex_destroy(&pthreadToContainer_mutex);          //TODO: destroy now??
@@ -243,103 +305,142 @@ void InitShuffleJob(int multiThreadLevel)
 
 void InitReduceJobs(int multiThreadLevel)
 {
-    popIndex = (int) _shuffleVec.size()-1;
-    pthread_mutex_lock(&pthreadToContainer_mutex);
-    for (int i = 0; i < multiThreadLevel; i++)
+    popIndex = (int) _shuffleVec.size() - 1;
+
+    if (pthread_mutex_trylock(&pthreadToContainer_mutex) == 0)
     {
-        pthread_t thre;
-        if (pthread_create(&thre, NULL, ExecReduceJob, NULL) != 0)
+        for (int i = 0; i < multiThreadLevel; i++)
         {
-            _logger.Log("Failed to create new threads.", true);
-            exit(EXIT_FAILURE);
+            pthread_t thre;
+            if (pthread_create(&thre, NULL, ExecReduceJob, NULL) != 0)
+            {
+                QuitWithError("Failed to create Reduce threads.");
+            }
+            ExecReduce.push_back(thre);
+
+            _reducersContainer[ExecReduce[i]] = OUT_ITEMS_VEC();
+            pthread_mutex_t m;
+            pthread_mutex_init(&m, NULL);
+            _reduceContainerMutexes[ExecReduce[i]] = m;
         }
-        ExecReduce.push_back(thre);
 
-        _reducersContainer[ExecReduce[i]] = OUT_ITEMS_VEC();
-        pthread_mutex_t m;
-        pthread_mutex_init(&m, NULL);
-        _reduceContainerMutexes[ExecReduce[i]] = m;
+        pthread_mutex_unlock(&pthreadToContainer_mutex);
+        for (int i = 0; i < multiThreadLevel; i++)//after the map work
+        {
+            pthread_mutex_t m = _reduceContainerMutexes[ExecReduce[i]];
+            pthread_join(ExecReduce[i], NULL);
+            pthread_mutex_destroy(&m);
+        }
     }
-
-    pthread_mutex_unlock(&pthreadToContainer_mutex);
-    for (int i = 0; i < multiThreadLevel; i++)//after the map work
-    {
-        pthread_mutex_t m = _reduceContainerMutexes[ExecReduce[i]];
-        pthread_join(ExecReduce[i], NULL);
-        pthread_mutex_destroy(&m);
-    }
-}
-
-template<typename Func>
-double MeasureTime(Func op, int multiThreadLevel)
-{
-    struct timeval s, e;
-    size_t i = 0;
-
-    gettimeofday(&s, nullptr);
-    op(multiThreadLevel);
-    gettimeofday(&e, nullptr);
-
-    return e.tv_usec - s.tv_usec;
+    else
+        throw "unable to lock pthreadToContainer_mutex";
 }
 
 void DestroyK2V2()
 {
-    for (auto &item : _pthreadToContainer)
+    for(auto &item : _pthreadToContainer)
     {
-        for (auto &key : item.second)
+        for(auto &key : item.second)
         {
             delete key.first;
             delete key.second;
         }
+        item.second.clear();
     }
 }
-
 
 OUT_ITEMS_VEC RunMapReduceFramework(MapReduceBase &mapReduce, IN_ITEMS_VEC &itemsVec,
                                     int multiThreadLevel, bool autoDeleteV2K2)
 {
-    _logger.Log("RunMapReduceFramework started with " + std::to_string(multiThreadLevel) +
-                " threads", false, _logger.ThreadDeath);
+    //region Init Framework
+    _log.open(".MapReduceFrameworkLog", std::ios::app);
+    if (!_log.is_open())
+    {
+        std::cerr << "Cannot open log file for writing!" << std::endl;
+        exit(EXIT_FAILURE);
+    }
+
+    _log << "RunMapReduceFramework started with " + std::to_string(multiThreadLevel) + " threads." << std::endl;
 
     _itemsVec = itemsVec;
     _mapReduce = &mapReduce;
     pthread_mutex_init(&pthreadToContainer_mutex, NULL);
     pthread_mutex_init(&popIndex_mutex, NULL);
     sem_init(&ShuffleSemaphore, 0, 0);// the first 0 is correct?
+    //endregion
 
     //region Perform MapReduce
-    // Initiate the Mapping phase
-    _logger.Log(" Map and Shuffle took " +
-                std::to_string(MeasureTime(InitMapJobs, multiThreadLevel) +
-                               MeasureTime(InitShuffleJob, multiThreadLevel)) + " ns");
+    // Initiate the Mapping and Shuffling phases
+    try
+    {
+        std::pair<long, double> mapTime = MeasureTime(InitMapJobs, multiThreadLevel);
+        std::pair<long, double> shuffleTime = MeasureTime(InitShuffleJob, multiThreadLevel);
+        std::pair<long, double> reduceTime = MeasureTime(InitReduceJobs, multiThreadLevel);
 
-    //Initiate the Reduce phase
-    _logger.Log("Reduce took " + std::to_string(MeasureTime(InitReduceJobs, multiThreadLevel)) + " ns");
+        _log << " Map and Shuffle took " +
+                std::to_string(mapTime.first + shuffleTime.first) + "." +
+                std::to_string(mapTime.second + shuffleTime.first) + "s" << std::endl;
+
+        //Initiate the Reduce phase
+        _log << "Reduce took " +
+                std::to_string(reduceTime.first) + "." + std::to_string(reduceTime.second) + "s" << std::endl;
+    }
+    catch (std::exception e)
+    {
+
+        QuitWithError(e.what());
+    }
+
+
     //endregion
 
     //region Destruction
     pthread_mutex_destroy(&pthreadToContainer_mutex);          //TODO: destroy now??
 
     if (autoDeleteV2K2) DestroyK2V2();
+
     _pthreadToContainer.clear();
+    _shuffleVec.clear();
+    _log << "RunMapReduceFramework finished" << std::endl;
     //endregion
-    _logger.Log("RunMapReduceFramework finished");
+
 
     return _outputVec;
 }
 
 void Emit2(k2Base *k2, v2Base *v2)
 {
-    pthread_mutex_lock(&(_mapContainerMutexes[pthread_self()]));
-    _pthreadToContainer[pthread_self()].push_back({k2, v2});
-    pthread_mutex_unlock(&(_mapContainerMutexes[pthread_self()]));
-    sem_post(&ShuffleSemaphore);
+    try
+    {
+        if (pthread_mutex_trylock(&(_mapContainerMutexes[pthread_self()])) == 0)
+        {
+            _pthreadToContainer[pthread_self()].push_back({k2, v2});
+            pthread_mutex_unlock(&(_mapContainerMutexes[pthread_self()]));
+            sem_post(&ShuffleSemaphore);
+        }
+        else throw "Cannot lock the _mapContainerMutex.";
+    }
+    catch (std::exception e)
+    {
+        std::cerr << "Emit2 failed with:" << std::endl << e.what() << std::endl;
+        throw e;
+    }
 }
 
 void Emit3(k3Base *k3, v3Base *v3)
 {
-    pthread_mutex_lock(&(_reduceContainerMutexes[pthread_self()]));
-    _reducersContainer[pthread_self()].push_back({k3, v3});
-    pthread_mutex_unlock(&(_reduceContainerMutexes[pthread_self()]));
+    try
+    {
+        if (pthread_mutex_trylock(&(_reduceContainerMutexes[pthread_self()])) == 0)
+        {
+            _reducersContainer[pthread_self()].push_back({k3, v3});
+            pthread_mutex_unlock(&(_reduceContainerMutexes[pthread_self()]));
+        }
+                else throw "Cannot lock the _reduceContainerMutex.";
+    }
+    catch (std::exception e)
+    {
+        std::cerr << "Emit3 failed with:" << std::endl << e.what() << std::endl;
+        throw e;
+    }
 }

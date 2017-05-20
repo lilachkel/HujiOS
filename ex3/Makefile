@@ -4,20 +4,20 @@ ADDFLAGS= -DNDEBUG
 
 default: Search
 
-MapReduceFramework.a: MapReduceFramework.o Logger.o
-	ar rcs MapReduceFramework.a MapReduceFramework.o Logger.o
+MapReduceFramework.a: MapReduceFramework.o
+	ar rcs MapReduceFramework.a MapReduceFramework.o
 
-MapReduceFramework.o: MapReduceFramework.cpp Logger.cpp
-	$(CC) $(CFLAGS) $(ADDFLAGS) -c MapReduceFramework.cpp Logger.cpp
+MapReduceFramework.o: MapReduceFramework.cpp
+	$(CC) $(CFLAGS) $(ADDFLAGS) -c MapReduceFramework.cpp
 
-SearchMapReduce.o: SearchMapReduce.cpp FileNameKey.cpp
-	$(CC) $(CFLAGS) $(ADDFLAGS) -c SearchMapReduce.cpp FileNameKey.cpp
+SearchMapReduce.o: SearchMapReduce.cpp FileNameKey.hpp MapReduceClient.h
+	$(CC) $(CFLAGS) $(ADDFLAGS) -c SearchMapReduce.cpp FileNameKey.hpp MapReduceClient.h
 
 Search: Search.cpp SearchMapReduce.o MapReduceFramework.a
-	$(CC) $(CFLAGS) $(ADDFLAGS) SearchMapReduce.o FileNameKey.o Search.cpp MapReduceFramework.a -lstdc++fs -lpthread -o Search
+	$(CC) $(CFLAGS) $(ADDFLAGS) SearchMapReduce.o Search.cpp MapReduceFramework.a -lstdc++fs -lpthread -o Search
 
 tar:
-	tar cvf ex2.tar FileNameKey.cpp *.cpp README Makefile
+	tar cvf ex3.tar FileNameKey.hpp *.cpp README Makefile
 
 clean:
-	rm -rf *.o *.a *.tar
+	rm -rf Search *.o *.a *.gch *.tar
