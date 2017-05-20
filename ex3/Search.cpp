@@ -15,6 +15,7 @@
  */
 void PrintOutput(OUT_ITEMS_VEC &output)
 {
+    std::cout << "output: ";
     for (auto &i : output)
         std::cout << i.first << " ";
     std::cout << std::endl;

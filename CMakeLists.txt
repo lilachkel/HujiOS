@@ -27,3 +27,9 @@ add_library(WordFrequenciesClient ex3/ex_3_test_suite/Test_28/WordFrequenciesCli
 set_target_properties(WordFrequenciesClient PROPERTIES LINKER_LANGUAGE CXX)
 add_executable(Test28 ex3/ex_3_test_suite/Test_28/WordFrequencies.cpp)
 target_link_libraries(Test28 WordFrequenciesClient)
+
+add_executable(PrimeTest ex3/ex_3_test_suite/TestGuy/PrimeTest.cpp)
+target_link_libraries(PrimeTest MapReduceFramework SearchMapReduce -lstdc++fs -pthread)
+
+add_executable(ShaharTest ex3/ex_3_test_suite/TestShahar/test.cpp)
+target_link_libraries(ShaharTest MapReduceFramework SearchMapReduce -lstdc++fs -pthread)
