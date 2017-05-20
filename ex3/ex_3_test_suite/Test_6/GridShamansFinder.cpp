@@ -1,6 +1,6 @@
 #include <fstream>
 #include <iostream>
-#include "GridMapReduce.cpp"
+#include "GridMapReduce.hpp"
 
 
 #define NUM_THREADS 8

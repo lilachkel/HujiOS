@@ -17,7 +17,13 @@ add_library(SearchMapReduce ex3/SearchMapReduce.cpp ex3/FileNameKey.hpp ex3/MapR
 add_executable(Search ex3/Search.cpp)
 target_link_libraries(Search MapReduceFramework SearchMapReduce -lstdc++fs -pthread)
 
-add_library(GridMapReduce ex3/ex_3_test_suite/Test_6/GridMapReduce.cpp ex3/ex_3_test_suite/Test_6/GridKeysValues.cpp)
+add_library(GridMapReduce ex3/ex_3_test_suite/Test_6/GridMapReduce.hpp
+        ex3/ex_3_test_suite/Test_6/GridKeysValues.hpp)
+set_target_properties(GridMapReduce PROPERTIES LINKER_LANGUAGE CXX)
 add_executable(Test6 ex3/ex_3_test_suite/Test_6/GridShamansFinder.cpp)
 target_link_libraries(Test6 MapReduceFramework GridMapReduce -lstdc++fs -pthread)
 
+add_library(WordFrequenciesClient ex3/ex_3_test_suite/Test_28/WordFrequenciesClient.hpp)
+set_target_properties(WordFrequenciesClient PROPERTIES LINKER_LANGUAGE CXX)
+add_executable(Test28 ex3/ex_3_test_suite/Test_28/WordFrequencies.cpp)
+target_link_libraries(Test28 WordFrequenciesClient)

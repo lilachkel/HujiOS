@@ -1,3 +1,4 @@
+#define NDEBUG
 
 #include <map>
 #include <semaphore.h>
@@ -9,8 +10,8 @@
 #include "MapReduceFramework.h"
 
 #define NANO_TO_SEC(x) x / 1000
-#define LOG_THREAD_CREATION(t) _log << "Thread " << t << " created [" + GetTimeString() + "]" << std::endl;
-#define LOG_THREAD_TERMINATION(t) _log << "Thread " << t << " terminated [" + GetTimeString() + "]" << std::endl;
+#define LOG_THREAD_CREATION(t) std::cout << "Thread " << t << " created [" + GetTimeString() + "]" << std::endl;
+#define LOG_THREAD_TERMINATION(t) std::cout << "Thread " << t << " terminated [" + GetTimeString() + "]" << std::endl;
 
 IN_ITEMS_VEC _itemsVec;
 OUT_ITEMS_VEC _outputVec;
@@ -111,6 +112,7 @@ void *ExecMapJob(void *mapReduce)
             }
             for (; i >= 0; i--)
             {
+                //TODO: remove this line:
                 std::cout << _itemsVec[chunk_ind].first << std::endl;
 //            std::cout << "gdsgfzsads\n";
                 _mapReduce->Map(_itemsVec[chunk_ind].first, _itemsVec[chunk_ind].second);
@@ -353,6 +355,7 @@ OUT_ITEMS_VEC RunMapReduceFramework(MapReduceBase &mapReduce, IN_ITEMS_VEC &item
                                     int multiThreadLevel, bool autoDeleteV2K2)
 {
     //region Init Framework
+    std::ofstream _log;
     _log.open(".MapReduceFrameworkLog", std::ios::app);
     if (!_log.is_open())
     {
@@ -360,7 +363,12 @@ OUT_ITEMS_VEC RunMapReduceFramework(MapReduceBase &mapReduce, IN_ITEMS_VEC &item
         exit(EXIT_FAILURE);
     }
 
-    _log << "RunMapReduceFramework started with " + std::to_string(multiThreadLevel) + " threads." << std::endl;
+#ifndef NDEBUG
+    auto backup = std::cout.rdbuf();
+    std::cout.rdbuf(_log.rdbuf());
+#endif
+
+    std::cout << "RunMapReduceFramework started with " + std::to_string(multiThreadLevel) + " threads." << std::endl;
 
     _itemsVec = itemsVec;
     _mapReduce = &mapReduce;
@@ -377,12 +385,12 @@ OUT_ITEMS_VEC RunMapReduceFramework(MapReduceBase &mapReduce, IN_ITEMS_VEC &item
         std::pair<long, double> shuffleTime = MeasureTime(InitShuffleJob, multiThreadLevel);
         std::pair<long, double> reduceTime = MeasureTime(InitReduceJobs, multiThreadLevel);
 
-        _log << " Map and Shuffle took " +
+        std::cout << " Map and Shuffle took " +
                 std::to_string(mapTime.first + shuffleTime.first) + "." +
                 std::to_string(mapTime.second + shuffleTime.first) + "s" << std::endl;
 
         //Initiate the Reduce phase
-        _log << "Reduce took " +
+        std::cout << "Reduce took " +
                 std::to_string(reduceTime.first) + "." + std::to_string(reduceTime.second) + "s" << std::endl;
     }
     catch (std::exception e)
@@ -401,9 +409,13 @@ OUT_ITEMS_VEC RunMapReduceFramework(MapReduceBase &mapReduce, IN_ITEMS_VEC &item
 
     _pthreadToContainer.clear();
     _shuffleVec.clear();
-    _log << "RunMapReduceFramework finished" << std::endl;
+    std::cout << "RunMapReduceFramework finished" << std::endl;
     //endregion
 
+#ifndef NDEBUG
+    std::cout.rdbuf(backup);
+#endif
+    _log.close();
 
     return _outputVec;
 }

@@ -5,7 +5,7 @@
 #include <sstream>
 #include <list>
 
-#include "GridKeysValues.cpp"
+#include "GridKeysValues.hpp"
 
 
 class GridMapReduce : public MapReduceBase
