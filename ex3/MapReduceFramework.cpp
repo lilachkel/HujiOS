@@ -395,6 +395,7 @@ void Emit3(k3Base *k3, v3Base *v3)
     {
         pthread_mutex_lock(&(_reduceContainerMutexes[pthread_self()]));
         _reducersContainer[pthread_self()].push_back({k3, v3});
+        //std::cout << _reducersContainer[pthread_self()].size() << std::endl;
         pthread_mutex_unlock(&(_reduceContainerMutexes[pthread_self()]));
     }
     catch (std::exception e)
