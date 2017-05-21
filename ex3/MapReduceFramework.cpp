@@ -6,6 +6,7 @@
 #include <sys/time.h>
 #include <fstream>
 #include <iostream>
+#include <algorithm>
 #include "MapReduceFramework.h"
 
 void SafePrint(std::string msg);
@@ -13,6 +14,11 @@ void SafePrint(std::string msg);
 #define MICRO_TO_NANO(x) x * 1000000
 #define LOG_THREAD_CREATION(t) SafePrint("Thread " + std::string(t) + " created [" + GetTimeString() + "]");
 #define LOG_THREAD_TERMINATION(t) SafePrint("Thread " + std::string(t) + " terminated [" + GetTimeString() + "]");
+
+struct Comparator
+{
+    bool operator() (k2Base *a, k2Base *b) const { return *a < *b; }
+};
 
 IN_ITEMS_VEC _itemsVec;
 OUT_ITEMS_VEC _outputVec;
@@ -27,7 +33,7 @@ std::vector<SHUFFLED_ITEM> _shuffleVec;
 
 std::unordered_map<pthread_t, MAP_CONTAINER> _pthreadToContainer;//container of <K2,V2> after the ExecMap job
 std::unordered_map<pthread_t, OUT_ITEMS_VEC> _reducersContainer;
-std::unordered_map<k2Base *, V2_VEC> _shuffledList;
+std::map<k2Base *, V2_VEC, Comparator> _shuffledList;
 std::unordered_map<pthread_t, pthread_mutex_t> _mapContainerMutexes;
 std::unordered_map<pthread_t, pthread_mutex_t> _reduceContainerMutexes;
 
@@ -37,9 +43,9 @@ pthread_mutex_t _execMapMutex;
 pthread_mutex_t _execReduceMutex;
 pthread_mutex_t pthreadToContainer_mutex;
 pthread_mutex_t popIndex_mutex;
-pthread_mutex_t _outputVecMutex;
 pthread_mutex_t _logMutex;
 sem_t ShuffleSemaphore;
+pthread_t _shuffleThread;
 
 std::ofstream _log;
 
@@ -59,7 +65,7 @@ void QuitWithError(std::string msg)
 }
 
 template<typename Func>
-long MeasureTime(Func op, int multiThreadLevel)
+size_t MeasureTime(Func op, int multiThreadLevel)
 {
     struct timeval s, e;
 
@@ -67,7 +73,10 @@ long MeasureTime(Func op, int multiThreadLevel)
     op(multiThreadLevel);
     gettimeofday(&e, nullptr);
 
-    return MICRO_TO_NANO(abs(e.tv_usec - s.tv_usec));
+    size_t sec = (e.tv_sec - s.tv_sec) * 1000000;
+    size_t usec = (e.tv_usec - s.tv_usec) * 1000;
+
+    return sec + usec;
 }
 
 std::string GetTimeString()
@@ -180,9 +189,8 @@ void *ExecShuffle(void *mapReduce)
         {
             for (auto &_key : _shuffledList)
             {
-                _shuffleVec.push_back(std::make_pair(_key.first, _key.second));// pushes a new pair?
+                _shuffleVec.push_back({_key.first, _key.second});// pushes a new pair?
                 // delete such new objects i created?
-                _shuffledList.erase(_key.first);// check the iterator support the deletion
             }
             _shuffledList.clear();//maybe not?
 
@@ -252,6 +260,15 @@ void InitMapJobs(int multiThreadLevel)
     }
     pthread_mutex_unlock(&_execMapMutex);
 
+    StupidVar = false;
+
+    if (pthread_create(&_shuffleThread, NULL, ExecShuffle, NULL) != 0)
+    {
+//        pthread_mutex_destroy(&pthreadToContainer_mutex);
+//        pthread_mutex_destroy(&popIndex_mutex);
+        QuitWithError("Failed to create shuffle thread.");
+    }
+
     for (int i = 0; i < multiThreadLevel; i++)
     {
         pthread_join(ExecMap[i], NULL);
@@ -262,21 +279,12 @@ void InitMapJobs(int multiThreadLevel)
 
 void InitShuffleJob(int multiThreadLevel)
 {
-    StupidVar = false;
-    pthread_t shuffleThread;
-
-    if (pthread_create(&shuffleThread, NULL, ExecShuffle, NULL) != 0)
-    {
-//        pthread_mutex_destroy(&pthreadToContainer_mutex);
-//        pthread_mutex_destroy(&popIndex_mutex);
-        QuitWithError("Failed to create shuffle thread.");
-    }
     //pthread_mutex_unlock(&pthreadToContainer_mutex);
     //pthread_mutex_destroy(&pthreadToContainer_mutex);          //TODO: destroy now??
 
     StupidVar = true;
     sem_post(&ShuffleSemaphore);
-    pthread_join(shuffleThread, NULL);
+    pthread_join(_shuffleThread, NULL);
     sem_destroy(&ShuffleSemaphore);
 //    for (SHUFFLED_ITEM pair:_shuffleVec)
 //    {
@@ -289,11 +297,13 @@ void InitShuffleJob(int multiThreadLevel)
 //        }
 //
 //    }
+
 }
 
 void InitReduceJobs(int multiThreadLevel)
 {
     popIndex = (int) _shuffleVec.size() - 1;
+
     ExecReduce.reserve(multiThreadLevel);
     pthread_mutex_init(&popIndex_mutex, NULL);
     pthread_mutex_lock(&_execReduceMutex);
@@ -304,7 +314,7 @@ void InitReduceJobs(int multiThreadLevel)
             QuitWithError("Failed to create Reduce threads.");
         }
 
-        _reducersContainer[ExecReduce[i]] = OUT_ITEMS_VEC();
+//        _reducersContainer[ExecReduce[i]] = OUT_ITEMS_VEC();
         pthread_mutex_init(&(_reduceContainerMutexes[ExecReduce[i]]), NULL);
     }
     pthread_mutex_unlock(&_execReduceMutex);
@@ -314,15 +324,21 @@ void InitReduceJobs(int multiThreadLevel)
         pthread_join(ExecReduce[i], NULL);
         pthread_mutex_destroy(&(_reduceContainerMutexes[ExecReduce[i]]));
     }
+
     _reduceContainerMutexes.clear();
     pthread_mutex_destroy(&_execReduceMutex);
+
+    for (auto &v : _reducersContainer)
+        _outputVec.insert(_outputVec.end(), v.second.begin(), v.second.end());
+
+    std::sort(_outputVec.begin(), _outputVec.end(), [] (OUT_ITEM a, OUT_ITEM b) { return a < b; });
 }
 
 void DestroyK2V2()
 {
-    for(auto &item : _pthreadToContainer)
+    for (auto &item : _pthreadToContainer)
     {
-        for(auto &key : item.second)
+        for (auto &key : item.second)
         {
             delete key.first;
             delete key.second;
@@ -364,14 +380,14 @@ OUT_ITEMS_VEC RunMapReduceFramework(MapReduceBase &mapReduce, IN_ITEMS_VEC &item
     // Initiate the Mapping and Shuffling phases
     try
     {
-        auto mapTime = MeasureTime(InitMapJobs, multiThreadLevel);
-        auto shuffleTime = MeasureTime(InitShuffleJob, multiThreadLevel);
-        auto reduceTime = MeasureTime(InitReduceJobs, multiThreadLevel);
-
+        size_t mapTime = MeasureTime(InitMapJobs, multiThreadLevel);
+        size_t shuffleTime = MeasureTime(InitShuffleJob, multiThreadLevel);
         std::cout << " Map and Shuffle took " +
                      std::to_string(mapTime + shuffleTime) + "ns" << std::endl;
 
+
         //Initiate the Reduce phase
+        size_t reduceTime = MeasureTime(InitReduceJobs, multiThreadLevel);
         std::cout << "Reduce took " +
                      std::to_string(reduceTime) + "ns" << std::endl;
     }
