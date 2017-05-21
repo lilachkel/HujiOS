@@ -6,6 +6,7 @@
 #include <sys/time.h>
 #include <fstream>
 #include <iostream>
+#include <algorithm>
 #include "MapReduceFramework.h"
 
 void SafePrint(std::string msg);
@@ -259,16 +260,6 @@ void InitMapJobs(int multiThreadLevel)
     }
     pthread_mutex_unlock(&_execMapMutex);
 
-
-    StupidVar = false;
-
-    if (pthread_create(&_shuffleThread, NULL, ExecShuffle, NULL) != 0)
-    {
-//        pthread_mutex_destroy(&pthreadToContainer_mutex);
-//        pthread_mutex_destroy(&popIndex_mutex);
-        QuitWithError("Failed to create shuffle thread.");
-    }
-
     for (int i = 0; i < multiThreadLevel; i++)
     {
         pthread_join(ExecMap[i], NULL);
@@ -282,6 +273,16 @@ void InitShuffleJob(int multiThreadLevel)
     //pthread_mutex_unlock(&pthreadToContainer_mutex);
     //pthread_mutex_destroy(&pthreadToContainer_mutex);          //TODO: destroy now??
 
+
+
+    StupidVar = false;
+
+    if (pthread_create(&_shuffleThread, NULL, ExecShuffle, NULL) != 0)
+    {
+//        pthread_mutex_destroy(&pthreadToContainer_mutex);
+//        pthread_mutex_destroy(&popIndex_mutex);
+        QuitWithError("Failed to create shuffle thread.");
+    }
     StupidVar = true;
     sem_post(&ShuffleSemaphore);
     pthread_join(_shuffleThread, NULL);
