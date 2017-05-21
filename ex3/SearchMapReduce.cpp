@@ -13,7 +13,7 @@ void SearchMapReduce::Map(const k1Base *const key, const v1Base *const val) cons
             auto file = iter->path().filename().string();
             if (file.find(_searchStr) != std::string::npos)
             {
-                Emit2(new FileNameKey(iter->path()), new FileNameKey(file));
+                Emit2(new FileNameKey(file), new FileNameKey(iter->path()));
             }
         }
     }

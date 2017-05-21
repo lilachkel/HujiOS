@@ -121,13 +121,12 @@ void *ExecMapJob(void *mapReduce)
         }
         else
         {
-            i = chunk_ind - popIndex;
-            popIndex = -1;
+            i = chunk_ind - popIndex-- + 1;
             pthread_mutex_unlock(&popIndex_mutex);// did it twice and not
             // under the ifelse since i wanted to unlock the mutex before i change 'i' to -1,
             // so that other threads will continue
         }
-        for (; i >= 0; i--)
+        for (; i > 0; i--)
         {
             _mapReduce->Map(_itemsVec[chunk_ind].first, _itemsVec[chunk_ind].second);
             chunk_ind--;
@@ -163,11 +162,11 @@ void *ExecReduceJob(void *mapReduce)
 
         else
         {
-            i = chunkIdx - popIndex--;
+            i = chunkIdx - popIndex-- + 1;
             pthread_mutex_unlock(&popIndex_mutex);
         }
 
-        for (; i >= 0; i--)
+        for (; i > 0; i--)
         {
             _mapReduce->Reduce(_shuffleVec[chunkIdx].first, _shuffleVec[chunkIdx].second);
             chunkIdx--;
@@ -215,7 +214,7 @@ void *ExecShuffle(void *mapReduce)
     }
 }
 
-void InitMapJobs(int multiThreadLevel)
+void InitMapShuffleJobs(int multiThreadLevel)
 {
     popIndex = (int) _itemsVec.size() - 1;// no need to lock since there are no threads yet..
 
@@ -236,8 +235,6 @@ void InitMapJobs(int multiThreadLevel)
 
     if (pthread_create(&_shuffleThread, NULL, ExecShuffle, NULL) != 0)
     {
-//        pthread_mutex_destroy(&pthreadToContainer_mutex);
-//        pthread_mutex_destroy(&popIndex_mutex);
         QuitWithError("Failed to create shuffle thread.");
     }
 
@@ -338,9 +335,8 @@ OUT_ITEMS_VEC RunMapReduceFramework(MapReduceBase &mapReduce, IN_ITEMS_VEC &item
     // Initiate the Mapping and Shuffling phases
     try
     {
-        size_t mapTime = MeasureTime(InitMapJobs, multiThreadLevel);
-//        size_t shuffleTime = MeasureTime(InitShuffleJob, multiThreadLevel);
-        std::cout << " Map and Shuffle took " +
+        size_t mapTime = MeasureTime(InitMapShuffleJobs, multiThreadLevel);
+        std::cout << "Map and Shuffle took " +
                      std::to_string(mapTime) + "ns" << std::endl;
 
 
@@ -370,6 +366,7 @@ OUT_ITEMS_VEC RunMapReduceFramework(MapReduceBase &mapReduce, IN_ITEMS_VEC &item
 #endif
     _log.close();
 
+
     return _outputVec;
 }
 
@@ -395,7 +392,6 @@ void Emit3(k3Base *k3, v3Base *v3)
     {
         pthread_mutex_lock(&(_reduceContainerMutexes[pthread_self()]));
         _reducersContainer[pthread_self()].push_back({k3, v3});
-        //std::cout << _reducersContainer[pthread_self()].size() << std::endl;
         pthread_mutex_unlock(&(_reduceContainerMutexes[pthread_self()]));
     }
     catch (std::exception e)

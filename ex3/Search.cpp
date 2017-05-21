@@ -15,9 +15,11 @@
  */
 void PrintOutput(OUT_ITEMS_VEC &output)
 {
-    std::cout << "output: ";
     for (auto &i : output)
-        std::cout << i.first << " ";
+    {
+        auto key = dynamic_cast<FileNameKey *>(i.first);
+        std::cout << key->GetData() << " ";
+    }
     std::cout << std::endl;
 }
 
