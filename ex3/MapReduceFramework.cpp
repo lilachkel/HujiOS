@@ -6,7 +6,6 @@
 #include <sys/time.h>
 #include <fstream>
 #include <iostream>
-#include <algorithm>
 #include "MapReduceFramework.h"
 
 void SafePrint(std::string msg);
@@ -260,6 +259,7 @@ void InitMapJobs(int multiThreadLevel)
     }
     pthread_mutex_unlock(&_execMapMutex);
 
+
     StupidVar = false;
 
     if (pthread_create(&_shuffleThread, NULL, ExecShuffle, NULL) != 0)
@@ -297,7 +297,6 @@ void InitShuffleJob(int multiThreadLevel)
 //        }
 //
 //    }
-
 }
 
 void InitReduceJobs(int multiThreadLevel)
