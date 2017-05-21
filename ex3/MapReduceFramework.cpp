@@ -11,7 +11,6 @@
 
 void SafePrint(std::string msg);
 
-#define MICRO_TO_NANO(x) x * 1000000
 #define LOG_THREAD_CREATION(t) SafePrint("Thread " + std::string(t) + " created [" + GetTimeString() + "]");
 #define LOG_THREAD_TERMINATION(t) SafePrint("Thread " + std::string(t) + " terminated [" + GetTimeString() + "]");
 
@@ -248,6 +247,7 @@ void InitMapJobs(int multiThreadLevel)
     }
 
     lilachPoopVar = true;
+    sem_post(&ShuffleSemaphore);
     pthread_join(_shuffleThread, NULL);
     for (int i = 0; i < multiThreadLevel; i++)
     {
@@ -290,7 +290,7 @@ void InitReduceJobs(int multiThreadLevel)
     for (auto &v : _reducersContainer)
         _outputVec.insert(_outputVec.end(), v.second.begin(), v.second.end());
 
-    std::sort(_outputVec.begin(), _outputVec.end(), [](OUT_ITEM a, OUT_ITEM b) { return a < b; });
+    std::sort(_outputVec.begin(), _outputVec.end(), [](OUT_ITEM a, OUT_ITEM b) { return *a.first < *b.first; });
 }
 
 void DestroyK2V2()
@@ -395,6 +395,7 @@ void Emit3(k3Base *k3, v3Base *v3)
     {
         pthread_mutex_lock(&(_reduceContainerMutexes[pthread_self()]));
         _reducersContainer[pthread_self()].push_back({k3, v3});
+        //std::cout << _reducersContainer[pthread_self()].size() << std::endl;
         pthread_mutex_unlock(&(_reduceContainerMutexes[pthread_self()]));
     }
     catch (std::exception e)
