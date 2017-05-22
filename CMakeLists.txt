@@ -8,7 +8,7 @@ set(CMAKE_CPP_FLAGS "${CMAKE_CPP_FLAGS} -Wall -std=c++11 ")
 
 #ex2
 add_library(uthreads ex2/uthreads.cpp)
-add_library(Thread ex2/Thread.cpp)
+add_library(Thread ex2/Thread.cpp ex2/tet.cpp ex2/tet.h)
 target_link_libraries(uthreads Thread)
 
 #ex3
@@ -33,3 +33,9 @@ target_link_libraries(PrimeTest MapReduceFramework SearchMapReduce -lstdc++fs -p
 
 add_executable(ShaharTest ex3/ex_3_test_suite/TestShahar/test.cpp)
 target_link_libraries(ShaharTest MapReduceFramework SearchMapReduce -lstdc++fs -pthread)
+
+add_executable(WordFrequencies ex3/ex_3_test_suite/Test_28/WordFrequencies.cpp)
+target_link_libraries(WordFrequencies MapReduceFramework SearchMapReduce -lstdc++fs -pthread)
+
+#add_executable(WordFrequenciesClient ex3/ex_3_test_suite/Test_28/WordFrequenciesClient.hpp)
+#target_link_libraries(WordFrequenciesClient MapReduceFramework SearchMapReduce -lstdc++fs -pthread)

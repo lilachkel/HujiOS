@@ -8,6 +8,7 @@
 #include <iostream>
 #include <algorithm>
 #include "MapReduceFramework.h"
+#include "ex_3_test_suite/Test_28/WordFrequenciesClient.hpp"
 
 void SafePrint(std::string msg);
 
@@ -35,7 +36,6 @@ std::unordered_map<pthread_t, MAP_CONTAINER> _pthreadToContainer;//container of 
 std::unordered_map<pthread_t, OUT_ITEMS_VEC> _reducersContainer;
 std::map<k2Base *, V2_VEC, Comparator> _shuffledList;
 std::unordered_map<pthread_t, pthread_mutex_t> _mapContainerMutexes;
-std::unordered_map<pthread_t, pthread_mutex_t> _reduceContainerMutexes;
 
 int popIndex;
 bool lilachPoopVar;
@@ -151,7 +151,6 @@ void *ExecReduceJob(void *mapReduce)
             LOG_THREAD_TERMINATION("ExecReduce")
             pthread_exit(nullptr);
         }
-
         chunkIdx = popIndex;
         if (popIndex - 10 > 0)
         {
@@ -205,9 +204,12 @@ void *ExecShuffle(void *mapReduce)
 
             pthread_mutex_lock(&_mapContainerMutexes[it.first]);
             MAP_ITEM &p = it.second.back();
-            _shuffledList[p.first].push_back(p.second);
+            try{
+                _shuffledList.at(p.first).push_back(p.second);
+            }catch (std::exception e){
+                _shuffledList[p.first].push_back(p.second);
+            }
             it.second.pop_back();
-
             pthread_mutex_unlock(&_mapContainerMutexes[it.first]);
             break;
         }
@@ -217,9 +219,7 @@ void *ExecShuffle(void *mapReduce)
 void InitMapShuffleJobs(int multiThreadLevel)
 {
     popIndex = (int) _itemsVec.size() - 1;// no need to lock since there are no threads yet..
-
     ExecMap.reserve(multiThreadLevel);
-    pthread_mutex_init(&popIndex_mutex, NULL);
     pthread_mutex_lock(&_execMapMutex);
     // to create the map threads which starts with 2 lines of lock and unlock pthreadToContainer_mutex
     for (int i = 0; i < multiThreadLevel; i++)//if itemsVec size is <10
@@ -232,17 +232,14 @@ void InitMapShuffleJobs(int multiThreadLevel)
         pthread_mutex_init(&(_mapContainerMutexes[ExecMap[i]]), NULL);
     }
     pthread_mutex_unlock(&_execMapMutex);
-
     if (pthread_create(&_shuffleThread, NULL, ExecShuffle, NULL) != 0)
     {
         QuitWithError("Failed to create shuffle thread.");
     }
-
     for (int i = 0; i < multiThreadLevel; i++)
     {
         pthread_join(ExecMap[i], NULL);
     }
-
     lilachPoopVar = true;
     sem_post(&ShuffleSemaphore);
     pthread_join(_shuffleThread, NULL);
@@ -257,7 +254,6 @@ void InitMapShuffleJobs(int multiThreadLevel)
 void InitReduceJobs(int multiThreadLevel)
 {
     popIndex = (int) _shuffleVec.size() - 1;
-
     ExecReduce.reserve(multiThreadLevel);
     pthread_mutex_lock(&_execReduceMutex);
     for (int i = 0; i < multiThreadLevel; i++)
@@ -266,27 +262,16 @@ void InitReduceJobs(int multiThreadLevel)
         {
             QuitWithError("Failed to create Reduce threads.");
         }
-
-        pthread_mutex_init(&(_reduceContainerMutexes[ExecReduce[i]]), NULL);
     }
     pthread_mutex_unlock(&_execReduceMutex);
-
     for (int i = 0; i < multiThreadLevel; i++)//after the map work
     {
         pthread_join(ExecReduce[i], NULL);
     }
-
-    for (int i = 0; i < multiThreadLevel; ++i)
-    {
-        pthread_mutex_destroy(&(_reduceContainerMutexes[ExecReduce[i]]));
-    }
-    _reduceContainerMutexes.clear();
-
     pthread_mutex_destroy(&_execReduceMutex);
 
     for (auto &v : _reducersContainer)
         _outputVec.insert(_outputVec.end(), v.second.begin(), v.second.end());
-
     std::sort(_outputVec.begin(), _outputVec.end(), [](OUT_ITEM a, OUT_ITEM b) { return *a.first < *b.first; });
 }
 
@@ -353,6 +338,7 @@ OUT_ITEMS_VEC RunMapReduceFramework(MapReduceBase &mapReduce, IN_ITEMS_VEC &item
 
     //region Cleanup
     pthread_mutex_destroy(&pthreadToContainer_mutex);          //TODO: destroy now??
+    pthread_mutex_destroy(&popIndex_mutex);          //TODO: destroy now??
 
     if (autoDeleteV2K2) DestroyK2V2();
 
@@ -390,9 +376,7 @@ void Emit3(k3Base *k3, v3Base *v3)
 {
     try
     {
-        pthread_mutex_lock(&(_reduceContainerMutexes[pthread_self()]));
         _reducersContainer[pthread_self()].push_back({k3, v3});
-        pthread_mutex_unlock(&(_reduceContainerMutexes[pthread_self()]));
     }
     catch (std::exception e)
     {
