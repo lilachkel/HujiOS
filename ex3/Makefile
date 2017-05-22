@@ -17,7 +17,7 @@ Search: Search.cpp SearchMapReduce.o MapReduceFramework.a
 	$(CC) $(CFLAGS) $(ADDFLAGS) SearchMapReduce.o Search.cpp MapReduceFramework.a -o Search -lstdc++fs -lpthread
 
 tar:
-	tar cvf ex3.tar FileNameKey.hpp *.cpp README Makefile
+	tar cvf ex3.tar FileNameKey.hpp SearchMapReduce.h *.cpp README Makefile
 
 clean:
 	rm -rf Search *.o *.a *.gch *.tar .MapReduceFrameworkLog

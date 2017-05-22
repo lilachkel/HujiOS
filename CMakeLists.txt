@@ -7,9 +7,9 @@ set(CMAKE_CPP_FLAGS "${CMAKE_CPP_FLAGS} -Wall -std=c++11 ")
 #target_link_libraries(simpletest osm)
 
 #ex2
-add_library(uthreads ex2/uthreads.cpp)
-add_library(Thread ex2/Thread.cpp ex2/tet.cpp ex2/tet.h)
-target_link_libraries(uthreads Thread)
+#add_library(uthreads ex2/uthreads.cpp)
+#add_library(Thread ex2/Thread.cpp ex2/tet.cpp ex2/tet.h)
+#target_link_libraries(uthreads Thread)
 
 #ex3
 add_library(MapReduceFramework ex3/MapReduceFramework.cpp)
@@ -26,7 +26,7 @@ target_link_libraries(Test6 MapReduceFramework GridMapReduce -lstdc++fs -pthread
 add_library(WordFrequenciesClient ex3/ex_3_test_suite/Test_28/WordFrequenciesClient.hpp)
 set_target_properties(WordFrequenciesClient PROPERTIES LINKER_LANGUAGE CXX)
 add_executable(Test28 ex3/ex_3_test_suite/Test_28/WordFrequencies.cpp)
-target_link_libraries(Test28 WordFrequenciesClient)
+target_link_libraries(Test28 WordFrequenciesClient MapReduceFramework -lstdc++fs -pthread)
 
 add_executable(PrimeTest ex3/ex_3_test_suite/TestGuy/PrimeTest.cpp)
 target_link_libraries(PrimeTest MapReduceFramework SearchMapReduce -lstdc++fs -pthread)
@@ -36,6 +36,3 @@ target_link_libraries(ShaharTest MapReduceFramework SearchMapReduce -lstdc++fs -
 
 add_executable(WordFrequencies ex3/ex_3_test_suite/Test_28/WordFrequencies.cpp)
 target_link_libraries(WordFrequencies MapReduceFramework SearchMapReduce -lstdc++fs -pthread)
-
-#add_executable(WordFrequenciesClient ex3/ex_3_test_suite/Test_28/WordFrequenciesClient.hpp)
-#target_link_libraries(WordFrequenciesClient MapReduceFramework SearchMapReduce -lstdc++fs -pthread)
