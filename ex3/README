@@ -1,135 +1,230 @@
-jenia90, lilach
-Yevgeni Dysin (320884216), Lilach Kelman (305390098)
-EX: 3
+jenia90, lilach Yevgeni Dysin (320884216), Lilach Kelman (305390098) EX: 3
 
-FILES:
-Makefile
+FILES: Makefile
 
 README - This file.
 
-Search.cpp - Main executable that given a search string and a directory, iterates over each of the folders and finds a list of files\folders that contain the given string in their names. Search utilizes MapReduceFramework.
+Search.cpp - Main executable that given a search string and a directory,
+iterates over each of the folders and finds a list of files\folders that contain
+the given string in their names. Search utilizes MapReduceFramework.
 
-SearchMapReduce.h/cpp - Class that inherits from the MapReduceBase and implements the Map and Reduce methods used for finding filenames in directories.
+SearchMapReduce.h/cpp - Class that inherits from the MapReduceBase and
+implements the Map and Reduce methods used for finding filenames in directories.
 
-FileNameKey.hpp - A class the inherits from the v*Base and k*Base and implements the operator<.
+FileNameKey.hpp - A class the inherits from the v*Base and k*Base and implements
+the operator<.
 
-MapReduceFramework.cpp - Implementation of the MapReduce algorithm using the pthread multithreading library.
+MapReduceFramework.cpp - Implementation of the MapReduce algorithm using the
+pthread multithreading library.
 
 REMARKS:
 
-===================================
+=================================== 
 ==== MapReduceFramework Design ====
-===================================
+=================================== 
 Upon initialization MapReduceFramework creates a log file and initializes 4 mutexes: execMap and execReduce mutexes, popIndexMutex and logMutex (which is used only for writing to the log file).
 
-Next we call the MeasureTime function which receives a function pointer and an int which will be passed to the function (this int indicates how many threads should we create for the operation). Measure time, as can be deduced from it's name, measures the runtime of a given function using the gettimeofday function. 
-First, we pass to it the InitMapShuffleJobs which creates and later joins the Map and Shuffle threads. The number of Map threads created is given by the 'multiThreadLevel' int passed to the function. Also, we initialize mutexes associated with each of the threads which reside inside the '_mapContainerMutexes' map. Each Map thread takes a chunk of 10 <k1,v1> pairs and using the Map function of the _mapReduce object converts them to <k2,v2> values for the shuffle thread to combine into a <k2, vector<v2>> pairs.
+Next we call the MeasureTime function which receives a function pointer and an
+int which will be passed to the function (this int indicates how many threads
+should we create for the operation). Measure time, as can be deduced from it's
+name, measures the runtime of a given function using the gettimeofday function.
+First, we pass to it the InitMapShuffleJobs which creates and later joins the
+Map and Shuffle threads. The number of Map threads created is given by the
+'multiThreadLevel' int passed to the function. Also, we initialize mutexes
+associated with each of the threads which reside inside the
+'_mapContainerMutexes' map. Each Map thread takes a chunk of 10 <k1,v1> pairs
+and using the Map function of the _mapReduce object converts them to <k2,v2>
+values for the shuffle thread to combine into a <k2, vector<v2>> pairs.
 
-Now, back to the InitMapShuffleJobs, after creating the ExecMap threads we unlock the mutex which blocks them from running and create the Shuffle thread so it can start emptyin the containers into the _shuffleList map.
-We then join both the Shuffle thread and all the ExecMap threads and wait for them to finish their jobs.
+Now, back to the InitMapShuffleJobs, after creating the ExecMap threads we
+unlock the mutex which blocks them from running and create the Shuffle thread so
+it can start emptyin the containers into the _shuffleList map. We then join both
+the Shuffle thread and all the ExecMap threads and wait for them to finish their
+jobs.
 
-We now return to the MeasureTime function which calculates the time passed and return it back to the RunMapReduceFramework so it would be outputed to the log file.
+We now return to the MeasureTime function which calculates the time passed and
+return it back to the RunMapReduceFramework so it would be outputed to the log
+file.
 
-Next, using same method we used earlier we call the InitReduceJobs throught the MeasureTime and create the ExecReduce threads which call the Reduce function in the _mapReduce object and emit the k3,v3 pairs the _reducersContainer. After finishing all of the Reduce jobs we combine all of the pairs created by the _reducers container into one output vector and sort it using a custom comparator function. 
+Next, using same method we used earlier we call the InitReduceJobs throught the
+MeasureTime and create the ExecReduce threads which call the Reduce function in
+the _mapReduce object and emit the k3,v3 pairs the _reducersContainer. After
+finishing all of the Reduce jobs we combine all of the pairs created by the
+_reducers container into one output vector and sort it using a custom comparator
+function.
 
-That output vector is returned back to the main function and printed (or whatever the calling class wants to do with it).
+That output vector is returned back to the main function and printed (or
+whatever the calling class wants to do with it).
 
-================
-==== Search ====
-================
+================ 
+==== Search ==== 
+================ 
 This is the main executable so it first creates vector of <k1, null> pairs where k1 is a FileNameKey pointer and passes it to the RunMapReduceFramework function along with the 'finder' object (SearchMapReduce) which was initialized with the keyword we are looking for in each of the filenames.
 
-==========================
+========================== 
 ==== SearchMaprReduce ====
 ==========================
-This class inherits from the MapReduceBase and implements the Map and Reduce functions.
-Map function - receives k1base(directory) and v1base(null). It then casts the k1 to a FileNameKey and gets the path of the directory we are going to scan. then using a directory_iterator from the experimental::filesystem library we iterate over each of the files and folders and check if any of them contain the keyword we are looking for. If the filename contains the keyword we can the Emit2 method and pass to it the filename as k2 and directory (path) as v2.
+This class inherits from the MapReduceBase and implements the Map and Reduce
+functions. Map function - receives k1base(directory) and v1base(null). It then
+casts the k1 to a FileNameKey and gets the path of the directory we are going to
+scan. then using a directory_iterator from the experimental::filesystem library
+we iterate over each of the files and folders and check if any of them contain
+the keyword we are looking for. If the filename contains the keyword we can the
+Emit2 method and pass to it the filename as k2 and directory (path) as v2.
 
-Reduce function - receives k2(filename) and vector of v2 and using the Emit3 function emits pair of k3,v3 values (k3 is filename, v3 is directory).
+Reduce function - receives k2(filename) and vector of v2 and using the Emit3
+function emits pair of k3,v3 values (k3 is filename, v3 is directory).
 
 
-ANSWERS:
-1) Another possible design for the Map Shuffle part of the exercise is instead of using a global semaphore, we would use a globla mutex (let's call it '_shuffleMutex'). When the InitMapShuffle function is called we would init the mutex and together with it some CV that would indicate to us if the map threads completed their jobs - in which case shufffle will empty the containers and finish it's job. We would implement a cond_timedwait on that CV so that once in a while Shuffle thread would be woken up - it then would check on the state of the CV. If CV is true (which means Map threads finished), it shuffle would finish its job and exit. If CV is false, and the shuffle thread woke up from the timeout - it will go back to sleep. Only other option is where shuffle thread was woken up by the exit of the last map thread.
-So, now the shuffle thread finished it's job emptying the containers and exited. We will destroy _shuffleMutex and proceed as normal to our reduce threads.
-Alright, now let's explain what happens with the Map threads. The only change that is going to happen here is in the Emit2 function. Instead of posting the semaphore we would perform a signal on the CV wrapped between a lock-unlock on the _shuffleMutex.
+ANSWERS: 1) Another possible design for the Map Shuffle part of the exercise is
+instead of using a global semaphore, we would use a globla mutex (let's call it
+'_shuffleMutex'). When the InitMapShuffle function is called we would init the
+mutex and together with it some CV that would indicate to us if the map threads
+completed their jobs - in which case shufffle will empty the containers and
+finish it's job. We would implement a cond_timedwait on that CV so that once in
+a while Shuffle thread would be woken up - it then would check on the state of
+the CV. If CV is true (which means Map threads finished), it shuffle would
+finish its job and exit. If CV is false, and the shuffle thread woke up from the
+timeout - it will go back to sleep. Only other option is where shuffle thread
+was woken up by the exit of the last map thread. So, now the shuffle thread
+finished it's job emptying the containers and exited. We will destroy
+_shuffleMutex and proceed as normal to our reduce threads. Alright, now let's
+explain what happens with the Map threads. The only change that is going to
+happen here is in the Emit2 function. Instead of posting the semaphore we would
+perform a signal on the CV wrapped between a lock-unlock on the _shuffleMutex.
 
-PseudoCode:
----------------------
-First the shuffle piece of code:
+PseudoCode: --------------------- 
+First the shuffle piece of code: 
 while true:
-	lock _shuffleMutex
-	timedwait with <timeout> on cvShuffle -> value
-	if value != 0
+	lock _shuffleMutex     
+	timedwait with <timeout> on cvShuffle -> value     
+	if value != 0         
 		if maps finished: empty containers
-		break
-	else sleep(shuffle) and continue
-	unlock _shuffleMutex
-	empty containers
+		         break     
+		else sleep(shuffle) and continue
+	    unlock _shuffleMutex
+	    empty containers
 
-Emit2: replace sem_post with implementation of the following:
-lock _shuffleMutex
-condsignal(cvShuffle)
-unlock _shuffleMutex
+Emit2: replace sem_post with implementation of the following: lock _shuffleMutex
+condsignal(cvShuffle) unlock _shuffleMutex
 
-Now, why we can't use pthread_cond_wait instead of pthread_cond_timedwait? Well, if we did and we received a signal while shuffle wasn't in sleep mode (for instance emptying containers) it would continue waiting until the next signal (which might never arrive) and we would be stuck.
+Now, why we can't use pthread_cond_wait instead of pthread_cond_timedwait? Well,
+if we did and we received a signal while shuffle wasn't in sleep mode (for
+instance emptying containers) it would continue waiting until the next signal
+(which might never arrive) and we would be stuck.
 
-2) We couldn't find an octa-core computer that doesn't support HT (apparently they don't exist in normal people homes). So, we will just explain the answer theoretically. In one of the recitation we showed a formula that would let us calculate that exact amount of threads we should use in our solution:
-								BT/ST + 1
+2) We couldn't find an octa-core computer that doesn't support HT (apparently
+they don't exist in normal people homes). So, we will just explain the answer
+theoretically. In one of the recitation we showed a formula that would let us
+calculate that exact amount of threads we should use in our solution:
+BT/ST + 1
 
-where BT is blocked time and ST is service time. So, if there's no HT (which means that every core performs 2 operations at once [sort of] acting as 2 cores) we would idially use 8 threads on in-memory problems and maybe 16 threads on problems that require acces to IO devices.
+where BT is blocked time and ST is service time. So, if there's no HT (which
+means that every core performs 2 operations at once [sort of] acting as 2 cores)
+we would idially use 8 threads on in-memory problems and maybe 16 threads on
+problems that require acces to IO devices.
 
 3)Utilizing Multi-cores:
 
 Nira: Nira implementation uses single thread only, means one core being used.
 
-Moti: Moti implementation uses kernel level threads, Managed by the Operating System and therfore Multi-cores being used.
-Moti implementation may use every available core.
+Moti: Moti implementation uses kernel level threads, Managed by the Operating
+System and therfore Multi-cores being used. Moti implementation may use every
+available core.
 
-Danny: Danny implementation uses user level threads. that means the threads are not managed by the Operating System.
- X user level threads which managed by 1 kernel level thread uses the same core used by this kernel level thread
- ( thread use 1 core only)
+Danny: Danny implementation uses user level threads. that means the threads are
+not managed by the Operating System.  X user level threads which managed by 1
+kernel level thread uses the same core used by this kernel level thread  (
+thread use 1 core only)
 
-Galit: Galit implementation uses every available core - same as Moti implementation. (except that it will be run much slower)
+Galit: Galit implementation uses every available core - same as Moti
+implementation. (except that it will be run much slower)
 
 The ability to create a sophisticated scheduler, based on internal data:
 
-Nira:  Nira can't create a sophisticated scheduler since she uses a single thread only. the scheduler work is irrelevant
+Nira:  Nira can't create a sophisticated scheduler since she uses a single
+thread only. the scheduler work is irrelevant
 
-Moti: Moti can't create a sophisticated scheduler since the scheduler belongs to the Operating System,
- Moti cant access or manipulate the scheduler .
+Moti: Moti can't create a sophisticated scheduler since the scheduler belongs to
+the Operating System,  Moti cant access or manipulate the scheduler .
 
-4) kernel and user level threads both share the same heap and global vars but have different stacks, where in the case of processes - they all have separate stacks, global vars and heaps.
+Danny: Danny can create a sophisticated scheduler because he is the one designing and creating the scheduler as he desires - so, he knows when and why context switch is performed and can act accordingly.
 
-5) Livelock: A situation in which two or more processes continuously change their states in response to changes in the other process(es) without doing any useful work. It is somewhat similar to the deadlock but the difference is processes are getting polite and let other to do the work. This can be happen when a process trying to avoid a deadlock. For example:
+Galit: Galit can't create a sophisticated scheduler because, as in Moti's case, process control is performed by the operating system and she can't manipulate the process control decision making protocols.
 
-// thread 1
-getLocks12(lock1, lock2)
-{
-  lock1.lock();
-  while (lock2.locked())
-  {
-    // attempt to step aside for the other thread
-    lock1.unlock();
-    wait();
-    lock1.lock();
-  }
-  lock2.lock();
+Communication time (between different threads\processes):
+
+Nira: Nira doesn't have the time where threads transfer data because there's ony one thread that holds the needed data.
+
+Moti: In Moti's implementation communication time is faster than in other cases because the data is stored in the same enviorment of the running threads.
+All the open file are accessible to all of the running threads and data can be stored without the need of waiting for other threads to finish accessing that data (excluding data structers that are being written to).
+
+Danny: As in Moti's case the data is accessible to all  of the running threads.
+
+Galit: Galit chose to implement the program with processes so, each process has its own separate enviorment. In this case the data transfer will take longer.
+
+Ability to progress while a certain thread/process is blocked:
+
+Nira: Because Nira has a single thread - if it's blocked then the whole program is blocked and none of the threads can run.
+
+Moti: In Moti's implementation there's a way for all of the threads to keep running simultaneously if they don't manipulate a shared variable. As logn as the threads use separate resources there's no blocking.
+
+Danny: Because it's not a software block when a thread is block  the whole program is blocked and none of the threads can keep running.
+
+Galit: It is similar case to Moti - one process runs even when the other is blocked.
+
+Overall speed:
+
+Nira: very slow - only one thread is working 
+
+Moti: Is the fastest because lot's of threads are going to divide the jobs between them and process it efficiently.
+
+Danny: Will be slow as Nira because only one core will be in use and there's no parallelism
+
+Galit: Will be slower than Moti but faster than others because it will use multiple cores to process the data. But in any case every context switch will take precious time.
+
+4) kernel and user level threads both share the same heap and global vars but
+have different stacks, where in the case of processes - they all have separate
+stacks, global vars and heaps.
+
+5) Livelock: A situation in which two or more processes continuously change
+their states in response to changes in the other process(es) without doing any
+useful work. It is somewhat similar to the deadlock but the difference is
+processes are getting polite and let other to do the work. This can be happen
+when a process trying to avoid a deadlock. For example:
+
+// thread 1 
+getLocks12(lock1, lock2) 
+{   lock1.lock();   
+	while (lock2.locked())
+	{     // attempt to step aside for the other thread   
+		lock1.unlock();
+		wait();
+		lock1.lock();   
+	}   
+	lock2.lock(); 
 }
 
-// thread 2
-getLocks21(lock1, lock2)
-{
-  lock2.lock();
-  while (lock1.locked())
-  {
-    // attempt to step aside for the other thread
-    lock2.unlock();
-    wait();
-    lock2.lock();
-  }
-  lock1.lock();
+// thread 2 
+getLocks21(lock1, lock2) 
+{   
+	lock2.lock();   
+	while (lock1.locked())
+	{     
+		// attempt to step aside for the other thread     
+		lock2.unlock();
+		wait();     
+		lock2.lock();   
+	}   
+	lock1.lock(); 
 }
 
-Deadlock: A situation in which two or more processes are unable to proceed because each is waiting for one the others to do something.
+Deadlock: A situation in which two or more processes are unable to proceed
+because each is waiting for one the others to do something.
 
-For example, consider two processes, P1 and P2, and two resources, R1 and R2. Suppose that each process needs access to both resources to perform part of its function. Then it is possible to have the following situation: the OS assigns R1 to P2, and R2 to P1. Each process is waiting for one of the two resources. Neither will release the resource that it already owns until it has acquired the other resource and performed the function requiring both resources.
+For example, consider two processes, P1 and P2, and two resources, R1 and R2.
+Suppose that each process needs access to both resources to perform part of its
+function. Then it is possible to have the following situation: the OS assigns R1
+to P2, and R2 to P1. Each process is waiting for one of the two resources.
+Neither will release the resource that it already owns until it has acquired the
+other resource and performed the function requiring both resources.

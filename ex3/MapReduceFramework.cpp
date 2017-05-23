@@ -308,6 +308,7 @@ void InitReduceJobs(int multiThreadLevel)
         {
             QuitWithError("Failed to create Reduce threads.");
         }
+        _reducersContainer[ExecReduce[i]];
     }
     pthread_mutex_unlock(&_execReduceMutex);
     //endregion
