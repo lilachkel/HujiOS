@@ -9,6 +9,8 @@
 #include <algorithm>
 #include "MapReduceFramework.h"
 
+#include "ex_3_test_suite/Test_28/WordFrequenciesClient.hpp"
+
 void SafePrint(std::string msg);
 
 #define LOG_THREAD_CREATION(t) SafePrint("Thread " + std::string(t) + " created [" + GetTimeString() + "]");
