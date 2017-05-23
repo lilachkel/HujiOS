@@ -77,7 +77,7 @@ int main(int argc, char *argv[])
         v.push_back(p);
     }
     MapReduceImp m;
-    auto results = RunMapReduceFramework(m, v, 1, true);
+    auto results = RunMapReduceFramework(m, v, 8, true);
     for (auto &item : results)
     {
         std::cout << ((NumWrapper *) item.first)->num << " : " << ((NumWrapper *) item.second)->num << " times"
