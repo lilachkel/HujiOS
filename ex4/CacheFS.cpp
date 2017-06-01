@@ -1,6 +1,5 @@
 #include <cstddef>
 #include <fcntl.h>
-#include <stdlib.h>
 #include "CacheFS.h"
 
 int CacheFS_init(int blocks_num, cache_algo_t cache_algo, double f_old, double f_new)
