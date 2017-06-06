@@ -9,11 +9,16 @@
 
 class LruAlgorithm : public ICacheAlgorithm
 {
-
+    virtual void Update(CacheMap::iterator &cm);
 public:
-    LruAlgorithm(size_t blkSize, size_t blkNum);
+    LruAlgorithm(size_t size) : _size(size)
+    {}
 
     virtual ~LruAlgorithm();
+
+    virtual char *Get(int key);
+
+    virtual int Set(int key, char *page);
 };
 
 

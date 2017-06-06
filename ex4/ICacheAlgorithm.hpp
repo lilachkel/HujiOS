@@ -6,14 +6,35 @@
 #define PROJECT_ICACHEALGORITHM_H
 
 #include <stdlib.h>
+#include <unordered_map>
+#include <list>
+
+typedef std::unordered_map<int, std::pair<char *, std::list<int>::iterator>> CacheMap;
 
 class ICacheAlgorithm
 {
-    size_t _blksize, _blocks_num;
-public:
-    ICacheAlgorithm() = delete;
+protected:
+    size_t _size;
+    std::list<int> _lru;
+    CacheMap _cache;
 
-    virtual ~ICacheAlgorithm() = 0;
+    virtual void Update(CacheMap::iterator &cm) = 0;
+
+public:
+    ICacheAlgorithm();
+
+    virtual ~ICacheAlgorithm()
+    {
+        for (auto &item : _cache)
+            delete[] item.second.first;
+
+        _cache.clear();
+    }
+
+    virtual char *Get(int key) = 0;
+
+    virtual int Set(int key, char *page) = 0;
+
 };
 
 

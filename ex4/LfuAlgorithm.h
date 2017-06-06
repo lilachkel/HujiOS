@@ -9,10 +9,6 @@
 
 class LfuAlgorithm : public ICacheAlgorithm
 {
-public:
-    LfuAlgorithm(size_t blkSize, size_t blkNum);
-
-    virtual ~LfuAlgorithm();
 };
 
 

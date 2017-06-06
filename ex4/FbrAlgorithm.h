@@ -9,10 +9,6 @@
 
 class FbrAlgorithm : public ICacheAlgorithm
 {
-public:
-    FbrAlgorithm();
-
-    virtual ~FbrAlgorithm();
 };
 
 
