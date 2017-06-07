@@ -10,19 +10,22 @@
 
 ICacheAlgorithm *_algorithm = nullptr;
 
+size_t GetBlockSize()
+{
+    struct stat fi;
+    stat("/tmp", &fi);
+    return fi.st_blksize;
+}
+
 int CacheFS_init(int blocks_num, cache_algo_t cache_algo, double f_old, double f_new)
 {
     if (f_new < 0 || f_new > 1 || f_old < 0 || f_old > 1 || (f_new + f_old) > 1 || blocks_num <= 0)
         return RET_FAILURE;
 
-    struct stat fi;
-    stat("/tmp", &fi);
-    size_t blksize = fi.st_blksize;
-
     switch (cache_algo)
     {
         case LRU:
-            _algorithm = new LruAlgorithm(blksize * blocks_num);
+            _algorithm = new LruAlgorithm(GetBlockSize() * blocks_num);
             break;
         case LFU:
             break;

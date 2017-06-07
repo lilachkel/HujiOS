@@ -13,26 +13,48 @@ typedef std::unordered_map<int, std::pair<char *, std::list<int>::iterator>> Cac
 
 class ICacheAlgorithm
 {
+    void CleanCache(CacheMap &cm)
+    {
+        for (auto &item : cm)
+            delete[] item.second.first;
+
+        cm.clear();
+    }
+
 protected:
     size_t _size;
-    std::list<int> _lru;
+    std::list<int> _queue;
     CacheMap _cache;
 
     virtual void Update(CacheMap::iterator &cm) = 0;
 
 public:
-    ICacheAlgorithm();
+    ICacheAlgorithm(size_t size) : _size(size)
+    {}
+
+    ICacheAlgorithm(ICacheAlgorithm &&other) : _size(std::move(other._size)),
+                                               _queue(std::move(other._queue)),
+                                               _cache(std::move(other._cache))
+    {}
+
+    ICacheAlgorithm &operator=(ICacheAlgorithm &&other)
+    {
+        if (this != &other)
+        {
+            _size = other._size;
+            _queue = std::move(other._queue);
+            _cache = std::move(other._cache);
+        }
+
+        return *this;
+    }
 
     virtual ~ICacheAlgorithm()
     {
-        for (auto &item : _cache)
-            delete[] item.second.first;
-
-        _cache.clear();
+        CleanCache(_cache);
     }
 
     virtual char *Get(int key) = 0;
-
     virtual int Set(int key, char *page) = 0;
 
 };

@@ -22,19 +22,19 @@ int LruAlgorithm::Set(int key, char *page)
     if (item != _cache.end())
     {
         Update(item);
-        //TODO: Check why this doesnt work!
-        _cache[key] = {page, _lru.begin()};
+        item->second.first = page;
+
         return 0;
     }
 
     if (_cache.size() == _size)
     {
-        _cache.erase(_lru.back());
-        _lru.pop_back();
+        _cache.erase(_queue.back());
+        _queue.pop_back();
     }
 
-    _lru.push_front(key);
-    _cache.insert({key, {page, _lru.begin()}})
+    _queue.push_front(key);
+    _cache.insert({key, {page, _queue.begin()}});
 
     return 0;
 }
@@ -42,7 +42,7 @@ int LruAlgorithm::Set(int key, char *page)
 void LruAlgorithm::Update(CacheMap::iterator &cm)
 {
     // TODO: Implement list.splice.
-    _lru.erase(cm->second.second);
-    _lru.push_front(cm->first);
-    cm->second.second = _lru.begin();
+    _queue.erase(cm->second.second);
+    _queue.push_front(cm->first);
+    cm->second.second = _queue.begin();
 }

@@ -11,7 +11,7 @@ class LruAlgorithm : public ICacheAlgorithm
 {
     virtual void Update(CacheMap::iterator &cm);
 public:
-    LruAlgorithm(size_t size) : _size(size)
+    LruAlgorithm(size_t size) : ICacheAlgorithm(size)
     {}
 
     virtual ~LruAlgorithm();
