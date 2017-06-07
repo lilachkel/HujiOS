@@ -148,28 +148,36 @@ thread only. the scheduler work is irrelevant
 Moti: Moti can't create a sophisticated scheduler since the scheduler belongs to
 the Operating System,  Moti cant access or manipulate the scheduler .
 
-Danny: Danny can create a sophisticated scheduler because he is the one designing and creating the scheduler as he desires - so, he knows when and why context switch is performed and can act accordingly.
+Danny: Danny can create a sophisticated scheduler because he is the one designing and
+creating the scheduler as he desires - so, he knows when and why context switch is performed and can act accordingly.
 
-Galit: Galit can't create a sophisticated scheduler because, as in Moti's case, process control is performed by the operating system and she can't manipulate the process control decision making protocols.
+Galit: Galit can't create a sophisticated scheduler because, as in Moti's case,
+ process control is performed by the operating system and she can't manipulate the process control decision making protocols.
 
 Communication time (between different threads\processes):
 
 Nira: Nira doesn't have the time where threads transfer data because there's ony one thread that holds the needed data.
 
-Moti: In Moti's implementation communication time is faster than in other cases because the data is stored in the same enviorment of the running threads.
-All the open file are accessible to all of the running threads and data can be stored without the need of waiting for other threads to finish accessing that data (excluding data structers that are being written to).
+Moti: In Moti's implementation communication time is faster than in other cases because the data is stored in the same
+ enviorment of the running threads.
+All the open file are accessible to all of the running threads and data can
+ be stored without the need of waiting for other threads to finish accessing
+ that data (excluding data structers that are being written to).
 
 Danny: As in Moti's case the data is accessible to all  of the running threads.
 
-Galit: Galit chose to implement the program with processes so, each process has its own separate enviorment. In this case the data transfer will take longer.
+Galit: Galit chose to implement the program with processes so, each process has its
+own separate enviorment. In this case the data transfer will take longer.
 
 Ability to progress while a certain thread/process is blocked:
 
 Nira: Because Nira has a single thread - if it's blocked then the whole program is blocked and none of the threads can run.
 
-Moti: In Moti's implementation there's a way for all of the threads to keep running simultaneously if they don't manipulate a shared variable. As logn as the threads use separate resources there's no blocking.
+Moti: In Moti's implementation there's a way for all of the threads to keep running simultaneously
+if they don't manipulate a shared variable. As logn as the threads use separate resources there's no blocking.
 
-Danny: Because it's not a software block when a thread is block  the whole program is blocked and none of the threads can keep running.
+Danny: Because it's not a software block when a thread is block  the whole program
+is blocked and none of the threads can keep running.
 
 Galit: It is similar case to Moti - one process runs even when the other is blocked.
 
@@ -181,7 +189,8 @@ Moti: Is the fastest because lot's of threads are going to divide the jobs betwe
 
 Danny: Will be slow as Nira because only one core will be in use and there's no parallelism
 
-Galit: Will be slower than Moti but faster than others because it will use multiple cores to process the data. But in any case every context switch will take precious time.
+Galit: Will be slower than Moti but faster than others because it will use multiple
+cores to process the data. But in any case every context switch will take precious time.
 
 4) kernel and user level threads both share the same heap and global vars but
 have different stacks, where in the case of processes - they all have separate
