@@ -8,7 +8,9 @@
 #define RET_FAILURE -1
 #define RET_SUCCESS 0
 
-ICacheAlgorithm *_algorithm = nullptr;
+template<typename K, typename D>
+ICacheAlgorithm<K, D> *_algorithm = nullptr;
+
 
 size_t GetBlockSize()
 {
@@ -25,7 +27,7 @@ int CacheFS_init(int blocks_num, cache_algo_t cache_algo, double f_old, double f
     switch (cache_algo)
     {
         case LRU:
-            _algorithm = new LruAlgorithm(GetBlockSize() * blocks_num);
+            _algorithm<int, char *> = new LruAlgorithm<int, char *>(GetBlockSize() * blocks_num);
             break;
         case LFU:
             break;

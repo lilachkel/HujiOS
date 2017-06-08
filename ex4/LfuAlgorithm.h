@@ -7,8 +7,15 @@
 
 #include "ICacheAlgorithm.hpp"
 
-class LfuAlgorithm : public ICacheAlgorithm
+struct LfuKey
 {
+    int key, count = 0;
+};
+
+class LfuAlgorithm : public ICacheAlgorithm<int, LfuKey>
+{
+public:
+    LfuAlgorithm(size_t size);
 };
 
 

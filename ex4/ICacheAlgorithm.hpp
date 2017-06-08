@@ -9,24 +9,18 @@
 #include <unordered_map>
 #include <list>
 
-typedef std::unordered_map<int, std::pair<char *, std::list<int>::iterator>> CacheMap;
+template<typename Key, typename Data>
+using CacheMap = std::unordered_map<Key, std::pair<Data, typename std::list<Key>::iterator>>;
 
+template<typename Key, typename Data>
 class ICacheAlgorithm
 {
-    void CleanCache(CacheMap &cm)
-    {
-        for (auto &item : cm)
-            delete[] item.second.first;
-
-        cm.clear();
-    }
-
 protected:
     size_t _size;
-    std::list<int> _queue;
-    CacheMap _cache;
+    std::list<Key> _queue;
+    CacheMap<Key, Data> _cache;
 
-    virtual void Update(CacheMap::iterator &cm) = 0;
+    virtual void Update(typename CacheMap<Key, Data>::iterator &cm) = 0;
 
 public:
     ICacheAlgorithm(size_t size) : _size(size)
@@ -37,7 +31,7 @@ public:
                                                _cache(std::move(other._cache))
     {}
 
-    ICacheAlgorithm &operator=(ICacheAlgorithm &&other)
+    ICacheAlgorithm<Key, Data> &operator=(ICacheAlgorithm<Key, Data> &&other)
     {
         if (this != &other)
         {
@@ -49,13 +43,11 @@ public:
         return *this;
     }
 
-    virtual ~ICacheAlgorithm()
-    {
-        CleanCache(_cache);
-    }
+    virtual ~ICacheAlgorithm() = 0;
 
-    virtual char *Get(int key) = 0;
-    virtual int Set(int key, char *page) = 0;
+    virtual Data Get(Key key) = 0;
+
+    virtual int Set(Key key, Data page) = 0;
 
 };
 
