@@ -41,7 +41,6 @@ int LruAlgorithm::Set(int key, char *page)
 
 void LruAlgorithm::Update(CacheMap::iterator &cm)
 {
-    // TODO: Implement list.splice.
     _queue.erase(cm->second.second);
     _queue.push_front(cm->first);
     cm->second.second = _queue.begin();
