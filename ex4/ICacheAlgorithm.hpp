@@ -9,14 +9,14 @@
 #include <unordered_map>
 #include <list>
 
-typedef std::unordered_map<int, std::pair<char *, std::list<int>::iterator>> CacheMap;
+typedef std::unordered_map<int, char *> CacheMap;
 
 class ICacheAlgorithm
 {
     void CleanCache(CacheMap &cm)
     {
         for (auto &item : cm)
-            delete[] item.second.first;
+            delete[] item.first;
 
         cm.clear();
     }
