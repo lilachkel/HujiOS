@@ -16,17 +16,17 @@ template<typename Key, typename Data>
 class ICacheAlgorithm
 {
 protected:
-    size_t _size;
+    size_t _capacity;
     std::list<Key> _queue;
     CacheMap<Key, Data> _cache;
 
     virtual void Update(typename CacheMap<Key, Data>::iterator &cm) = 0;
 
 public:
-    ICacheAlgorithm(size_t size) : _size(size)
+    ICacheAlgorithm(size_t size) : _capacity(size)
     {}
 
-    ICacheAlgorithm(ICacheAlgorithm &&other) : _size(std::move(other._size)),
+    ICacheAlgorithm(ICacheAlgorithm &&other) : _capacity(std::move(other._capacity)),
                                                _queue(std::move(other._queue)),
                                                _cache(std::move(other._cache))
     {}
@@ -35,7 +35,7 @@ public:
     {
         if (this != &other)
         {
-            _size = other._size;
+            _capacity = other._capacity;
             _queue = std::move(other._queue);
             _cache = std::move(other._cache);
         }
@@ -44,11 +44,8 @@ public:
     }
 
     virtual ~ICacheAlgorithm() = 0;
-
     virtual Data Get(Key key) = 0;
-
     virtual int Set(Key key, Data page) = 0;
-
 };
 
 

@@ -34,7 +34,7 @@ int LruAlgorithm<Key, Data>::Set(Key key, Data page)
         return 0;
     }
 
-    if (Base::_cache.size() == Base::_size)
+    if (Base::_cache.size() == Base::_capacity)
     {
         Base::_cache.erase(Base::_queue.back());
         Base::_queue.pop_back();

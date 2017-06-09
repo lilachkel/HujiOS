@@ -7,15 +7,59 @@
 
 #include "ICacheAlgorithm.hpp"
 
-struct LfuKey
+struct LfuNode
 {
-    int key, count = 0;
+    int count;
+    LfuNode *prev, *next;
+    std::list<int> keys;
+
+    LfuNode() : count(1)
+    {}
+
+    LfuNode(int freq) : count(freq), prev(nullptr), next(nullptr)
+    {}
+
+    bool operator()(const LfuNode &lhs, const LfuNode &rhs)
+    {
+        return lhs.count < rhs.count;
+    }
+
+    bool operator<(const LfuNode &rhs)
+    {
+        return count < rhs.count;
+    }
 };
 
-class LfuAlgorithm : public ICacheAlgorithm<int, LfuKey>
+template<typename Key = int, typename Data = char *>
+class LfuAlgorithm : public ICacheAlgorithm<Key, Data>
 {
+    using Base = ICacheAlgorithm<Key, Data>;
+
+    LfuNode *_head;
+
+    std::unordered_map<Key, LfuNode *> _lfu;
+//    std::unordered_map<Key, Data> _cache;
+
+    virtual void Update(typename CacheMap<Key, Data>::iterator &cm);
+
+    void updateHead(int key);
+
+    void removeNode(LfuNode *node);
+
+    void removeOldNode();
+
 public:
-    LfuAlgorithm(size_t size);
+    LfuAlgorithm(size_t size) : ICacheAlgorithm<Key, Data>(size), _head(nullptr)
+    {}
+
+    ~LfuAlgorithm()
+    {
+        delete _head;
+    }
+
+    virtual Data Get(Key key);
+
+    virtual int Set(Key key, Data page);
 };
 
 
