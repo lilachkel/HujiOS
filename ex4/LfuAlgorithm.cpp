@@ -107,7 +107,14 @@ void LfuAlgorithm<Key, Data>::removeNode(LfuNode *node)
         node->prev->next = node->next;
 
     else
-        _head = _head->next;
+    {
+        LfuNode *next = _head->next;
+        delete _head;
+        _head = next;
+        return;
+    }
+
+    delete node;
 }
 
 template<typename Key, typename Data>

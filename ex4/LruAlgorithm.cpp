@@ -36,12 +36,12 @@ int LruAlgorithm<Key, Data>::Set(Key key, Data page)
 
     if (Base::_cache.size() == Base::_capacity)
     {
-        Base::_cache.erase(Base::_queue.back());
-        Base::_queue.pop_back();
+        Base::_cache.erase(_queue.back());
+        _queue.pop_back();
     }
 
-    Base::_queue.push_front(key);
-    Base::_cache.insert({key, {page, Base::_queue.begin()}});
+    _queue.push_front(key);
+    Base::_cache.insert({key, {page, _queue.begin()}});
 
     return 0;
 }
@@ -49,9 +49,9 @@ int LruAlgorithm<Key, Data>::Set(Key key, Data page)
 template<typename Key, typename Data>
 void LruAlgorithm<Key, Data>::Update(typename CacheMap<Key, Data>::iterator &cm)
 {
-    Base::_queue.erase(cm->second.second);
-    Base::_queue.push_front(cm->first);
-    cm->second.second = Base::_queue.begin();
+    _queue.erase(cm->second.second);
+    _queue.push_front(cm->first);
+    cm->second.second = _queue.begin();
 }
 
 template<typename Key, typename Data>

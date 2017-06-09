@@ -4,6 +4,7 @@
 #include "CacheFS.h"
 #include "ICacheAlgorithm.hpp"
 #include "LruAlgorithm.h"
+#include "LfuAlgorithm.h"
 
 #define RET_FAILURE -1
 #define RET_SUCCESS 0
@@ -30,6 +31,7 @@ int CacheFS_init(int blocks_num, cache_algo_t cache_algo, double f_old, double f
             _algorithm<int, char *> = new LruAlgorithm<int, char *>(GetBlockSize() * blocks_num);
             break;
         case LFU:
+            _algorithm<int, char *> = new LfuAlgorithm<int, char *>(GetBlockSize() * blocks_num);
             break;
         case FBR:
             break;
@@ -41,6 +43,15 @@ int CacheFS_init(int blocks_num, cache_algo_t cache_algo, double f_old, double f
 
 int CacheFS_destroy()
 {
+    try
+    {
+        delete _algorithm;
+    }
+    catch (std::exception &e)
+    {
+        return RET_FAILURE;
+    }
+
     return RET_SUCCESS;
 }
 

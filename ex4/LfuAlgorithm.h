@@ -13,21 +13,11 @@ struct LfuNode
     LfuNode *prev, *next;
     std::list<int> keys;
 
-    LfuNode() : count(1)
+    LfuNode() : count(1), prev(nullptr), next(nullptr)
     {}
 
     LfuNode(int freq) : count(freq), prev(nullptr), next(nullptr)
     {}
-
-    bool operator()(const LfuNode &lhs, const LfuNode &rhs)
-    {
-        return lhs.count < rhs.count;
-    }
-
-    bool operator<(const LfuNode &rhs)
-    {
-        return count < rhs.count;
-    }
 };
 
 template<typename Key = int, typename Data = char *>
@@ -38,7 +28,6 @@ class LfuAlgorithm : public ICacheAlgorithm<Key, Data>
     LfuNode *_head;
 
     std::unordered_map<Key, LfuNode *> _lfu;
-//    std::unordered_map<Key, Data> _cache;
 
     virtual void Update(typename CacheMap<Key, Data>::iterator &cm);
 

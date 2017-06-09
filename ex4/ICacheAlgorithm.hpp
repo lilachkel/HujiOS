@@ -17,7 +17,6 @@ class ICacheAlgorithm
 {
 protected:
     size_t _capacity;
-    std::list<Key> _queue;
     CacheMap<Key, Data> _cache;
 
     virtual void Update(typename CacheMap<Key, Data>::iterator &cm) = 0;
