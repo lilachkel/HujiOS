@@ -12,7 +12,10 @@
 template<typename K, typename D>
 ICacheAlgorithm<K, D> *_algorithm = nullptr;
 
-
+/**
+ * Gets the current blocks size.
+ * @return block size unsigned long
+ */
 size_t GetBlockSize()
 {
     struct stat fi;
@@ -45,7 +48,7 @@ int CacheFS_destroy()
 {
     try
     {
-        delete _algorithm;
+        delete _algorithm<int, char *>;
     }
     catch (std::exception &e)
     {

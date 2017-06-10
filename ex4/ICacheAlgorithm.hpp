@@ -8,6 +8,7 @@
 #include <stdlib.h>
 #include <unordered_map>
 #include <list>
+#include <iostream>
 
 template<typename Key, typename Data>
 using CacheMap = std::unordered_map<Key, std::pair<Data, typename std::list<Key>::iterator>>;
@@ -26,7 +27,6 @@ public:
     {}
 
     ICacheAlgorithm(ICacheAlgorithm &&other) : _capacity(std::move(other._capacity)),
-                                               _queue(std::move(other._queue)),
                                                _cache(std::move(other._cache))
     {}
 
@@ -35,7 +35,6 @@ public:
         if (this != &other)
         {
             _capacity = other._capacity;
-            _queue = std::move(other._queue);
             _cache = std::move(other._cache);
         }
 
@@ -45,6 +44,14 @@ public:
     virtual ~ICacheAlgorithm() = 0;
     virtual Data Get(Key key) = 0;
     virtual int Set(Key key, Data page) = 0;
+
+    void PrintCache()
+    {
+        for (const auto &item : _cache)
+        {
+            //TODO: how do we want to print it?
+        }
+    }
 };
 
 
