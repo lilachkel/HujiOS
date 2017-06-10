@@ -44,13 +44,13 @@ int LruAlgorithm<Key, Data>::Set(Key key, Data page)
     if (Base::_cache.size() == Base::_capacity)
     {
         // if yes, evict the LRU item.
-        Base::_cache.erase(_queue.back());
-        _queue.pop_back();
+        Base::_cache.erase(_lru.back());
+        _lru.pop_back();
     }
 
     // insert new item to the cache and update the queue.
-    _queue.push_front(key);
-    Base::_cache.insert({key, {page, _queue.begin()}});
+    _lru.push_front(key);
+    Base::_cache.insert({key, {page, _lru.begin()}});
 
     return 0;
 }
@@ -59,11 +59,11 @@ template<typename Key, typename Data>
 void LruAlgorithm<Key, Data>::Update(typename CacheMap<Key, Data>::iterator &cm)
 {
     // remove the item from the queue and add it in the front
-    _queue.erase(cm->second.second);
-    _queue.push_front(cm->first);
+    _lru.erase(cm->second.second);
+    _lru.push_front(cm->first);
 
     // update the item's position iterator in the cache map
-    cm->second.second = _queue.begin();
+    cm->second.second = _lru.begin();
 }
 
 template<typename Key, typename Data>
@@ -74,4 +74,18 @@ void LruAlgorithm<Key, Data>::CleanCache(CacheMap<Key, Data> &cm)
         delete[] item.second.first;
 
     cm.clear();
+}
+
+template<typename Key, typename Data>
+void LruAlgorithm<Key, Data>::RemoveByFileID(int fd)
+{
+    for (auto iter = Base::_cache.begin(); iter != Base::_cache.end(); iter++)
+    {
+        if (iter->first.first == fd)
+        {
+            _lru.erase(iter->second.second);
+            free(iter->second.first);
+            Base::_cache.erase(iter);
+        }
+    }
 }

@@ -7,11 +7,12 @@
 
 #include "ICacheAlgorithm.hpp"
 
+template<typename Key>
 struct LfuNode
 {
     int count;
     LfuNode *prev, *next;
-    std::list<int> keys;
+    std::list<Key> keys;
 
     LfuNode() : count(1), prev(nullptr), next(nullptr)
     {}
@@ -25,9 +26,9 @@ class LfuAlgorithm : public ICacheAlgorithm<Key, Data>
 {
     using Base = ICacheAlgorithm<Key, Data>;
 
-    LfuNode *_head;
+    LfuNode<Key> *_head;
 
-    std::unordered_map<Key, LfuNode *> _lfu;
+    std::unordered_map<Key, LfuNode<Key> *, PairHash<int, int>, PairEqual<int, int>> _lfu;
 
     virtual void Update(typename CacheMap<Key, Data>::iterator &cm);
 
@@ -35,14 +36,14 @@ class LfuAlgorithm : public ICacheAlgorithm<Key, Data>
      * Update the double linked-list's head with the given key.
      * @param key
      */
-    void updateHead(int key);
+    void updateHead(Key key);
 
     /**
      * Check if the node has next or previous nodes linked to it and relink everything bypassing the given node.
      * Then, delete given node
      * @param node LfuNode pointer to remove.
      */
-    void removeNode(LfuNode *node);
+    void removeNode(LfuNode<Key> *node);
 
     /**
      * Remove the node with lowest frequency.
@@ -58,9 +59,11 @@ public:
         delete _head;
     }
 
+    virtual void RemoveByFileID(int fd);
+
     virtual Data Get(Key key);
 
-    virtual int Set(Key key, Data page);
+    virtual int Set(Key key, Data data);
 };
 
 

@@ -9,15 +9,15 @@ void LfuAlgorithm<Key, Data>::Update(typename CacheMap<Key, Data>::iterator &cm)
 {
     // Get the key
     int key = cm->first;
-    // create get the node we are working with
-    LfuNode *node = _lfu[key];
+    // get the node we are working with
+    LfuNode<Key> *node = _lfu[key];
     // delete the key from node's list of keys.
     node->keys.erase(cm->second.second);
 
     // if node doesnt have next node we add a new node with a higher access count. Then add the key to that item's list.
     if (node->next == nullptr)
     {
-        node->next = new LfuNode(node->count + 1);
+        node->next = new LfuNode<Key>(node->count + 1);
         node->next->prev = node;
         node->next->keys.push_back(key);
     }
@@ -29,7 +29,7 @@ void LfuAlgorithm<Key, Data>::Update(typename CacheMap<Key, Data>::iterator &cm)
         // final case is for when the node has more nodes we insert a new node to that list and add the key to it.
     else
     {
-        LfuNode *newNode = new LfuNode(node->count + 1);
+        LfuNode<Key> *newNode = new LfuNode<Key>(node->count + 1);
         newNode->next = node->next;
         node->next->prev = newNode;
         newNode->prev = node;
@@ -63,14 +63,14 @@ Data LfuAlgorithm<Key, Data>::Get(Key key)
 }
 
 template<typename Key, typename Data>
-int LfuAlgorithm<Key, Data>::Set(Key key, Data page)
+int LfuAlgorithm<Key, Data>::Set(Key key, Data data)
 {
     // if the key already exists update it's access frequency and replace it's data.
     auto item = Base::_cache.find(key);
     if (item != Base::_cache.end())
     {
         Update(item);
-        item->second.first = page;
+        item->second.first = data;
     }
 
     else
@@ -84,7 +84,7 @@ int LfuAlgorithm<Key, Data>::Set(Key key, Data page)
         // add the key to the head because it has the lowest access count.
         updateHead(key);
         // add the key to the cache buffer.
-        Base::_cache.insert({key, {page, std::prev(_head->keys.end())}});
+        Base::_cache.insert({key, {data, std::prev(_head->keys.end())}});
     }
     return 0;
 }
@@ -95,7 +95,7 @@ void LfuAlgorithm<Key, Data>::updateHead(Key key)
     // if head is null - initialize it and add the key to it.
     if (_head == nullptr)
     {
-        _head = new LfuNode();
+        _head = new LfuNode<Key>();
         _head->keys.push_back(key);
     }
         // if _head frequncy is 1 we add the key to it
@@ -106,7 +106,7 @@ void LfuAlgorithm<Key, Data>::updateHead(Key key)
         // if head's frequency is higher than 1 - create a new head and add link the current head as it's next.
     else
     {
-        LfuNode *newNode = new LfuNode(1);
+        LfuNode<Key> *newNode = new LfuNode<Key>();
         _head->prev = newNode;
         newNode->next = _head;
         _head = newNode;
@@ -118,7 +118,7 @@ void LfuAlgorithm<Key, Data>::updateHead(Key key)
 }
 
 template<typename Key, typename Data>
-void LfuAlgorithm<Key, Data>::removeNode(LfuNode *node)
+void LfuAlgorithm<Key, Data>::removeNode(LfuNode<Key> *node)
 {
     // if it has next node then relink next node's prev to the prev of the current node
     if (node->next != nullptr)
@@ -132,7 +132,7 @@ void LfuAlgorithm<Key, Data>::removeNode(LfuNode *node)
         // head.
     else
     {
-        LfuNode *next = _head->next;
+        LfuNode<Key> *next = _head->next;
         delete _head;
         _head = next;
         return;
@@ -160,4 +160,21 @@ void LfuAlgorithm<Key, Data>::removeOldNode()
     Base::_cache.erase(old);
     // remove the old key from the lfu queue.
     _lfu.erase(old);
+}
+
+template<typename Key, typename Data>
+void LfuAlgorithm<Key, Data>::RemoveByFileID(int fd)
+{
+    for (auto iter = Base::_cache.begin(); iter != Base::_cache.end(); iter++)
+    {
+        if (iter->first.first == fd)
+        {
+            _lfu.erase(iter->first);
+            // get the node we are working with
+            LfuNode<Key> *node = _lfu[iter->first];
+            free(iter->second.first);
+            // delete the key from node's list of keys.
+            node->keys.erase(iter->second.second);
+        }
+    }
 }

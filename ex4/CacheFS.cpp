@@ -1,5 +1,6 @@
 #include <cstddef>
 #include <fcntl.h>
+#include <unistd.h>
 #include <sys/stat.h>
 #include "CacheFS.h"
 #include "ICacheAlgorithm.hpp"
@@ -32,10 +33,12 @@ int CacheFS_init(int blocks_num, cache_algo_t cache_algo, double f_old, double f
     switch (cache_algo)
     {
         case LRU:
-            _algorithm<int, char *> = new LruAlgorithm<int, char *>(GetBlockSize() * blocks_num);
+            _algorithm<std::pair<int, int>, char *> =
+                    new LruAlgorithm<std::pair<int, int>, char *>(GetBlockSize() * blocks_num);
             break;
         case LFU:
-            _algorithm<int, char *> = new LfuAlgorithm<int, char *>(GetBlockSize() * blocks_num);
+            _algorithm<std::pair<int, int>, char *> =
+                    new LfuAlgorithm<std::pair<int, int>, char *>(GetBlockSize() * blocks_num);
             break;
         case FBR:
             break;
@@ -49,7 +52,7 @@ int CacheFS_destroy()
 {
     try
     {
-        delete _algorithm<int, char *>;
+        delete _algorithm<std::pair<int, int>, char *>;
     }
     catch (std::exception &e)
     {
@@ -66,13 +69,13 @@ int CacheFS_open(const char *pathname)
     if (pos == std::string::npos || pos != 0)
         return RET_FAILURE;
 
-    std::bitset<16>(open(path, O_RDONLY | O_DIRECT | O_SYNC));
-
     return open(path, O_RDONLY | O_DIRECT | O_SYNC);
 }
 
 int CacheFS_close(int file_id)
 {
+    _algorithm->RemoveByFileID(file_id);
+    close(file_id);
     return RET_SUCCESS;
 }
 

@@ -1,7 +1,3 @@
-//
-// Created by jenia90 on 6/4/17.
-//
-
 #ifndef PROJECT_ICACHEALGORITHM_H
 #define PROJECT_ICACHEALGORITHM_H
 
@@ -10,8 +6,27 @@
 #include <list>
 #include <iostream>
 
+template<class T, typename U>
+struct PairHash
+{
+    const size_t operator()(const std::pair<T, U> &key) const
+    {
+        return std::hash<T>()(key.first) ^ std::hash<U>()(key.second);
+    }
+};
+
+template<class T, typename U>
+struct PairEqual
+{
+    bool operator()(const std::pair<T, U> &lhs, const std::pair<T, U> &rhs) const
+    {
+        return lhs.first == rhs.first && lhs.second == rhs.second;
+    }
+};
+
 template<typename Key, typename Data>
-using CacheMap = std::unordered_map<Key, std::pair<Data, typename std::list<Key>::iterator>>;
+using CacheMap = std::unordered_map<Key, std::pair<Data, typename std::list<Key>::iterator>, PairHash<int, int>,
+        PairEqual<int, int>>;
 
 template<typename Key, typename Data>
 class ICacheAlgorithm
@@ -69,6 +84,8 @@ public:
      * @return 0 if all goes well; -1 if error.
      */
     virtual int Set(Key key, Data page) = 0;
+
+    virtual void RemoveByFileID(int fd) = 0;
 
     void PrintCache()
     {
