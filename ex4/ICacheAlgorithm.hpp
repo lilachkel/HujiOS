@@ -87,13 +87,7 @@ public:
 
     virtual void RemoveByFileID(int fd) = 0;
 
-    void PrintCache()
-    {
-        for (const auto &item : _cache)
-        {
-            //TODO: how do we want to print it?
-        }
-    }
+    virtual void PrintCache(FILE *f) = 0;
 };
 
 

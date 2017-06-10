@@ -26,6 +26,8 @@ public:
     virtual Data Get(Key key);
 
     virtual int Set(Key key, Data page);
+
+    virtual void PrintCache(FILE *f);
 };
 
 

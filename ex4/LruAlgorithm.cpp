@@ -3,6 +3,7 @@
 //
 
 #include "LruAlgorithm.h"
+#include <unistd.h>
 
 
 template<typename Key, typename Data>
@@ -87,5 +88,16 @@ void LruAlgorithm<Key, Data>::RemoveByFileID(int fd)
             free(iter->second.first);
             Base::_cache.erase(iter);
         }
+    }
+}
+
+template<typename Key, typename Data>
+void LruAlgorithm<Key, Data>::PrintCache(FILE *f)
+{
+    char path[255];
+    for (auto &item : _lru)
+    {
+        readlink(("/proc/self/fd/" + std::string(item->first)).c_str(), path, 255);
+        fprintf(f, "%s %d\n", path, item->second);
     }
 }

@@ -178,3 +178,8 @@ void LfuAlgorithm<Key, Data>::RemoveByFileID(int fd)
         }
     }
 }
+
+void LfuAlgorithm::PrintCache(FILE *f)
+{
+
+}

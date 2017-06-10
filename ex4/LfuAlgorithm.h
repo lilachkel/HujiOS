@@ -64,6 +64,8 @@ public:
     virtual Data Get(Key key);
 
     virtual int Set(Key key, Data data);
+
+    virtual void PrintCache(FILE *f);
 };
 
 

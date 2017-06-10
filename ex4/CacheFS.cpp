@@ -14,6 +14,8 @@
 template<typename K, typename D>
 ICacheAlgorithm<K, D> *_algorithm = nullptr;
 
+int cache_hits, cache_misses;
+
 /**
  * Gets the current blocks size.
  * @return block size unsigned long
@@ -29,6 +31,9 @@ int CacheFS_init(int blocks_num, cache_algo_t cache_algo, double f_old, double f
 {
     if (f_new < 0 || f_new > 1 || f_old < 0 || f_old > 1 || (f_new + f_old) > 1 || blocks_num <= 0)
         return RET_FAILURE;
+
+    cache_hits = 0;
+    cache_misses = 0;
 
     switch (cache_algo)
     {
@@ -86,10 +91,24 @@ int CacheFS_pread(int file_id, void *buf, size_t count, off_t offset)
 
 int CacheFS_print_cache(const char *log_path)
 {
+    auto path = realpath(log_path, NULL);
+    FILE *f = fopen(path, "a");
+
+    _algorithm->PrintCache(f);
+
+    fflush(f);
+    fclose(f);
     return RET_SUCCESS;
 }
 
 int CacheFS_print_stat(const char *log_path)
 {
+    auto path = realpath(log_path, NULL);
+    FILE *f = fopen(path, "a");
+
+    fprintf(f, "Hits number: %d\nMisses number: %d\n", cache_hits, cache_misses);
+
+    fflush(f);
+    fclose(f);
     return RET_SUCCESS;
 }
