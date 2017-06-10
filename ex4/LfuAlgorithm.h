@@ -31,10 +31,22 @@ class LfuAlgorithm : public ICacheAlgorithm<Key, Data>
 
     virtual void Update(typename CacheMap<Key, Data>::iterator &cm);
 
+    /**
+     * Update the double linked-list's head with the given key.
+     * @param key
+     */
     void updateHead(int key);
 
+    /**
+     * Check if the node has next or previous nodes linked to it and relink everything bypassing the given node.
+     * Then, delete given node
+     * @param node LfuNode pointer to remove.
+     */
     void removeNode(LfuNode *node);
 
+    /**
+     * Remove the node with lowest frequency.
+     */
     void removeOldNode();
 
 public:
