@@ -25,7 +25,7 @@ size_t GetBlockSize()
 
 int CacheFS_init(int blocks_num, cache_algo_t cache_algo, double f_old, double f_new)
 {
-    if (f_new < 0 || f_new > 1 || f_old < 0 || f_old > 1 || (f_new + f_old) > 1 || blocks_num <= 0)
+    if (blocks_num <= 0)
         return RET_FAILURE;
 
     switch (cache_algo)
@@ -34,9 +34,13 @@ int CacheFS_init(int blocks_num, cache_algo_t cache_algo, double f_old, double f
             _algorithm<int, char *> = new LruAlgorithm<int, char *>(GetBlockSize() * blocks_num);
             break;
         case LFU:
+//            _algorithm<int, char *> = new LfuAlgorithm<int, char *>(GetBlockSize() * blocks_num);
             _algorithm<int, char *> = new LfuAlgorithm<int, char *>(GetBlockSize() * blocks_num);
             break;
         case FBR:
+            if (f_new < 0 || f_new > 1 || f_old < 0 || f_old > 1 || (f_new + f_old) > 1)
+                return RET_FAILURE;
+//            _algorithm<int, char *> = new FbrAlgorithm<int, char *>(GetBlockSize() * blocks_num);
             break;
         default:
             return RET_FAILURE;
