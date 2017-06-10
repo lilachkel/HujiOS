@@ -5,6 +5,7 @@
 #include "ICacheAlgorithm.hpp"
 #include "LruAlgorithm.h"
 #include "LfuAlgorithm.h"
+#include <bitset>
 
 #define RET_FAILURE -1
 #define RET_SUCCESS 0
@@ -60,9 +61,14 @@ int CacheFS_destroy()
 
 int CacheFS_open(const char *pathname)
 {
-    if (std::string(pathname).find("/tmp") == std::string::npos)
+    auto path = realpath(pathname, NULL);
+    int pos = std::string(path).find("/tmp");
+    if (pos == std::string::npos || pos != 0)
         return RET_FAILURE;
-    return RET_SUCCESS;
+
+    std::bitset<16>(open(path, O_RDONLY | O_DIRECT | O_SYNC));
+
+    return open(path, O_RDONLY | O_DIRECT | O_SYNC);
 }
 
 int CacheFS_close(int file_id)
