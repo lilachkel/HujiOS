@@ -79,7 +79,7 @@ int CacheFS_open(const char *pathname)
 
 int CacheFS_close(int file_id)
 {
-    _algorithm->RemoveByFileID(file_id);
+    _algorithm<std::pair<int, int>, char *>->RemoveByFileID(file_id);
     close(file_id);
     return RET_SUCCESS;
 }
@@ -94,7 +94,7 @@ int CacheFS_print_cache(const char *log_path)
     auto path = realpath(log_path, NULL);
     FILE *f = fopen(path, "a");
 
-    _algorithm->PrintCache(f);
+    _algorithm<std::pair<int, int>, char *>->PrintCache(f);
 
     fflush(f);
     fclose(f);
