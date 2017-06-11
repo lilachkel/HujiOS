@@ -1,9 +1,4 @@
-//
-// Created by jenia90 on 6/4/17.
-//
-
 #include "LruAlgorithm.h"
-
 
 template<typename Key, typename Data>
 LruAlgorithm<Key, Data>::~LruAlgorithm()
@@ -44,6 +39,7 @@ int LruAlgorithm<Key, Data>::Set(Key key, Data page)
     if (Base::_cache.size() == Base::_capacity)
     {
         // if yes, evict the LRU item.
+        free(Base::_cache[_lru.back()].first);
         Base::_cache.erase(_lru.back());
         _lru.pop_back();
     }
@@ -71,9 +67,10 @@ void LruAlgorithm<Key, Data>::CleanCache(CacheMap<Key, Data> &cm)
 {
     // TODO: check if this really needed (Maybe we free memory in the library function).
     for (auto &item : cm)
-        delete[] item.second.first;
+        free(item->second.first);
 
     cm.clear();
+    _lru.clear();
 }
 
 template<typename Key, typename Data>

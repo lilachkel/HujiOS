@@ -146,7 +146,7 @@ void LfuAlgorithm<Key, Data>::removeOldNode()
 {
     // if head is already null then do nothing.
     if (_head == nullptr) return;
-    int old = 0;
+    Key old = Key();
     // if head's key list is not empty get the key and remove it from the head.
     if (!_head->keys.empty())
     {
@@ -157,6 +157,7 @@ void LfuAlgorithm<Key, Data>::removeOldNode()
     if (_head->keys.empty()) removeNode(_head);
 
     // remove the old key from the buffer
+    free(Base::_cache[old].first);
     Base::_cache.erase(old);
     // remove the old key from the lfu queue.
     _lfu.erase(old);

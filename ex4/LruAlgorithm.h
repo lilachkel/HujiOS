@@ -12,6 +12,7 @@ class LruAlgorithm : public ICacheAlgorithm<Key, Data>
 {
     using Base = ICacheAlgorithm<Key, Data>;
     std::list<Key> _lru;
+
     virtual void Update(typename CacheMap<Key, Data>::iterator &cm);
 
     void CleanCache(CacheMap<Key, Data> &cm);
