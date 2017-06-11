@@ -3,7 +3,6 @@
 //
 
 #include "LruAlgorithm.h"
-#include <unistd.h>
 
 
 template<typename Key, typename Data>

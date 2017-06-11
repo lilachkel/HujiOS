@@ -182,5 +182,20 @@ void LfuAlgorithm<Key, Data>::RemoveByFileID(int fd)
 template<typename Key, typename Data>
 void LfuAlgorithm<Key, Data>::PrintCache(FILE *f)
 {
+    PrintHelper(f, _head);
+}
 
+template<typename Key, typename Data>
+void LfuAlgorithm<Key, Data>::PrintHelper(FILE *f, LfuNode<Key> *node)
+{
+    if (node == nullptr)
+        return;
+    PrintHelper(f, node->next);
+
+    char path[255];
+    for (auto &i : node->keys)
+    {
+        readlink(("/proc/self/fd/" + std::string(i->first)).c_str(), path, 255);
+        fprintf(f, "%s %d\n", path, i->second);
+    }
 }

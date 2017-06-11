@@ -50,6 +50,9 @@ class LfuAlgorithm : public ICacheAlgorithm<Key, Data>
      */
     void removeOldNode();
 
+    // Prints the cache state from the last key that will be evicted.
+    void PrintHelper(FILE *f, LfuNode<Key> *node);
+
 public:
     LfuAlgorithm(size_t size) : ICacheAlgorithm<Key, Data>(size), _head(nullptr)
     {}

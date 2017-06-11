@@ -5,6 +5,7 @@
 #include <unordered_map>
 #include <list>
 #include <iostream>
+#include <unistd.h>
 
 template<class T, typename U>
 struct PairHash
