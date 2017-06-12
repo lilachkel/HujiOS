@@ -26,14 +26,18 @@ Data LruAlgorithm<Key, Data>::Get(Key key)
 }
 
 template<typename Key, typename Data>
-void LruAlgorithm<Key, Data>::FbrTouch(Key key)
+std::pair<Key, Data> LruAlgorithm<Key, Data>::FbrGet(Key key)
 {
     auto item = Base::_cache.find(key);
     if (item == Base::_cache.end())
-        return;
+        return {nullptr, nullptr};
+
+    Data data = item->second.first;
 
     _lru.erase(item->second.second);
     Base::_cache.erase(key);
+
+    return {key, data};
 }
 
 template<typename Key, typename Data>

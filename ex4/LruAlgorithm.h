@@ -19,7 +19,7 @@ public:
 
     ~LruAlgorithm();
 
-    void FbrTouch(Key key);
+    std::pair<Key, Data> FbrGet(Key key);
 
     std::pair<Key, Data> FbrSet(Key key, Data data);
 
