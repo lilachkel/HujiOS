@@ -88,7 +88,7 @@ public:
 
     virtual void RemoveByFileID(int fd) = 0;
 
-    virtual void PrintCache(FILE *f) = 0;
+    virtual void PrintCache(FILE *f, std::unordered_map<int, std::string> &files) = 0;
 };
 
 

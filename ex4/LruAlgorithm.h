@@ -28,7 +28,7 @@ public:
 
     virtual int Set(Key key, Data page);
 
-    virtual void PrintCache(FILE *f);
+    virtual void PrintCache(FILE *f, std::unordered_map<int, std::string> &files);
 };
 
 

@@ -21,7 +21,7 @@ struct LfuNode
     {}
 };
 
-template<typename Key = int, typename Data = char *>
+template<typename Key, typename Data>
 class LfuAlgorithm : public ICacheAlgorithm<Key, Data>
 {
     using Base = ICacheAlgorithm<Key, Data>;
@@ -50,8 +50,12 @@ class LfuAlgorithm : public ICacheAlgorithm<Key, Data>
      */
     void removeOldNode();
 
-    // Prints the cache state from the last key that will be evicted.
-    void PrintHelper(FILE *f, LfuNode<Key> *node);
+    /**
+     * Prints the cache state recursively
+     * @param f log file pointer
+     * @param node current node in our traversal.
+     */
+    void PrintHelper(FILE *f, LfuNode<Key> *node, std::unordered_map<int, std::string> &files);
 
 public:
     LfuAlgorithm(size_t size) : ICacheAlgorithm<Key, Data>(size), _head(nullptr)
@@ -68,7 +72,7 @@ public:
 
     virtual int Set(Key key, Data data);
 
-    virtual void PrintCache(FILE *f);
+    virtual void PrintCache(FILE *f, std::unordered_map<int, std::string> &files);
 };
 
 

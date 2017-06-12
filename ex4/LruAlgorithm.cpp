@@ -88,12 +88,10 @@ void LruAlgorithm<Key, Data>::RemoveByFileID(int fd)
 }
 
 template<typename Key, typename Data>
-void LruAlgorithm<Key, Data>::PrintCache(FILE *f)
+void LruAlgorithm<Key, Data>::PrintCache(FILE *f, std::unordered_map<int, std::string> &files)
 {
-    char path[255];
     for (auto &item : _lru)
     {
-        readlink(("/proc/self/fd/" + std::string(item->first)).c_str(), path, 255);
-        fprintf(f, "%s %d\n", path, item->second);
+        fprintf(f, "%s %d\n", files[item->first], item->second);
     }
 }

@@ -181,22 +181,20 @@ void LfuAlgorithm<Key, Data>::RemoveByFileID(int fd)
 }
 
 template<typename Key, typename Data>
-void LfuAlgorithm<Key, Data>::PrintCache(FILE *f)
+void LfuAlgorithm<Key, Data>::PrintCache(FILE *f, std::unordered_map<int, std::string> &files)
 {
-    PrintHelper(f, _head);
+    PrintHelper(f, _head, files);
 }
 
 template<typename Key, typename Data>
-void LfuAlgorithm<Key, Data>::PrintHelper(FILE *f, LfuNode<Key> *node)
+void LfuAlgorithm<Key, Data>::PrintHelper(FILE *f, LfuNode<Key> *node, std::unordered_map<int, std::string> &files)
 {
     if (node == nullptr)
         return;
-    PrintHelper(f, node->next);
+    PrintHelper(f, node->next, files);
 
-    char path[255];
     for (auto &i : node->keys)
     {
-        readlink(("/proc/self/fd/" + std::string(i->first)).c_str(), path, 255);
-        fprintf(f, "%s %d\n", path, i->second);
+        fprintf(f, "%s %d\n", files[i->first], i->second);
     }
 }
