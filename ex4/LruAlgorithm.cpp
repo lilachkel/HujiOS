@@ -1,9 +1,4 @@
-//
-// Created by jenia90 on 6/4/17.
-//
-
 #include "LruAlgorithm.h"
-
 
 template<typename Key, typename Data>
 LruAlgorithm<Key, Data>::~LruAlgorithm()
@@ -44,13 +39,14 @@ int LruAlgorithm<Key, Data>::Set(Key key, Data page)
     if (Base::_cache.size() == Base::_capacity)
     {
         // if yes, evict the LRU item.
-        Base::_cache.erase(_queue.back());
-        _queue.pop_back();
+        free(Base::_cache[_lru.back()].first);
+        Base::_cache.erase(_lru.back());
+        _lru.pop_back();
     }
 
     // insert new item to the cache and update the queue.
-    _queue.push_front(key);
-    Base::_cache.insert({key, {page, _queue.begin()}});
+    _lru.push_front(key);
+    Base::_cache.insert({key, {page, _lru.begin()}});
 
     return 0;
 }
@@ -59,11 +55,11 @@ template<typename Key, typename Data>
 void LruAlgorithm<Key, Data>::Update(typename CacheMap<Key, Data>::iterator &cm)
 {
     // remove the item from the queue and add it in the front
-    _queue.erase(cm->second.second);
-    _queue.push_front(cm->first);
+    _lru.erase(cm->second.second);
+    _lru.push_front(cm->first);
 
     // update the item's position iterator in the cache map
-    cm->second.second = _queue.begin();
+    cm->second.second = _lru.begin();
 }
 
 template<typename Key, typename Data>
@@ -71,7 +67,33 @@ void LruAlgorithm<Key, Data>::CleanCache(CacheMap<Key, Data> &cm)
 {
     // TODO: check if this really needed (Maybe we free memory in the library function).
     for (auto &item : cm)
-        delete[] item.second.first;
+        free(item->second.first);
 
     cm.clear();
+    _lru.clear();
+}
+
+template<typename Key, typename Data>
+void LruAlgorithm<Key, Data>::RemoveByFileID(int fd)
+{
+    for (auto iter = Base::_cache.begin(); iter != Base::_cache.end(); iter++)
+    {
+        if (iter->first.first == fd)
+        {
+            _lru.erase(iter->second.second);
+            free(iter->second.first);
+            Base::_cache.erase(iter);
+        }
+    }
+}
+
+template<typename Key, typename Data>
+void LruAlgorithm<Key, Data>::PrintCache(FILE *f)
+{
+    char path[255];
+    for (auto &item : _lru)
+    {
+        readlink(("/proc/self/fd/" + std::string(item->first)).c_str(), path, 255);
+        fprintf(f, "%s %d\n", path, item->second);
+    }
 }

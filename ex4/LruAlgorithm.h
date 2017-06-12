@@ -7,11 +7,12 @@
 
 #include "ICacheAlgorithm.hpp"
 
-template<typename Key = int, typename Data=char *>
+template<typename Key, typename Data>
 class LruAlgorithm : public ICacheAlgorithm<Key, Data>
 {
     using Base = ICacheAlgorithm<Key, Data>;
-    std::list<Key> _queue;
+    std::list<Key> _lru;
+
     virtual void Update(typename CacheMap<Key, Data>::iterator &cm);
 
     void CleanCache(CacheMap<Key, Data> &cm);
@@ -21,9 +22,13 @@ public:
 
     virtual ~LruAlgorithm();
 
+    virtual void RemoveByFileID(int fd);
+
     virtual Data Get(Key key);
 
     virtual int Set(Key key, Data page);
+
+    virtual void PrintCache(FILE *f);
 };
 
 
