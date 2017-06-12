@@ -90,9 +90,11 @@ int CacheFS_close(int file_id)
 {
     try
     {
+        _openFiles.at(file_id);
         _algorithm<std::pair<int, int>, void *>->RemoveByFileID(file_id);
         close(file_id);
         _openFiles.erase(file_id);
+
     }
     catch (std::exception e)
     {
@@ -145,6 +147,7 @@ int CacheFS_pread(int file_id, void *buf, size_t count, off_t offset)
             ssize_t _readSize = pread(file_id, _cacheBuff, blockSize, blockCandid * blockSize);
             if (_readSize == -1)
             {
+                delete[]_cacheBuff;
                 return RET_FAILURE;
             }
 
@@ -163,8 +166,8 @@ int CacheFS_pread(int file_id, void *buf, size_t count, off_t offset)
 //        _curOffset += addToOffset;
         cur_count -= addToOffset;
     }
-
-    return (int) buf_offset;
+    delete[]_cacheBuff;
+    return (int)buf_offset;
 }
 
 int CacheFS_print_cache(const char *log_path)
