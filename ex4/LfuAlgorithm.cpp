@@ -84,7 +84,7 @@ int LfuAlgorithm<Key, Data>::Set(Key key, Data data)
 }
 
 template<typename Key, typename Data>
-int LfuAlgorithm<Key, Data>::Set(Key key, Data data, int count = 1)
+int LfuAlgorithm<Key, Data>::Set(Key key, Data data, int count = 1, Key *old = nullptr)
 {
     // if the key already exists update it's access frequency and replace it's data.
     auto item = Base::_cache.find(key);
@@ -100,7 +100,7 @@ int LfuAlgorithm<Key, Data>::Set(Key key, Data data, int count = 1)
         // if the key doesn't exist and there's no more room in the buffer - remove the LFU node first.
         if (Base::_cache.size() == Base::_capacity)
         {
-            removeOldNode();
+            removeOldNode(old);
         }
 
         // add the key to the head because it has the lowest access count.
@@ -210,7 +210,7 @@ void LfuAlgorithm<Key, Data>::removeNode(LfuNode<Key> *node)
 }
 
 template<typename Key, typename Data>
-void LfuAlgorithm<Key, Data>::removeOldNode()
+void LfuAlgorithm<Key, Data>::removeOldNode(Key *oldKey)
 {
     // if head is already null then do nothing.
     if (_head == nullptr) return;
@@ -219,6 +219,7 @@ void LfuAlgorithm<Key, Data>::removeOldNode()
     if (!_head->keys.empty())
     {
         old = _head->keys.front();
+        oldKey = &old;
         _head->keys.pop_front();
     }
     // if head is empty now - remove it.
