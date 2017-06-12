@@ -11,7 +11,7 @@ LfuAlgorithm<Key, Data>::~LfuAlgorithm()
 }
 
 template<typename Key, typename Data>
-void LfuAlgorithm<Key, Data>::DestroyLFU(LfuNode *node)
+void LfuAlgorithm<Key, Data>::DestroyLFU(LfuNode<Key> *node)
 {
     if (node == nullptr)
         return;
@@ -80,6 +80,12 @@ Data LfuAlgorithm<Key, Data>::Get(Key key)
 template<typename Key, typename Data>
 int LfuAlgorithm<Key, Data>::Set(Key key, Data data)
 {
+    Set(key, data, 1);
+}
+
+template<typename Key, typename Data>
+int LfuAlgorithm<Key, Data>::Set(Key key, Data data, int count = 1)
+{
     // if the key already exists update it's access frequency and replace it's data.
     auto item = Base::_cache.find(key);
     if (item != Base::_cache.end())
@@ -90,6 +96,7 @@ int LfuAlgorithm<Key, Data>::Set(Key key, Data data)
 
     else
     {
+        std::list<Key>::iterator pos;
         // if the key doesn't exist and there's no more room in the buffer - remove the LFU node first.
         if (Base::_cache.size() == Base::_capacity)
         {
@@ -97,11 +104,57 @@ int LfuAlgorithm<Key, Data>::Set(Key key, Data data)
         }
 
         // add the key to the head because it has the lowest access count.
-        updateHead(key);
+        if (count == 1)
+        {
+            updateHead(key);
+            pos = _head->keys.end();
+        }
+        else
+        {
+            pos = updateExisting(key, _head, count);
+        }
         // add the key to the cache buffer.
-        Base::_cache.insert({key, {data, std::prev(_head->keys.end())}});
+        Base::_cache.insert({key, {data, std::prev(pos)}});
     }
     return 0;
+}
+
+template<typename Key, typename Data>
+std::list<Key>::iterator &LfuAlgorithm<Key, Data>::updateExisting(Key key, LfuNode<Key> *node, int count)
+{
+    if (node->count == count)
+    {
+        node->keys.push_back(key);
+        return node->keys.end();
+    }
+        // if we have to add the key in the middle of the list
+    else if (node->next != nullptr)
+    {
+        // there are nodes with higher frequency
+        if (node->next->count <= count)
+        {
+            return updateExisting(key, node->next, count);
+        }
+        else
+        {
+            LfuNode<Key> *newNode = new LfuNode<Key>(count);
+            newNode->next = node->next;
+            node->next->prev = newNode;
+            node->next = newNode;
+            newNode->prev = node;
+            newNode->keys.push_back(key);
+            return newNode->keys.end();
+        }
+    }
+
+    else
+    {
+        LfuNode<Key> *newNode = new LfuNode<Key>(count);
+        node->next = newNode;
+        newNode->prev = node;
+        newNode->keys.push_back(key);
+        return newNode->keys.end();
+    }
 }
 
 template<typename Key, typename Data>

@@ -26,7 +26,18 @@ Data LruAlgorithm<Key, Data>::Get(Key key)
 }
 
 template<typename Key, typename Data>
-int LruAlgorithm<Key, Data>::Set(Key key, Data page)
+void LruAlgorithm<Key, Data>::FbrTouch(Key key)
+{
+    auto item = Base::_cache.find(key);
+    if (item == Base::_cache.end())
+        return;
+
+    _lru.erase(item->second.second);
+    Base::_cache.erase(key);
+}
+
+template<typename Key, typename Data>
+int LruAlgorithm<Key, Data>::Set(Key key, Data data)
 {
     // Check if the item with the given key is already cached
     auto item = Base::_cache.find(key);
@@ -34,7 +45,7 @@ int LruAlgorithm<Key, Data>::Set(Key key, Data page)
     {
         // If cached update its position as if it was accessed and update its data.
         Update(item);
-        item->second.first = page;
+        item->second.first = data;
 
         return 0;
     }
@@ -50,9 +61,37 @@ int LruAlgorithm<Key, Data>::Set(Key key, Data page)
 
     // insert new item to the cache and update the queue.
     _lru.push_front(key);
-    Base::_cache.insert({key, {page, _lru.begin()}});
+    Base::_cache.insert({key, {data, _lru.begin()}});
 
     return 0;
+}
+
+template<typename Key, typename Data>
+Key LruAlgorithm<Key, Data>::FbrSet(Key key, Data data)
+{
+    Key old;
+    // Check if the item with the given key is already cached
+    auto item = Base::_cache.find(key);
+    if (item != Base::_cache.end())
+    {
+        // If cached update its position as if it was accessed and update its data.
+        Update(item);
+        item->second.first = data;
+
+        return Key();
+
+    }
+
+    // check if we reached capacity limit
+    if (Base::_cache.size() == Base::_capacity)
+    {
+        Key old = _lru.back();
+        // if yes, evict the LRU item.
+        Base::_cache.erase(_lru.back());
+        _lru.pop_back();
+    }
+
+    return old;
 }
 
 template<typename Key, typename Data>

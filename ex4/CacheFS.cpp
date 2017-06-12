@@ -172,7 +172,7 @@ int CacheFS_print_cache(const char *log_path)
     auto path = realpath(log_path, NULL);
     FILE *f = fopen(path, "a");
 
-    _algorithm<std::pair<int, int>, void *>->PrintCache(f, _openFiles);
+    _algorithm<std::pair<int, int>, void *>->PrintCache(f);
 
     fflush(f);
     fclose(f);

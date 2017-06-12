@@ -19,9 +19,13 @@ public:
 
     ~LruAlgorithm();
 
+    void FbrTouch(Key key);
+
+    Key FbrSet(Key key, Data data);
+
     virtual Data Get(Key key);
 
-    virtual int Set(Key key, Data page);
+    virtual int Set(Key key, Data data);
 
     virtual void PrintCache(FILE *f);
 };

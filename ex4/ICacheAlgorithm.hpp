@@ -75,7 +75,7 @@ public:
     {
         for (auto &item : _cache)
         {
-            free(item->second.first);
+            free(item.second.first);
         }
 
         _cache.clear();

@@ -30,7 +30,7 @@ class LfuAlgorithm : public ICacheAlgorithm<Key, Data>
 
     std::unordered_map<Key, LfuNode<Key> *, PairHash<int, int>, PairEqual<int, int>> _lfu;
 
-    void DestroyLFU(LfuNode<Key, Data> *node);
+    void DestroyLFU(LfuNode<Key> *node);
 
     virtual void Update(typename CacheMap<Key, Data>::iterator &cm);
 
@@ -39,6 +39,8 @@ class LfuAlgorithm : public ICacheAlgorithm<Key, Data>
      * @param key
      */
     void updateHead(Key key);
+
+    typename std::list<Key>::iterator &updateExisting(Key key, LfuNode<Key> *node, int count);
 
     /**
      * Check if the node has next or previous nodes linked to it and relink everything bypassing the given node.
@@ -67,6 +69,8 @@ public:
     virtual Data Get(Key key);
 
     virtual int Set(Key key, Data data);
+
+    virtual int Set(Key key, Data data, int count);
 
     virtual void PrintCache(FILE *f);
 };
