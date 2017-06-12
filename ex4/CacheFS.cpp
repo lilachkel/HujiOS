@@ -64,7 +64,6 @@ int CacheFS_destroy()
 {
     try
     {
-
         delete _algorithm<std::pair<int, int>, void *>;
     }
     catch (std::exception &e)
@@ -145,6 +144,7 @@ int CacheFS_pread(int file_id, void *buf, size_t count, off_t offset)
             ssize_t _readSize = pread(file_id, _cacheBuff, blockSize, blockCandid * blockSize);
             if (_readSize == -1)
             {
+                free(_cacheBuff);
                 return RET_FAILURE;
             }
 
@@ -163,8 +163,8 @@ int CacheFS_pread(int file_id, void *buf, size_t count, off_t offset)
 //        _curOffset += addToOffset;
         cur_count -= addToOffset;
     }
-
-    return (int) buf_offset;
+    free(_cacheBuff);
+    return (int)buf_offset;
 }
 
 int CacheFS_print_cache(const char *log_path)
