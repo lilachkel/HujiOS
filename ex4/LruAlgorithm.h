@@ -21,7 +21,7 @@ public:
 
     void FbrTouch(Key key);
 
-    Key FbrSet(Key key, Data data);
+    std::pair<Key, Data> FbrSet(Key key, Data data);
 
     virtual Data Get(Key key);
 

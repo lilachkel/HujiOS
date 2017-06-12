@@ -67,9 +67,10 @@ int LruAlgorithm<Key, Data>::Set(Key key, Data data)
 }
 
 template<typename Key, typename Data>
-Key LruAlgorithm<Key, Data>::FbrSet(Key key, Data data)
+std::pair<Key, Data> LruAlgorithm<Key, Data>::FbrSet(Key key, Data data)
 {
-    Key old;
+    Key oldKey;
+    Data oldData;
     // Check if the item with the given key is already cached
     auto item = Base::_cache.find(key);
     if (item != Base::_cache.end())
@@ -78,20 +79,21 @@ Key LruAlgorithm<Key, Data>::FbrSet(Key key, Data data)
         Update(item);
         item->second.first = data;
 
-        return Key();
+        return nullptr;
 
     }
 
     // check if we reached capacity limit
     if (Base::_cache.size() == Base::_capacity)
     {
-        Key old = _lru.back();
+        oldKey = _lru.back();
+        oldData = Base::_cache.erase(oldKey);
         // if yes, evict the LRU item.
-        Base::_cache.erase(_lru.back());
+        Base::_cache.erase(oldKey);
         _lru.pop_back();
     }
 
-    return old;
+    return {oldKey, oldData};
 }
 
 template<typename Key, typename Data>

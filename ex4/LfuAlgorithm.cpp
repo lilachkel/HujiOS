@@ -80,11 +80,11 @@ Data LfuAlgorithm<Key, Data>::Get(Key key)
 template<typename Key, typename Data>
 int LfuAlgorithm<Key, Data>::Set(Key key, Data data)
 {
-    Set(key, data, 1);
+    Set(key, data, 1, nullptr, free);
 }
 
 template<typename Key, typename Data>
-int LfuAlgorithm<Key, Data>::Set(Key key, Data data, int count = 1, Key *old = nullptr)
+int LfuAlgorithm<Key, Data>::Set(Key key, Data data, int count, Key *old, void (*freeData)(Data))
 {
     // if the key already exists update it's access frequency and replace it's data.
     auto item = Base::_cache.find(key);
@@ -96,11 +96,11 @@ int LfuAlgorithm<Key, Data>::Set(Key key, Data data, int count = 1, Key *old = n
 
     else
     {
-        std::list<Key>::iterator pos;
+        typename std::list<Key>::iterator pos;
         // if the key doesn't exist and there's no more room in the buffer - remove the LFU node first.
         if (Base::_cache.size() == Base::_capacity)
         {
-            removeOldNode(old);
+            removeOldNode(old, freeData);
         }
 
         // add the key to the head because it has the lowest access count.
@@ -120,7 +120,7 @@ int LfuAlgorithm<Key, Data>::Set(Key key, Data data, int count = 1, Key *old = n
 }
 
 template<typename Key, typename Data>
-std::list<Key>::iterator &LfuAlgorithm<Key, Data>::updateExisting(Key key, LfuNode<Key> *node, int count)
+typename std::list<Key>::iterator &LfuAlgorithm<Key, Data>::updateExisting(Key key, LfuNode<Key> *node, int count)
 {
     if (node->count == count)
     {
@@ -210,7 +210,7 @@ void LfuAlgorithm<Key, Data>::removeNode(LfuNode<Key> *node)
 }
 
 template<typename Key, typename Data>
-void LfuAlgorithm<Key, Data>::removeOldNode(Key *oldKey)
+void LfuAlgorithm<Key, Data>::removeOldNode(Key *oldKey, void (*freeData)(Data))
 {
     // if head is already null then do nothing.
     if (_head == nullptr) return;
@@ -226,7 +226,7 @@ void LfuAlgorithm<Key, Data>::removeOldNode(Key *oldKey)
     if (_head->keys.empty()) removeNode(_head);
 
     // remove the old key from the buffer
-    free(Base::_cache[old].first);
+    freeData(Base::_cache[old].first);
     Base::_cache.erase(old);
     // remove the old key from the lfu queue.
     _lfu.erase(old);
