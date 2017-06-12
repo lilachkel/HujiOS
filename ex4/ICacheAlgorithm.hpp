@@ -50,6 +50,11 @@ public:
                                                _cache(std::move(other._cache))
     {}
 
+    ~ICacheAlgorithm()
+    {
+        CleanCache();
+    }
+
     /**
      * Assignment move operator
      * @param other the object to move from
@@ -66,10 +71,15 @@ public:
         return *this;
     }
 
-    /**
-     * Dtor
-     */
-    virtual ~ICacheAlgorithm() = 0;
+    void CleanCache()
+    {
+        for (auto &item : _cache)
+        {
+            free(item->second.first);
+        }
+
+        _cache.clear();
+    }
 
     /**
      * Gets an item from the cache by a given key
@@ -86,9 +96,8 @@ public:
      */
     virtual int Set(Key key, Data page) = 0;
 
-    virtual void RemoveByFileID(int fd) = 0;
+    virtual void PrintCache(FILE *f) = 0;
 
-    virtual void PrintCache(FILE *f, std::unordered_map<int, std::string> &files) = 0;
 };
 
 

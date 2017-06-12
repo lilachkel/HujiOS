@@ -14,21 +14,16 @@ class LruAlgorithm : public ICacheAlgorithm<Key, Data>
     std::list<Key> _lru;
 
     virtual void Update(typename CacheMap<Key, Data>::iterator &cm);
-
-    void CleanCache(CacheMap<Key, Data> &cm);
 public:
-    LruAlgorithm(size_t size) : ICacheAlgorithm<Key, Data>(size)
-    {}
+    LruAlgorithm(size_t size);
 
-    virtual ~LruAlgorithm();
-
-    virtual void RemoveByFileID(int fd);
+    ~LruAlgorithm();
 
     virtual Data Get(Key key);
 
     virtual int Set(Key key, Data page);
 
-    virtual void PrintCache(FILE *f, std::unordered_map<int, std::string> &files);
+    virtual void PrintCache(FILE *f);
 };
 
 

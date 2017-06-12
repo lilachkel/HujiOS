@@ -30,6 +30,8 @@ class LfuAlgorithm : public ICacheAlgorithm<Key, Data>
 
     std::unordered_map<Key, LfuNode<Key> *, PairHash<int, int>, PairEqual<int, int>> _lfu;
 
+    void DestroyLFU(LfuNode<Key, Data> *node);
+
     virtual void Update(typename CacheMap<Key, Data>::iterator &cm);
 
     /**
@@ -55,24 +57,18 @@ class LfuAlgorithm : public ICacheAlgorithm<Key, Data>
      * @param f log file pointer
      * @param node current node in our traversal.
      */
-    void PrintHelper(FILE *f, LfuNode<Key> *node, std::unordered_map<int, std::string> &files);
+    void PrintHelper(FILE *f, LfuNode<Key> *node);
 
 public:
-    LfuAlgorithm(size_t size) : ICacheAlgorithm<Key, Data>(size), _head(nullptr)
-    {}
+    LfuAlgorithm(size_t size);
 
-    ~LfuAlgorithm()
-    {
-        delete _head;
-    }
-
-    virtual void RemoveByFileID(int fd);
+    ~LfuAlgorithm();
 
     virtual Data Get(Key key);
 
     virtual int Set(Key key, Data data);
 
-    virtual void PrintCache(FILE *f, std::unordered_map<int, std::string> &files);
+    virtual void PrintCache(FILE *f);
 };
 
 

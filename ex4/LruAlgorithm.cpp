@@ -1,9 +1,13 @@
 #include "LruAlgorithm.h"
 
 template<typename Key, typename Data>
+LruAlgorithm<Key, Data>::LruAlgorithm(size_t size) : ICacheAlgorithm<Key, Data>(size)
+{}
+
+template<typename Key, typename Data>
 LruAlgorithm<Key, Data>::~LruAlgorithm()
 {
-    CleanCache(Base::_cache);
+    _lru.clear();
 }
 
 template<typename Key, typename Data>
@@ -63,35 +67,12 @@ void LruAlgorithm<Key, Data>::Update(typename CacheMap<Key, Data>::iterator &cm)
 }
 
 template<typename Key, typename Data>
-void LruAlgorithm<Key, Data>::CleanCache(CacheMap<Key, Data> &cm)
+void LruAlgorithm<Key, Data>::PrintCache(FILE *f)
 {
-    // TODO: check if this really needed (Maybe we free memory in the library function).
-    for (auto &item : cm)
-        free(item->second.first);
-
-    cm.clear();
-    _lru.clear();
-}
-
-template<typename Key, typename Data>
-void LruAlgorithm<Key, Data>::RemoveByFileID(int fd)
-{
-    for (auto iter = Base::_cache.begin(); iter != Base::_cache.end(); iter++)
-    {
-        if (iter->first.first == fd)
-        {
-            _lru.erase(iter->second.second);
-            free(iter->second.first);
-            Base::_cache.erase(iter);
-        }
-    }
-}
-
-template<typename Key, typename Data>
-void LruAlgorithm<Key, Data>::PrintCache(FILE *f, std::unordered_map<int, std::string> &files)
-{
+    char path[FILENAME_MAX];
     for (auto &item : _lru)
     {
-        fprintf(f, "%s %d\n", files[item->first], item->second);
+        readlink(("/proc/self/fd/" + std::to_string(item->first)).c_str(), path, FILENAME_MAX);
+        fprintf(f, "%s %d\n", path, item->second);
     }
 }

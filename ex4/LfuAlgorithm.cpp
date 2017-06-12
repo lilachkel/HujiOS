@@ -1,8 +1,23 @@
-//
-// Created by jenia90 on 6/4/17.
-//
-
 #include "LfuAlgorithm.h"
+
+template<typename Key, typename Data>
+LfuAlgorithm<Key, Data>::LfuAlgorithm(size_t size) : ICacheAlgorithm<Key, Data>(size), _head(nullptr)
+{}
+
+template<typename Key, typename Data>
+LfuAlgorithm<Key, Data>::~LfuAlgorithm()
+{
+    DestroyLFU(_head);
+}
+
+template<typename Key, typename Data>
+void LfuAlgorithm<Key, Data>::DestroyLFU(LfuNode *node)
+{
+    if (node == nullptr)
+        return;
+    DestroyLFU(node->next);
+    delete node;
+}
 
 template<typename Key, typename Data>
 void LfuAlgorithm<Key, Data>::Update(typename CacheMap<Key, Data>::iterator &cm)
@@ -164,37 +179,22 @@ void LfuAlgorithm<Key, Data>::removeOldNode()
 }
 
 template<typename Key, typename Data>
-void LfuAlgorithm<Key, Data>::RemoveByFileID(int fd)
+void LfuAlgorithm<Key, Data>::PrintCache(FILE *f)
 {
-    for (auto iter = Base::_cache.begin(); iter != Base::_cache.end(); iter++)
-    {
-        if (iter->first.first == fd)
-        {
-            _lfu.erase(iter->first);
-            // get the node we are working with
-            LfuNode<Key> *node = _lfu[iter->first];
-            free(iter->second.first);
-            // delete the key from node's list of keys.
-            node->keys.erase(iter->second.second);
-        }
-    }
+    PrintHelper(f, _head);
 }
 
 template<typename Key, typename Data>
-void LfuAlgorithm<Key, Data>::PrintCache(FILE *f, std::unordered_map<int, std::string> &files)
-{
-    PrintHelper(f, _head, files);
-}
-
-template<typename Key, typename Data>
-void LfuAlgorithm<Key, Data>::PrintHelper(FILE *f, LfuNode<Key> *node, std::unordered_map<int, std::string> &files)
+void LfuAlgorithm<Key, Data>::PrintHelper(FILE *f, LfuNode<Key> *node)
 {
     if (node == nullptr)
         return;
-    PrintHelper(f, node->next, files);
+    PrintHelper(f, node->next);
 
+    char path[FILENAME_MAX];
     for (auto &i : node->keys)
     {
-        fprintf(f, "%s %d\n", files[i->first], i->second);
+        readlink(("/proc/self/fd/" + std::string(i->first)).c_str(), path, FILENAME_MAX);
+        fprintf(f, "%s %d\n", path, i->second);
     }
 }

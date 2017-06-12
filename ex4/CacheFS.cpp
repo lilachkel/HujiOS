@@ -64,6 +64,7 @@ int CacheFS_destroy()
 {
     try
     {
+
         delete _algorithm<std::pair<int, int>, void *>;
     }
     catch (std::exception &e)
@@ -80,17 +81,16 @@ int CacheFS_open(const char *pathname)
     int pos = std::string(path).find("/tmp");
     if (pos == std::string::npos || pos != 0)
         return RET_FAILURE;
-    int _id = open(path, O_RDONLY | O_DIRECT | O_SYNC);
-    if (_id != -1)
-        _openFiles.insert({_id, std::string(pathname)});
-    return _id;
+    int fd = open(path, O_RDONLY | O_DIRECT | O_SYNC);
+    if (fd != -1)
+        _openFiles.insert({fd, std::string(pathname)});
+    return fd;
 }
 
 int CacheFS_close(int file_id)
 {
     try
     {
-        _algorithm<std::pair<int, int>, void *>->RemoveByFileID(file_id);
         close(file_id);
         _openFiles.erase(file_id);
     }
@@ -172,7 +172,7 @@ int CacheFS_print_cache(const char *log_path)
     auto path = realpath(log_path, NULL);
     FILE *f = fopen(path, "a");
 
-    _algorithm<std::pair<int, int>, void *>->PrintCache(f, _openFiles);
+    _algorithm<std::pair<int, int>, void *>->PrintCache(f);
 
     fflush(f);
     fclose(f);
