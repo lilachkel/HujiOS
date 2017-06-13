@@ -5,6 +5,7 @@
 #include "CacheFS.h"
 #include "ICacheAlgorithm.hpp"
 #include "LruAlgorithm.h"
+#include "FbrAlgorithm.h"
 #include "LfuAlgorithm.h"
 #include <bitset>
 #include <cstring>
@@ -52,7 +53,7 @@ int CacheFS_init(int blocks_num, cache_algo_t cache_algo, double f_old, double f
         case FBR:
             if (f_new < 0 || f_new > 1 || f_old < 0 || f_old > 1 || (f_new + f_old) > 1)
                 return RET_FAILURE;
-//            _algorithm<int, char *> = new FbrAlgorithm<int, char *>(GetBlockSize() * blocks_num);
+            _algorithm<std::pair<int, int>, void *> = new FbrAlgorithm<int, char *>(GetBlockSize() * blocks_num, f_old, f_new);
             break;
         default:
             return RET_FAILURE;
@@ -90,8 +91,10 @@ int CacheFS_close(int file_id)
 {
     try
     {
+        _openFiles.at(file_id);
         close(file_id);
         _openFiles.erase(file_id);
+
     }
     catch (std::exception e)
     {
@@ -133,7 +136,7 @@ int CacheFS_pread(int file_id, void *buf, size_t count, off_t offset)
         std::pair<int, int> key = std::make_pair(file_id, blockCandid);
         if ((_cacheBuff = _algorithm<std::pair<int, int>, void *>->Get(key)) != nullptr)
         {
-            addToOffset = std::min(blockSize - junkBits, count);
+            addToOffset = std::min(blockSize - junkBits, cur_count);
             memcpy(buf + buf_offset, _cacheBuff + junkBits,
                    addToOffset); // buff cur offset, the wanted block part, size to copy
 

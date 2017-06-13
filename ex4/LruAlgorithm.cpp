@@ -83,7 +83,7 @@ std::pair<Key, Data> LruAlgorithm<Key, Data>::FbrSet(Key key, Data data)
         Update(item);
         item->second.first = data;
 
-        return nullptr;
+        return {nullptr, nullptr};
 
     }
 
