@@ -68,6 +68,8 @@ public:
 
     virtual Data Get(Key key);
 
+    std::pair<Key, Data> FbrGet(Key key);
+
     virtual int Set(Key key, Data data);
 
     virtual int Set(Key key, Data data, int count, Key *old, void (*freeData)(Data));

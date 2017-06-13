@@ -23,7 +23,7 @@ template<typename Key, typename Data>
 void LfuAlgorithm<Key, Data>::Update(typename CacheMap<Key, Data>::iterator &cm)
 {
     // Get the key
-    int key = cm->first;
+    Key key = cm->first;
     // get the node we are working with
     LfuNode<Key> *node = _lfu[key];
     // delete the key from node's list of keys.
@@ -75,6 +75,25 @@ Data LfuAlgorithm<Key, Data>::Get(Key key)
     // update the key access frequency and return it's data.
     Update(item);
     return item->second.first;
+}
+
+template<typename Key, typename Data>
+std::pair<Key, Data> LfuAlgorithm::FbrGet(Key key)
+{
+    auto item = Base::_cache.find(key);
+    if (item == Base::_cache.end())
+        return {nullptr, nullptr};
+
+    // get the node we are working with
+    LfuNode<Key> *node = _lfu[key];
+    // delete the key from node's list of keys.
+    node->keys.erase(item->second.second);
+
+    Data data = item->second.first;
+
+    Base::_cache.erase(key);
+
+    return {key, data};
 }
 
 template<typename Key, typename Data>
