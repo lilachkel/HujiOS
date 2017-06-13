@@ -1,9 +1,8 @@
 
 #include "FbrAlgorithm.h"
 
-//template<typename Key, typename Data>
-FbrAlgorithm::FbrAlgorithm(size_t size, double f_old, double f_new) : ICacheAlgorithm(size)
-{
+
+FbrAlgorithm::FbrAlgorithm(size_t size, double f_old, double f_new) : ICacheAlgorithm(0) {
     new_Lru = new LruAlgorithm(size * ((size_t) f_new));
     old_Lfu = new LfuAlgorithm(size * ((size_t) f_old));
     m_exist = (1 - (f_new + f_old) != 0);
@@ -12,7 +11,6 @@ FbrAlgorithm::FbrAlgorithm(size_t size, double f_old, double f_new) : ICacheAlgo
         m_Lru = new LruAlgorithm(size * ((size_t) (1 - (f_new + f_old))));
     }
 }
-
 
 //template<typename Key, typename Data>
 FbrAlgorithm::~FbrAlgorithm()
@@ -32,25 +30,29 @@ DataType FbrAlgorithm::Get(KeyType key)
     {
         return node->_blockBuff;
     }
-    std::pair<KeyType, FbrNode *> _block;
+    std::pair<KeyType, FbrNode *> *_block;
     if (m_exist)
     {
         //TODO: fix this
-        _block = m_Lru->FbrGet(key);
+        auto temp = m_Lru->FbrGet(key);
+        auto block_pair = std::make_pair(temp.first, (FbrNode*)temp.second);
+        _block = &block_pair;
         //checks if M contains the  key, if true: count++, and set it in the new list.
-        if (_block.first)
+        if (_block->second != nullptr)
         {
-            _block.second->_count++;
-            SetNew(_block.first, _block.second);
-            return _block.second->_blockBuff;
+            _block->second->_count++;
+            SetNew(_block->first, _block->second);
+            return _block->second->_blockBuff;
         }
     }
-    _block = old_Lfu->FbrGet(key);
-    if (_block.first)
+    auto temp = old_Lfu->FbrGet(key);
+    auto block_pair = std::make_pair(temp.first, (FbrNode*)temp.second);
+    _block = &block_pair;
+    if (_block->second != nullptr)
     {
-        _block.second->_count++;
-        SetNew(_block.first, _block.second);
-        return _block.second->_blockBuff;
+        _block->second->_count++;
+        SetNew(_block->first, _block->second);
+        return _block->second->_blockBuff;
     }
     return nullptr;
 }
@@ -59,16 +61,20 @@ DataType FbrAlgorithm::Get(KeyType key)
 void FbrAlgorithm::SetNew(KeyType key, FbrNode *node)
 {
     node->_type = NEW;
-    std::pair<KeyType, FbrNode *> block = new_Lru->FbrSet(key, node);
-    if (block.first != nullptr)
+    auto temp = new_Lru->FbrSet(key ,node);
+    auto block_pair = std::make_pair(temp.first, (FbrNode*)temp.second);
+    std::pair<KeyType, FbrNode *> *block = &block_pair;
+//    block = &block_pair;
+
+    if (block_pair.second != nullptr)
     {
         if (m_exist)
         {
-            SetM(block);
+            SetM(block_pair);
         }
         else
         {
-            SetOld(block);
+            SetOld(block_pair);
         }
     }
 };
@@ -78,10 +84,14 @@ void FbrAlgorithm::SetNew(KeyType key, FbrNode *node)
 void FbrAlgorithm::SetM(std::pair<KeyType, FbrNode *> block)
 {
     block.second->_type = MIDDLE;
-    std::pair<KeyType, FbrNode *> _block = m_Lru->FbrSet(block.first, block.second);
-    if (_block.first != nullptr)
+//    auto temp = new_Lru->FbrSet(key ,node);
+//    auto block_pair = std::make_pair(temp.first, (FbrNode*)temp.second);
+//    std::pair<KeyType, FbrNode *> *block = &block_pair;
+    auto temp = m_Lru->FbrSet(block.first, block.second);
+    auto block_pair = std::make_pair(temp.first, (FbrNode*)temp.second);
+    if (block_pair.second != nullptr)
     {
-        SetOld(_block);
+        SetOld(block_pair);
     }
 };
 

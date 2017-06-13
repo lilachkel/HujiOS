@@ -6,6 +6,7 @@
 #define PROJECT_LFUALGORITHM_H
 
 #include "ICacheAlgorithm.hpp"
+//#include "LfuAlgorithm.cpp"
 
 //template<typename Key>
 struct LfuNode

@@ -6,6 +6,7 @@
 #define PROJECT_FBRALGORITHM_H
 
 #include "ICacheAlgorithm.hpp"
+//#include "FbrAlgorithm.cpp"
 #include "LfuAlgorithm.h"
 #include "LruAlgorithm.h"
 
@@ -40,13 +41,15 @@ class FbrAlgorithm : public ICacheAlgorithm
 
     bool m_exist;
 
-    void FreeFbrNode(FbrNode* node)
+    static void FreeFbrNode(DataType data)
     {
+        FbrNode* node = (FbrNode*)data;
         free(node->_blockBuff);
         free(node);
     }
 
-    void Update(CacheMap::iterator &cm);
+    void Update(CacheMap::iterator &cm)
+    {}
 
 public:
 

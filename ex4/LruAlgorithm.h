@@ -6,6 +6,7 @@
 #define PROJECT_LRUALGORITHM_H
 
 #include "ICacheAlgorithm.hpp"
+//#include "LruAlgorithm.cpp"
 
 //template<typename Key, typename Data>
 class LruAlgorithm : public ICacheAlgorithm

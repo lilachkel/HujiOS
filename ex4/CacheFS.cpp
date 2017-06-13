@@ -42,18 +42,15 @@ int CacheFS_init(int blocks_num, cache_algo_t cache_algo, double f_old, double f
     switch (cache_algo)
     {
         case LRU:
-            _algorithm =
-                    new LruAlgorithm(GetBlockSize() * blocks_num);
+            _algorithm = new LruAlgorithm(GetBlockSize() * blocks_num);
             break;
         case LFU:
-            _algorithm =
-                    new LfuAlgorithm(GetBlockSize() * blocks_num);
+            _algorithm = new LfuAlgorithm(GetBlockSize() * blocks_num);
             break;
         case FBR:
             if (f_new < 0 || f_new > 1 || f_old < 0 || f_old > 1 || (f_new + f_old) > 1)
                 return RET_FAILURE;
-            _algorithm =
-                    new FbrAlgorithm(GetBlockSize() * blocks_num, f_old, f_new);
+            _algorithm = new FbrAlgorithm(GetBlockSize() * blocks_num, f_old, f_new);
             break;
         default:
             return RET_FAILURE;
