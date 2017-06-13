@@ -33,7 +33,6 @@ DataType FbrAlgorithm::Get(KeyType key)
     std::pair<KeyType, FbrNode *> *_block;
     if (m_exist)
     {
-        //TODO: fix this
         auto temp = m_Lru->FbrGet(key);
         auto block_pair = std::make_pair(temp.first, (FbrNode*)temp.second);
         _block = &block_pair;
@@ -63,8 +62,6 @@ void FbrAlgorithm::SetNew(KeyType key, FbrNode *node)
     node->_type = NEW;
     auto temp = new_Lru->FbrSet(key ,node);
     auto block_pair = std::make_pair(temp.first, (FbrNode*)temp.second);
-    std::pair<KeyType, FbrNode *> *block = &block_pair;
-//    block = &block_pair;
 
     if (block_pair.second != nullptr)
     {

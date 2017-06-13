@@ -42,6 +42,7 @@ void basicLFU()
 
     // ramp up the frequency of these ones:
     CacheFS_pread(fd1, &data, 10, 0 * blockSize);
+
     CacheFS_pread(fd1, &data, 10, 1 * blockSize);
     CacheFS_pread(fd1, &data, 10, 2 * blockSize);
     CacheFS_pread(fd1, &data, 10, 3 * blockSize);
