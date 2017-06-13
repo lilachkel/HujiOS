@@ -26,8 +26,8 @@ struct PairEqual
 };
 
 template<typename Key, typename Data>
-using CacheMap = std::unordered_map<Key, std::pair<Data, typename std::list<Key>::iterator>, PairHash<int, int>,
-        PairEqual<int, int>>;
+using CacheMap = std::unordered_map<Key, std::pair<Data, typename std::list<Key>::iterator>,
+        PairHash<int, int>, PairEqual<int, int>>;
 
 template<typename Key, typename Data>
 class ICacheAlgorithm

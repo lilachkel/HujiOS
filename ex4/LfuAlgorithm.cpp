@@ -78,7 +78,7 @@ Data LfuAlgorithm<Key, Data>::Get(Key key)
 }
 
 template<typename Key, typename Data>
-std::pair<Key, Data> LfuAlgorithm::FbrGet(Key key)
+std::pair<Key, Data> LfuAlgorithm<Key, Data>::FbrGet(Key key)
 {
     auto item = Base::_cache.find(key);
     if (item == Base::_cache.end())

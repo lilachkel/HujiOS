@@ -6,7 +6,6 @@
 #include "ICacheAlgorithm.hpp"
 #include "LruAlgorithm.h"
 #include "FbrAlgorithm.h"
-#include "LfuAlgorithm.h"
 #include <bitset>
 #include <cstring>
 #include <unordered_set>
@@ -53,7 +52,8 @@ int CacheFS_init(int blocks_num, cache_algo_t cache_algo, double f_old, double f
         case FBR:
             if (f_new < 0 || f_new > 1 || f_old < 0 || f_old > 1 || (f_new + f_old) > 1)
                 return RET_FAILURE;
-            _algorithm<std::pair<int, int>, void *> = new FbrAlgorithm<int, char *>(GetBlockSize() * blocks_num, f_old, f_new);
+            _algorithm<std::pair<int, int>, void *> =
+                    new FbrAlgorithm<std::pair<int, int>, void *>(GetBlockSize() * blocks_num, f_old, f_new);
             break;
         default:
             return RET_FAILURE;

@@ -29,7 +29,7 @@ struct FbrNode
 
 };
 
-template<typename Key = std::pair<int,int>, typename Data = char *>
+template<typename Key = std::pair<int, int>, typename Data = void *>
 class FbrAlgorithm : public ICacheAlgorithm<Key, Data>
 {
     using Base = ICacheAlgorithm<Key, Data>;
@@ -43,12 +43,14 @@ class FbrAlgorithm : public ICacheAlgorithm<Key, Data>
     void FreeFbrNode(FbrNode* node)
     {
         free(node->_blockBuff);
-        free(&node);
+        free(node);
     }
 
+    void Update(typename CacheMap<Key, Data>::iterator &cm);
 
 public:
-    FbrAlgorithm(size_t size, double f_old, double f_new );
+
+    FbrAlgorithm(size_t size, double f_old, double f_new);
 
     ~FbrAlgorithm();
 
