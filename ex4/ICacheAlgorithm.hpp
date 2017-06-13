@@ -7,6 +7,10 @@
 #include <iostream>
 #include <unistd.h>
 
+typedef std::pair<int, int> KeyType;
+typedef std::pair<void *, std::list<KeyType>::iterator> ValueType;
+typedef void *DataType;
+
 template<class T, typename U>
 struct PairHash
 {
@@ -25,22 +29,24 @@ struct PairEqual
     }
 };
 
-template<typename Key, typename Data>
-using CacheMap = std::unordered_map<Key, std::pair<Data, typename std::list<Key>::iterator>,
+//template<typename Key, typename Data>
+using CacheMap = std::unordered_map<KeyType, std::pair<DataType, typename std::list<KeyType>::iterator>,
         PairHash<int, int>, PairEqual<int, int>>;
+//using CacheMap = std::unordered_map<KeyType, std::pair<DataType , std::list<std::pair<int, int>>::iterator>>;
+//        PairHash<int, int>, PairEqual<int, int>>;
 
-template<typename Key, typename Data>
+
 class ICacheAlgorithm
 {
 protected:
     size_t _capacity;
-    CacheMap<Key, Data> _cache;
+    CacheMap _cache;
 
     /**
      * Updates the cache buffer.
      * @param cm position iterator for the cache queue
      */
-    virtual void Update(typename CacheMap<Key, Data>::iterator &cm) = 0;
+    virtual void Update(CacheMap::iterator &cm) = 0;
 
 public:
     ICacheAlgorithm(size_t size) : _capacity(size)
@@ -60,7 +66,7 @@ public:
      * @param other the object to move from
      * @return updated object reference
      */
-    ICacheAlgorithm<Key, Data> &operator=(ICacheAlgorithm<Key, Data> &&other)
+    ICacheAlgorithm &operator=(ICacheAlgorithm &&other)
     {
         if (this != &other)
         {
@@ -86,7 +92,7 @@ public:
      * @param key item key
      * @return Data item
      */
-    virtual Data Get(Key key) = 0;
+    virtual void *Get(KeyType key) = 0;
 
     /**
      * Adds an item to the cache (buffer)
@@ -94,7 +100,7 @@ public:
      * @param page item data to be added
      * @return 0 if all goes well; -1 if error.
      */
-    virtual int Set(Key key, Data page) = 0;
+    virtual int Set(KeyType key, DataType page) = 0;
 
     virtual void PrintCache(FILE *f) = 0;
 

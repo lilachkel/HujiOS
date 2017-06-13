@@ -14,8 +14,8 @@
 #define RET_SUCCESS 0
 
 
-template<typename K = std::pair<int, int>, typename D = void *>
-ICacheAlgorithm<K, D> *_algorithm = nullptr;
+//template<typename Key, typename Data>
+ICacheAlgorithm *_algorithm = nullptr;
 std::unordered_map<int, std::string> _openFiles;
 
 int cache_hits, cache_misses;
@@ -42,18 +42,18 @@ int CacheFS_init(int blocks_num, cache_algo_t cache_algo, double f_old, double f
     switch (cache_algo)
     {
         case LRU:
-            _algorithm<std::pair<int, int>, void *> =
-                    new LruAlgorithm<std::pair<int, int>, void *>(GetBlockSize() * blocks_num);
+            _algorithm =
+                    new LruAlgorithm(GetBlockSize() * blocks_num);
             break;
         case LFU:
-            _algorithm<std::pair<int, int>, void *> =
-                    new LfuAlgorithm<std::pair<int, int>, void *>(GetBlockSize() * blocks_num);
+            _algorithm =
+                    new LfuAlgorithm(GetBlockSize() * blocks_num);
             break;
         case FBR:
             if (f_new < 0 || f_new > 1 || f_old < 0 || f_old > 1 || (f_new + f_old) > 1)
                 return RET_FAILURE;
-            _algorithm<std::pair<int, int>, void *> =
-                    new FbrAlgorithm<std::pair<int, int>, void *>(GetBlockSize() * blocks_num, f_old, f_new);
+            _algorithm =
+                    new FbrAlgorithm(GetBlockSize() * blocks_num, f_old, f_new);
             break;
         default:
             return RET_FAILURE;
@@ -65,7 +65,7 @@ int CacheFS_destroy()
 {
     try
     {
-        delete _algorithm<std::pair<int, int>, void *>;
+        delete _algorithm;
     }
     catch (std::exception &e)
     {
@@ -134,7 +134,7 @@ int CacheFS_pread(int file_id, void *buf, size_t count, off_t offset)
     while (cur_count > 0)
     {
         std::pair<int, int> key = std::make_pair(file_id, blockCandid);
-        if ((_cacheBuff = _algorithm<std::pair<int, int>, void *>->Get(key)) != nullptr)
+        if ((_cacheBuff = _algorithm->Get(key)) != nullptr)
         {
             addToOffset = std::min(blockSize - junkBits, cur_count);
             memcpy(buf + buf_offset, _cacheBuff + junkBits,
@@ -155,7 +155,7 @@ int CacheFS_pread(int file_id, void *buf, size_t count, off_t offset)
             {
                 break;
             }
-            _algorithm<std::pair<int, int>, void *>->Set(key, _cacheBuff);
+            _algorithm->Set(key, _cacheBuff);
             addToOffset = _readSize - junkBits;
             memcpy(buf + buf_offset, _cacheBuff + junkBits, addToOffset);
             _cacheBuff = aligned_alloc(blockSize, blockSize);
@@ -175,7 +175,7 @@ int CacheFS_print_cache(const char *log_path)
     auto path = realpath(log_path, NULL);
     FILE *f = fopen(path, "a");
 
-    _algorithm<std::pair<int, int>, void *>->PrintCache(f);
+    _algorithm->PrintCache(f);
 
     fflush(f);
     fclose(f);

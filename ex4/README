@@ -1,0 +1,33 @@
+jenia90, lilach Yevgeni Dysin (320884216), Lilach Kelman (305390098) EX: 3
+
+FILES: Makefile
+
+README - This file.
+
+Makefile
+
+CacheFS.cpp - implementation of the library
+
+ICacheAlgorithm.hpp - Caching algorithm abstract class
+
+LruAlgorithm.cpp/.h - Implementation of the LRU caching algorithm
+
+LfuAlgorithm.cpp/.h - Implementation of the LFU caching algorithm
+
+FbrAlgorithm.cpp/.h - Implementation of the FBR caching algorithm
+
+REMARKS:
+
+For OOP-ier design we decided to implement an abstract class that would define the general interface for caching
+algorithm implementations. This approach allowed us to hold a pointer to the ICacheAlgoirthm object which would be
+initialized when CacheFS_init is called.
+
+LRU was implemented using a simple std::list which is updated upon each item access and accessed item is moved up
+front. Whenever we run out of space in our cache the item which is at the back is evicted.
+
+LFU was implemented using a doubly linked list. The list is arranged by the count (frequency) of each node. That way
+we can see which keys have lower frequency of access and the ones that haven't been accessed for longest periods are
+evicted.
+
+FBR uses LRU for the new and middle sections and old is implemented using LFU (just holds pointers to LruAlgorithm
+and LfuAlgorithm objects).

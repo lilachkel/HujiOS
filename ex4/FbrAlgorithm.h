@@ -29,14 +29,14 @@ struct FbrNode
 
 };
 
-template<typename Key = std::pair<int, int>, typename Data = void *>
-class FbrAlgorithm : public ICacheAlgorithm<Key, Data>
+//template<typename Key = std::pair<int, int>, typename Data = void *>
+class FbrAlgorithm : public ICacheAlgorithm
 {
-    using Base = ICacheAlgorithm<Key, Data>;
-    LruAlgorithm<Key, Data> *new_Lru = nullptr;
-    LruAlgorithm<Key, Data> *m_Lru = nullptr;
+    using Base = ICacheAlgorithm;
+    LruAlgorithm *new_Lru = nullptr;
+    LruAlgorithm *m_Lru = nullptr;
 
-    LfuAlgorithm<Key, Data> *old_Lfu = nullptr;
+    LfuAlgorithm *old_Lfu = nullptr;
 
     bool m_exist;
 
@@ -46,7 +46,7 @@ class FbrAlgorithm : public ICacheAlgorithm<Key, Data>
         free(node);
     }
 
-    void Update(typename CacheMap<Key, Data>::iterator &cm);
+    void Update(CacheMap::iterator &cm);
 
 public:
 
@@ -54,17 +54,17 @@ public:
 
     ~FbrAlgorithm();
 
-    virtual Data Get(Key key);
+    virtual DataType Get(KeyType key);
 
-    virtual int Set(Key key, Data data);
+    virtual int Set(KeyType key, DataType data);
 
     virtual void PrintCache(FILE *f);
 
-    void SetNew(Key key,FbrNode* node);
+    void SetNew(KeyType key, FbrNode *node);
 
-    void SetM(std::pair<Key, FbrNode*>);
+    void SetM(std::pair<KeyType, FbrNode *>);
 
-    void SetOld(std::pair<Key, FbrNode*>);
+    void SetOld(std::pair<KeyType, FbrNode *>);
 
 
 };

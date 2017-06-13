@@ -7,25 +7,25 @@
 
 #include "ICacheAlgorithm.hpp"
 
-template<typename Key, typename Data>
-class LruAlgorithm : public ICacheAlgorithm<Key, Data>
+//template<typename Key, typename Data>
+class LruAlgorithm : public ICacheAlgorithm
 {
-    using Base = ICacheAlgorithm<Key, Data>;
-    std::list<Key> _lru;
+    using Base = ICacheAlgorithm;
+    std::list<KeyType> _lru;
 
-    virtual void Update(typename CacheMap<Key, Data>::iterator &cm);
+    virtual void Update(CacheMap::iterator &cm);
 public:
     LruAlgorithm(size_t size);
 
     ~LruAlgorithm();
 
-    std::pair<Key, Data> FbrGet(Key key);
+    std::pair<KeyType, DataType> FbrGet(KeyType key);
 
-    std::pair<Key, Data> FbrSet(Key key, Data data);
+    std::pair<KeyType, DataType> FbrSet(KeyType key, DataType data);
 
-    virtual Data Get(Key key);
+    virtual DataType Get(KeyType key);
 
-    virtual int Set(Key key, Data data);
+    virtual int Set(KeyType key, DataType data);
 
     virtual void PrintCache(FILE *f);
 };

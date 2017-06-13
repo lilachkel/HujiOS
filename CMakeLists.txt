@@ -38,5 +38,9 @@ set(CMAKE_CPP_FLAGS "${CMAKE_CPP_FLAGS} -Wall -std=c++11 ")
 #target_link_libraries(WordFrequencies MapReduceFramework SearchMapReduce -lstdc++fs -pthread)
 
 # ex4
-add_library(CacheFS ex4/CacheFS.cpp ex4/ICacheAlgorithm.hpp ex4/LruAlgorithm.cpp
-        ex4/FbrAlgorithm.cpp ex4/LfuAlgorithm.cpp)
+add_library(Algorithms ex4/ICacheAlgorithm.hpp ex4/LruAlgorithm.cpp ex4/LfuAlgorithm.cpp ex4/FbrAlgorithm.cpp)
+set_target_properties(Algorithms PROPERTIES LINKER_LANGUAGE CXX)
+add_library(CacheFS ex4/CacheFS.cpp)
+target_link_libraries(CacheFS Algorithms)
+add_executable(TestLFU ex4/TestLFU.cpp)
+target_link_libraries(TestLFU CacheFS)
