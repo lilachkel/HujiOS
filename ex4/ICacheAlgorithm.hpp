@@ -8,7 +8,6 @@
 #include <unistd.h>
 
 typedef std::pair<int, int> KeyType;
-typedef std::pair<void *, std::list<KeyType>::iterator> ValueType;
 typedef void* DataType;
 
 template<class T, typename U>

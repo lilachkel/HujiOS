@@ -92,11 +92,13 @@ std::pair<KeyType, DataType> LfuAlgorithm::FbrGet(KeyType key)
 
 int LfuAlgorithm::Set(KeyType key, DataType data)
 {
-    Set(key, data, 1, nullptr, free);
+    return Set(key, data, 1, nullptr, free);
 }
 
 int LfuAlgorithm::Set(KeyType key, DataType data, int count, KeyType *old, void (*freeData)(DataType))
 {
+    if (count < 1)
+        return -1;
     // if the key already exists update it's access frequency and replace it's data.
     auto item = Base::_cache.find(key);
     if (item != Base::_cache.end())
@@ -172,7 +174,7 @@ void LfuAlgorithm::updateHead(KeyType key)
     // if head is null - initialize it and add the key to it.
     if (_head == nullptr)
     {
-        _head = new LfuNode();
+        _head = new LfuNode(1);
         _head->keys.push_back(key);
     }
         // if _head frequncy is 1 we add the key to it
@@ -183,7 +185,7 @@ void LfuAlgorithm::updateHead(KeyType key)
         // if head's frequency is higher than 1 - create a new head and add link the current head as it's next.
     else
     {
-        LfuNode *newNode = new LfuNode();
+        LfuNode *newNode = new LfuNode(1);
         _head->prev = newNode;
         newNode->next = _head;
         _head = newNode;
