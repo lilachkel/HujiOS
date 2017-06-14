@@ -125,9 +125,7 @@ int CacheFS_pread(int file_id, void *buf, size_t count, off_t offset)
     {
         return RET_FAILURE;
     }
-//    lseek(file_id, offset, SEEK_SET);
     size_t blockSize = GetBlockSize();
-//    off_t fsize = lseek(file_id, 0, SEEK_END);
     size_t junkBits = offset % blockSize;
     size_t buf_offset = 0;
     size_t addToOffset = 0;
@@ -142,8 +140,8 @@ int CacheFS_pread(int file_id, void *buf, size_t count, off_t offset)
         {
             cache_hits++;
             addToOffset = std::min(blockSize - junkBits, (size_t) cur_count);
-            memcpy(buf + buf_offset, _cacheBuff + junkBits,
-                   addToOffset); // buff cur offset, the wanted block part, size to copy
+            // buff cur offset, the wanted block part, size to copy
+            memcpy((char *) buf + buf_offset, (char *) _cacheBuff + junkBits, addToOffset);
 
         }
         else
@@ -151,7 +149,7 @@ int CacheFS_pread(int file_id, void *buf, size_t count, off_t offset)
             cache_misses++;
             _cacheBuff = aligned_alloc(blockSize, blockSize);
 
-            ssize_t _readSize = pread(file_id, _cacheBuff, blockSize, blockCandid * blockSize);
+            ssize_t _readSize = pread(file_id, (char *) _cacheBuff, blockSize, blockCandid * blockSize);
             if (_readSize == -1)
             {
                 free(_cacheBuff);
@@ -162,18 +160,14 @@ int CacheFS_pread(int file_id, void *buf, size_t count, off_t offset)
             {
                 break;
             }
-            //todo
-//            std::cout<<(char*)_cacheBuff<<std::endl;
             _algorithm->Set(key, _cacheBuff);
             long o =_readSize - junkBits;
             addToOffset = std::min(_readSize - junkBits, (size_t)cur_count);
-            memcpy(buf + buf_offset, _cacheBuff + junkBits, addToOffset);
-//            _cacheBuff = aligned_alloc(blockSize, blockSize);
+            memcpy((char *) buf + buf_offset, (char *) _cacheBuff + junkBits, addToOffset);
         }
         buf_offset += addToOffset;
         junkBits = 0;
         blockCandid ++;
-//        _curOffset += addToOffset;
         cur_count -= addToOffset;
     }
 
@@ -182,7 +176,7 @@ int CacheFS_pread(int file_id, void *buf, size_t count, off_t offset)
 
 int CacheFS_print_cache(const char *log_path)
 {
-#ifndef NDEBUG
+#ifdef NDEBUG
     std::ofstream _log;
     _log.open(log_path, std::ios::app | std::ios::out);
     if(_log.fail())
@@ -194,7 +188,7 @@ int CacheFS_print_cache(const char *log_path)
 
     _algorithm->PrintCache();
 
-#ifndef NDEBUG
+#ifdef NDEBUG
     _log.flush();
     _log.close();
     std::cout.rdbuf(backup);
@@ -204,7 +198,7 @@ int CacheFS_print_cache(const char *log_path)
 
 int CacheFS_print_stat(const char *log_path)
 {
-#ifndef NDEBUG
+#ifdef NDEBUG
     std::ofstream _log;
     _log.open(log_path, std::ios::app | std::ios::out);
     if(_log.fail())
@@ -217,7 +211,7 @@ int CacheFS_print_stat(const char *log_path)
     std::cout << "Hits number: " << cache_hits << std::endl;
     std::cout << "Misses number: " << cache_misses << std::endl;
 
-#ifndef NDEBUG
+#ifdef NDEBUG
     _log.flush();
     _log.close();
     std::cout.rdbuf(backup);

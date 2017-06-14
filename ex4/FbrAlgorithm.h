@@ -16,16 +16,12 @@
 
 struct FbrNode
 {
-    char* _blockBuff;
+    void *_blockBuff;
     int _count;
     int _type;
 
-    FbrNode(char* blockBuff)
-    {
-        _blockBuff = blockBuff;
-        _count = 1;
-        _type = NEW;
-    }
+    FbrNode(void *blockBuff) : _blockBuff(blockBuff), _count(1), _type(NEW)
+    {}
 
 };
 
