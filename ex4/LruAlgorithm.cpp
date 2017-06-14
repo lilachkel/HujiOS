@@ -67,8 +67,9 @@ int LruAlgorithm::Set(KeyType key, DataType data)
 
 std::pair<KeyType, DataType> LruAlgorithm::FbrSet(KeyType key, DataType data)
 {
-    KeyType *oldKey;
+    int f, s;
     DataType oldData;
+    KeyType k = {f, s};
     // Check if the item with the given key is already cached
     auto item = Base::_cache.find(key);
     if (item != Base::_cache.end())
@@ -77,21 +78,25 @@ std::pair<KeyType, DataType> LruAlgorithm::FbrSet(KeyType key, DataType data)
         Update(item);
         item->second.first = data;
 
-        return std::make_pair(*oldKey, nullptr);
+        return std::make_pair(k, nullptr);
 
     }
 
     // check if we reached capacity limit
     if (Base::_cache.size() == Base::_capacity)
     {
-        oldKey = &_lru.back();
-        oldData = Base::_cache[*oldKey].first;
+        int f, s;
+        f = _lru.back().first;
+        s = _lru.back().second;
+        k.first = f;
+        k.second = s;
+        oldData = Base::_cache[{f, s}].first;
         // if yes, evict the LRU item.
-        Base::_cache.erase(*oldKey);
+        Base::_cache.erase({f, s});
         _lru.pop_back();
     }
 
-    return std::make_pair(*oldKey, oldData);
+    return std::make_pair(k, oldData);
 }
 
 void LruAlgorithm::Update(CacheMap::iterator &cm)

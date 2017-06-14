@@ -3,8 +3,8 @@
 
 
 FbrAlgorithm::FbrAlgorithm(size_t size, double f_old, double f_new) : ICacheAlgorithm(0) {
-    new_Lru = new LruAlgorithm(size * ((size_t) f_new));
-    old_Lfu = new LfuAlgorithm(size * ((size_t) f_old));
+    new_Lru = new LruAlgorithm(((size_t) (f_new * size)));
+    old_Lfu = new LfuAlgorithm(((size_t) (size * f_old)));
     m_exist = (1 - (f_new + f_old) != 0);
     if (m_exist)
     {
