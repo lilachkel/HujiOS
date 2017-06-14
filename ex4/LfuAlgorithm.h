@@ -27,7 +27,7 @@ class LfuAlgorithm : public ICacheAlgorithm
 
     LfuNode *_head;
 
-    std::unordered_map<KeyType, LfuNode *, PairHash<int, int>, PairEqual<int, int>> _lfu;
+    std::unordered_map<KeyType, LfuNode *, PairHash, PairEqual> _lfu;
 
     void DestroyLFU(LfuNode *node);
 

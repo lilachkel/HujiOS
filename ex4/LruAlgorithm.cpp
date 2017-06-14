@@ -67,7 +67,8 @@ int LruAlgorithm::Set(KeyType key, DataType data)
 
 std::pair<KeyType, DataType> LruAlgorithm::FbrSet(KeyType key, DataType data)
 {
-    int f, s;
+    std::string f;
+    int s;
     DataType oldData = nullptr;
     KeyType k = {f, s};
     // Check if the item with the given key is already cached
@@ -113,10 +114,8 @@ void LruAlgorithm::Update(CacheMap::iterator &cm)
 
 void LruAlgorithm::PrintCache()
 {
-    char path[FILENAME_MAX];
     for (auto &item : _lru)
     {
-        readlink(("/proc/self/fd/" + std::to_string(item.first)).c_str(), path, FILENAME_MAX);
-        std::cout << path << " " << item.second << std::endl;
+        std::cout << item.first << " " << item.second << std::endl;
     }
 }

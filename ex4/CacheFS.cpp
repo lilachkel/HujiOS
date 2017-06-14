@@ -135,7 +135,7 @@ int CacheFS_pread(int file_id, void *buf, size_t count, off_t offset)
     void *_cacheBuff;
     while (cur_count > 0)
     {
-        std::pair<int, int> key = std::make_pair(file_id, blockCandid);
+        std::pair<std::string, int> key = std::make_pair(_openFiles[file_id], blockCandid);
         if ((_cacheBuff = _algorithm->Get(key)) != nullptr)
         {
             cache_hits++;

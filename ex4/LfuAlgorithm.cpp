@@ -220,7 +220,8 @@ void LfuAlgorithm::removeNode(LfuNode *node)
 
 void LfuAlgorithm::removeOldNode(KeyType *oldKey, void (*freeData)(DataType))
 {
-    int f, s;
+    std::string f;
+    int s;
     // if head is already null then do nothing.
     if (_head == nullptr) return;
     // if head's key list is not empty get the key and remove it from the head.
@@ -251,10 +252,8 @@ void LfuAlgorithm::PrintHelper(LfuNode *node)
         return;
     PrintHelper(node->next);
 
-    char path[FILENAME_MAX];
     for (auto &i : node->keys)
     {
-        readlink(("/proc/self/fd/" + std::to_string(i.first)).c_str(), path, FILENAME_MAX);
-        std::cout << path << " " << i.second << std::endl;
+        std::cout << i.first << " " << i.second << std::endl;
     }
 }

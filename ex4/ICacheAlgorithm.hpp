@@ -7,29 +7,27 @@
 #include <iostream>
 #include <unistd.h>
 
-typedef std::pair<int, int> KeyType;
+typedef std::pair<std::string, int> KeyType;
 typedef void* DataType;
 
-template<class T, typename U>
 struct PairHash
 {
-    const size_t operator()(const std::pair<T, U> &key) const
+    const size_t operator()(const std::pair<std::string, int> &key) const
     {
-        return std::hash<T>()(key.first) ^ std::hash<U>()(key.second);
+        return std::hash<int>()(key.first.length()) ^ std::hash<int>()(key.second);
     }
 };
 
-template<class T, typename U>
 struct PairEqual
 {
-    bool operator()(const std::pair<T, U> &lhs, const std::pair<T, U> &rhs) const
+    bool operator()(const std::pair<std::string, int> &lhs, const std::pair<std::string, int> &rhs) const
     {
         return lhs.first == rhs.first && lhs.second == rhs.second;
     }
 };
 
 using CacheMap = std::unordered_map<KeyType, std::pair<DataType, typename std::list<KeyType>::iterator>,
-        PairHash<int, int>, PairEqual<int, int>>;
+        PairHash, PairEqual>;
 
 
 class ICacheAlgorithm
