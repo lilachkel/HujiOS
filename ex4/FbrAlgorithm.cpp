@@ -74,21 +74,21 @@ void FbrAlgorithm::SetNew(KeyType key, FbrNode *node)
 };
 
 
-void FbrAlgorithm::SetM(std::pair<KeyType, FbrNode *> block)
+void FbrAlgorithm::SetM(KeyType key, FbrNode *node)
 {
-    block.second->_type = MIDDLE;
-    auto temp = m_Lru->FbrSet(block.first, block.second);
+    node->_type = MIDDLE;
+    auto temp = m_Lru->FbrSet(key, node);
     auto block_pair = std::make_pair(temp.first, (FbrNode*)temp.second);
     if (block_pair.second != nullptr)
     {
-        SetOld(block_pair);
+        SetOld(block_pair.first, block_pair.second);
     }
 };
 
-void FbrAlgorithm::SetOld(std::pair<KeyType, FbrNode *> block)
+void FbrAlgorithm::SetOld(KeyType key, FbrNode *node)
 {
-    block.second->_type = OLD;
-    old_Lfu->Set(block.first, block.second, block.second->_count, nullptr, FreeFbrNode);
+    node->_type = OLD;
+    old_Lfu->Set(key, node, node->_count, nullptr, FreeFbrNode);
 };
 
 int FbrAlgorithm::Set(KeyType key, DataType data)

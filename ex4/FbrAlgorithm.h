@@ -64,9 +64,9 @@ public:
 
     void SetNew(KeyType key, FbrNode *node);
 
-    void SetM(std::pair<KeyType, FbrNode *>);
+    void SetM(KeyType key, FbrNode *node);
 
-    void SetOld(std::pair<KeyType, FbrNode *>);
+    void SetOld(KeyType key, FbrNode *node);
 
 
 };
