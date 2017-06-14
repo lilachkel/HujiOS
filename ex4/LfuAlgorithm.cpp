@@ -50,6 +50,7 @@ void LfuAlgorithm::Update(CacheMap::iterator &cm)
     // update the key's position
     cm->second.second = std::prev(node->next->keys.end());
 
+    _lfu.erase(key);
     // add the <key, node> to the lfu cache
     _lfu.insert({key, node->next});
 
@@ -97,8 +98,6 @@ int LfuAlgorithm::Set(KeyType key, DataType data)
 
 int LfuAlgorithm::Set(KeyType key, DataType data, int count, KeyType *old, void (*freeData)(DataType))
 {
-    if (count < 1)
-        return -1;
     // if the key already exists update it's access frequency and replace it's data.
     auto item = Base::_cache.find(key);
     if (item != Base::_cache.end())
@@ -221,24 +220,24 @@ void LfuAlgorithm::removeNode(LfuNode *node)
 
 void LfuAlgorithm::removeOldNode(KeyType *oldKey, void (*freeData)(DataType))
 {
+    int f, s;
     // if head is already null then do nothing.
     if (_head == nullptr) return;
-    KeyType *old = new KeyType();
     // if head's key list is not empty get the key and remove it from the head.
     if (!_head->keys.empty())
     {
-        old = &_head->keys.front();
-        oldKey = old;
+        f = _head->keys.front().first;
+        s = _head->keys.front().second;
+        oldKey = &_head->keys.front();
         _head->keys.pop_front();
     }
     // if head is empty now - remove it.
     if (_head->keys.empty()) removeNode(_head);
-
     // remove the old key from the buffer
-    freeData(Base::_cache[*old].first);
-    Base::_cache.erase(*old);
+    freeData(Base::_cache[{f, s}].first);
+    Base::_cache.erase({f, s});
     // remove the old key from the lfu queue.
-    _lfu.erase(*old);
+    _lfu.erase({f, s});
 }
 
 void LfuAlgorithm::PrintCache()
