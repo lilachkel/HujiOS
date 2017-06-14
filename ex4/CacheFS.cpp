@@ -1,4 +1,4 @@
-#define NDEBUG
+//#define NDEBUG
 
 #include <cstddef>
 #include <fcntl.h>
@@ -129,21 +129,20 @@ int CacheFS_pread(int file_id, void *buf, size_t count, off_t offset)
     size_t blockSize = GetBlockSize();
 //    off_t fsize = lseek(file_id, 0, SEEK_END);
     size_t junkBits = offset % blockSize;
-//    size_t buf_offset = 0;
-    size_t addToOffset = 0, _curOffset = 0;
-    int blockCandid;
+    size_t buf_offset = 0;
+    size_t addToOffset = 0;
 
-    size_t cur_count = count;
+    long cur_count = count;
+    int blockCandid = (int) (offset / blockSize);
+    void *_cacheBuff;
     while (cur_count > 0)
     {
-        void *_cacheBuff;
-        blockCandid = (int) _curOffset / blockSize;
         std::pair<int, int> key = std::make_pair(file_id, blockCandid);
         if ((_cacheBuff = _algorithm->Get(key)) != nullptr)
         {
             cache_hits++;
-            addToOffset = std::min(blockSize - junkBits, cur_count);
-            memcpy(buf + _curOffset, _cacheBuff + junkBits,
+            addToOffset = std::min(blockSize - junkBits, (size_t) cur_count);
+            memcpy(buf + buf_offset, _cacheBuff + junkBits,
                    addToOffset); // buff cur offset, the wanted block part, size to copy
 
         }
@@ -152,7 +151,7 @@ int CacheFS_pread(int file_id, void *buf, size_t count, off_t offset)
             cache_misses++;
             _cacheBuff = aligned_alloc(blockSize, blockSize);
 
-            ssize_t _readSize = pread(file_id, _cacheBuff, blockSize, _curOffset);
+            ssize_t _readSize = pread(file_id, _cacheBuff, blockSize, blockCandid * blockSize);
             if (_readSize == -1)
             {
                 free(_cacheBuff);
@@ -163,20 +162,21 @@ int CacheFS_pread(int file_id, void *buf, size_t count, off_t offset)
             {
                 break;
             }
-
+            //todo
+//            std::cout<<(char*)_cacheBuff<<std::endl;
             _algorithm->Set(key, _cacheBuff);
             addToOffset = _readSize - junkBits;
-            memcpy(buf + _curOffset, _cacheBuff + junkBits, addToOffset);
+            memcpy(buf + buf_offset, _cacheBuff + junkBits, addToOffset);
+//            _cacheBuff = aligned_alloc(blockSize, blockSize);
         }
-//        buf_offset += addToOffset;
+        buf_offset += addToOffset;
         junkBits = 0;
-        _curOffset += addToOffset;
-        cur_count -= addToOffset / blockSize;
-
-        //TODO: remove
+        blockCandid += blockSize;
+//        _curOffset += addToOffset;
+        cur_count -= addToOffset;
     }
 
-    return (int) _curOffset;
+    return (int) buf_offset;
 }
 
 int CacheFS_print_cache(const char *log_path)
