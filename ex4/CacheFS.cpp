@@ -1,4 +1,4 @@
-//#define NDEBUG
+#define NDEBUG
 
 #include <cstddef>
 #include <fcntl.h>
@@ -165,13 +165,14 @@ int CacheFS_pread(int file_id, void *buf, size_t count, off_t offset)
             //todo
 //            std::cout<<(char*)_cacheBuff<<std::endl;
             _algorithm->Set(key, _cacheBuff);
-            addToOffset = _readSize - junkBits;
+            long o =_readSize - junkBits;
+            addToOffset = std::min(_readSize - junkBits, (size_t)cur_count);
             memcpy(buf + buf_offset, _cacheBuff + junkBits, addToOffset);
 //            _cacheBuff = aligned_alloc(blockSize, blockSize);
         }
         buf_offset += addToOffset;
         junkBits = 0;
-        blockCandid += blockSize;
+        blockCandid ++;
 //        _curOffset += addToOffset;
         cur_count -= addToOffset;
     }
