@@ -94,7 +94,7 @@ void basicLFU()
                 "2\n/tmp/LFU1.txt 4\n/tmp/LFU1.txt 1\n/tmp/LFU2.txt"
                 " 1\n";
 
-        if (strcmp(cacheResults, cacheCorrect))
+        if (strcmp(cacheResults, cacheCorrect)) 
         { ok = false; }
     }
     resultsFileInput.close();

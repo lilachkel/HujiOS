@@ -1,16 +1,13 @@
 #include "LfuAlgorithm.h"
 
-//template<typename Key, typename Data>
 LfuAlgorithm::LfuAlgorithm(size_t size) : ICacheAlgorithm(size), _head(nullptr)
 {}
 
-//template<typename Key, typename Data>
 LfuAlgorithm::~LfuAlgorithm()
 {
     DestroyLFU(_head);
 }
 
-//template<typename Key, typename Data>
 void LfuAlgorithm::DestroyLFU(LfuNode *node)
 {
     if (node == nullptr)
@@ -19,7 +16,6 @@ void LfuAlgorithm::DestroyLFU(LfuNode *node)
     delete node;
 }
 
-//template<typename Key, typename Data>
 void LfuAlgorithm::Update(CacheMap::iterator &cm)
 {
     // Get the key
@@ -62,7 +58,6 @@ void LfuAlgorithm::Update(CacheMap::iterator &cm)
         removeNode(node);
 }
 
-//template<typename Key, typename Data>
 DataType LfuAlgorithm::Get(KeyType key)
 {
     // if the key doesn't exist return null.
@@ -77,7 +72,6 @@ DataType LfuAlgorithm::Get(KeyType key)
     return item->second.first;
 }
 
-//template<typename Key, typename Data>
 std::pair<KeyType, DataType> LfuAlgorithm::FbrGet(KeyType key)
 {
     auto item = Base::_cache.find(key);
@@ -96,13 +90,11 @@ std::pair<KeyType, DataType> LfuAlgorithm::FbrGet(KeyType key)
     return std::make_pair(key, data);
 }
 
-//template<typename Key, typename Data>
 int LfuAlgorithm::Set(KeyType key, DataType data)
 {
     Set(key, data, 1, nullptr, free);
 }
 
-//template<typename Key, typename Data>
 int LfuAlgorithm::Set(KeyType key, DataType data, int count, KeyType *old, void (*freeData)(DataType))
 {
     // if the key already exists update it's access frequency and replace it's data.
@@ -138,7 +130,6 @@ int LfuAlgorithm::Set(KeyType key, DataType data, int count, KeyType *old, void 
     return 0;
 }
 
-//template<typename Key, typename Data>
 std::list<KeyType>::iterator LfuAlgorithm::updateExisting(KeyType key, LfuNode *node, int count)
 {
     if (node->count == count)
@@ -176,7 +167,6 @@ std::list<KeyType>::iterator LfuAlgorithm::updateExisting(KeyType key, LfuNode *
     }
 }
 
-//template<typename Key, typename Data>
 void LfuAlgorithm::updateHead(KeyType key)
 {
     // if head is null - initialize it and add the key to it.
@@ -204,7 +194,6 @@ void LfuAlgorithm::updateHead(KeyType key)
     _lfu.insert({key, _head});
 }
 
-//template<typename Key, typename Data>
 void LfuAlgorithm::removeNode(LfuNode *node)
 {
     // if it has next node then relink next node's prev to the prev of the current node
@@ -228,7 +217,6 @@ void LfuAlgorithm::removeNode(LfuNode *node)
     delete node;
 }
 
-//template<typename Key, typename Data>
 void LfuAlgorithm::removeOldNode(KeyType *oldKey, void (*freeData)(DataType))
 {
     // if head is already null then do nothing.
@@ -251,23 +239,21 @@ void LfuAlgorithm::removeOldNode(KeyType *oldKey, void (*freeData)(DataType))
     _lfu.erase(*old);
 }
 
-//template<typename Key, typename Data>
-void LfuAlgorithm::PrintCache(FILE *f)
+void LfuAlgorithm::PrintCache()
 {
-    PrintHelper(f, _head);
+    PrintHelper(_head);
 }
 
-//template<typename Key, typename Data>
-void LfuAlgorithm::PrintHelper(FILE *f, LfuNode *node)
+void LfuAlgorithm::PrintHelper(LfuNode *node)
 {
     if (node == nullptr)
         return;
-    PrintHelper(f, node->next);
+    PrintHelper(node->next);
 
     char path[FILENAME_MAX];
     for (auto &i : node->keys)
     {
         readlink(("/proc/self/fd/" + std::to_string(i.first)).c_str(), path, FILENAME_MAX);
-        fprintf(f, "%s %d\n", path, i.second);
+        std::cout << path << " " << i.second << std::endl;
     }
 }

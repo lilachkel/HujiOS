@@ -12,7 +12,6 @@ FbrAlgorithm::FbrAlgorithm(size_t size, double f_old, double f_new) : ICacheAlgo
     }
 }
 
-//template<typename Key, typename Data>
 FbrAlgorithm::~FbrAlgorithm()
 {
     delete new_Lru;
@@ -21,7 +20,6 @@ FbrAlgorithm::~FbrAlgorithm()
 }
 
 
-//template<typename Key, typename Data>
 DataType FbrAlgorithm::Get(KeyType key)
 {
     FbrNode *node = (FbrNode *) new_Lru->Get(key);
@@ -56,7 +54,6 @@ DataType FbrAlgorithm::Get(KeyType key)
     return nullptr;
 }
 
-//template<typename Key, typename Data>
 void FbrAlgorithm::SetNew(KeyType key, FbrNode *node)
 {
     node->_type = NEW;
@@ -77,13 +74,9 @@ void FbrAlgorithm::SetNew(KeyType key, FbrNode *node)
 };
 
 
-//template<typename Key, typename Data>
 void FbrAlgorithm::SetM(std::pair<KeyType, FbrNode *> block)
 {
     block.second->_type = MIDDLE;
-//    auto temp = new_Lru->FbrSet(key ,node);
-//    auto block_pair = std::make_pair(temp.first, (FbrNode*)temp.second);
-//    std::pair<KeyType, FbrNode *> *block = &block_pair;
     auto temp = m_Lru->FbrSet(block.first, block.second);
     auto block_pair = std::make_pair(temp.first, (FbrNode*)temp.second);
     if (block_pair.second != nullptr)
@@ -92,14 +85,12 @@ void FbrAlgorithm::SetM(std::pair<KeyType, FbrNode *> block)
     }
 };
 
-//template<typename Key, typename Data>
 void FbrAlgorithm::SetOld(std::pair<KeyType, FbrNode *> block)
 {
     block.second->_type = OLD;
     old_Lfu->Set(block.first, block.second, block.second->_count, nullptr, FreeFbrNode);
 };
 
-//template<typename Key, typename Data>
 int FbrAlgorithm::Set(KeyType key, DataType data)
 {
     FbrNode *node = new FbrNode((char *) data);
@@ -107,14 +98,12 @@ int FbrAlgorithm::Set(KeyType key, DataType data)
     return 0;
 };
 
-
-//template<typename Key, typename Data>
-void FbrAlgorithm::PrintCache(FILE *f)
+void FbrAlgorithm::PrintCache()
 {
-    new_Lru->PrintCache(f);
+    new_Lru->PrintCache();
     if (m_exist)
     {
-        m_Lru->PrintCache(f);
+        m_Lru->PrintCache();
     }
-    old_Lfu->PrintCache(f);
+    old_Lfu->PrintCache();
 }

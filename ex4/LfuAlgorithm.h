@@ -8,7 +8,6 @@
 #include "ICacheAlgorithm.hpp"
 //#include "LfuAlgorithm.cpp"
 
-//template<typename Key>
 struct LfuNode
 {
     int count;
@@ -22,7 +21,6 @@ struct LfuNode
     {}
 };
 
-//template<typename Key, typename Data>
 class LfuAlgorithm : public ICacheAlgorithm
 {
     using Base = ICacheAlgorithm;
@@ -60,7 +58,7 @@ class LfuAlgorithm : public ICacheAlgorithm
      * @param f log file pointer
      * @param node current node in our traversal.
      */
-    void PrintHelper(FILE *f, LfuNode *node);
+    void PrintHelper(LfuNode *node);
 
 public:
     LfuAlgorithm(size_t size);
@@ -75,7 +73,7 @@ public:
 
     virtual int Set(KeyType key, DataType data, int count, KeyType *old, void (*freeData)(DataType));
 
-    virtual void PrintCache(FILE *f);
+    virtual void PrintCache();
 };
 
 

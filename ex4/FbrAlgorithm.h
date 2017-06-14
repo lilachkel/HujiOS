@@ -60,7 +60,7 @@ public:
 
     virtual int Set(KeyType key, DataType data);
 
-    virtual void PrintCache(FILE *f);
+    virtual void PrintCache();
 
     void SetNew(KeyType key, FbrNode *node);
 

@@ -29,11 +29,8 @@ struct PairEqual
     }
 };
 
-//template<typename Key, typename Data>
 using CacheMap = std::unordered_map<KeyType, std::pair<DataType, typename std::list<KeyType>::iterator>,
         PairHash<int, int>, PairEqual<int, int>>;
-//using CacheMap = std::unordered_map<KeyType, std::pair<DataType , std::list<std::pair<int, int>>::iterator>>;
-//        PairHash<int, int>, PairEqual<int, int>>;
 
 
 class ICacheAlgorithm
@@ -102,7 +99,7 @@ public:
      */
     virtual int Set(KeyType key, DataType page) = 0;
 
-    virtual void PrintCache(FILE *f) = 0;
+    virtual void PrintCache() = 0;
 
 };
 
