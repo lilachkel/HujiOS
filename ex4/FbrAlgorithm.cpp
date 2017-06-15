@@ -12,7 +12,7 @@ FbrAlgorithm::FbrAlgorithm(size_t size, double f_old, double f_new) : ICacheAlgo
         m_Lru = new LruAlgorithm((size_t) (size * (1 - (f_new + f_old))));
     }
 }
-
+//
 
 
 FbrAlgorithm::~FbrAlgorithm()
