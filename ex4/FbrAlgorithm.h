@@ -5,6 +5,7 @@
 #ifndef PROJECT_FBRALGORITHM_H
 #define PROJECT_FBRALGORITHM_H
 
+#include <cstring>
 #include "ICacheAlgorithm.hpp"
 #include "LfuAlgorithm.h"
 #include "LruAlgorithm.h"
