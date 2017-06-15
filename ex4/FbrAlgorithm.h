@@ -26,15 +26,15 @@ struct FbrNode
 };
 struct Comp
 {
-    bool operator()(std::pair<KeyType, size_t> k1, std::pair<KeyType, size_t> k2)
+    const bool operator()(const std::pair<KeyType, size_t> &k1, const std::pair<KeyType, size_t> &k2)
     {
         return k1.second < k2.second;
     }
 };
 struct Lfu {
     size_t _capacity;
-    std::unordered_map<KeyType, FbrNode*> Cache;
-    std::set<std::pair<KeyType, size_t>,Comp> lfu;
+    std::unordered_map<KeyType, FbrNode *, PairHash, PairEqual> Cache;
+    std::set<std::pair<KeyType, size_t>, Comp> lfu;
     Lfu(size_t capacity)
     {
         _capacity = capacity;

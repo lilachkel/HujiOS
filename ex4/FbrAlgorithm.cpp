@@ -44,7 +44,7 @@ DataType FbrAlgorithm::Get(KeyType key)
         }
     }
     auto temp = GetOld(key);
-    auto block_pair = std::make_pair(temp.first, static_cast<FbrNode *>(temp.second));
+    auto block_pair = std::make_pair(temp.first, temp.second);
     if (block_pair.second != nullptr)
     {
         block_pair.second->_count++;
@@ -120,9 +120,9 @@ std::pair<KeyType, FbrNode*> FbrAlgorithm::GetOld(KeyType key)
         node = old_Lfu->Cache.at(key);
     }catch (std::exception e)
     {
-        return {nullptr, nullptr};
+        return {key, nullptr};
     }
-    old_Lfu->lfu.erase({key,node->_count});
+    old_Lfu->lfu.erase({key, node->_count});
     node->_count++;
     old_Lfu->Cache.erase(key);
     return std::make_pair(key, node);
