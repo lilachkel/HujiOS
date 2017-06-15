@@ -145,7 +145,6 @@ int CacheFS_pread(int file_id, void *buf, size_t count, off_t offset)
         }
         else
         {
-            cache_misses++;
             _cacheBuff = aligned_alloc(blockSize, blockSize);
 
             ssize_t _readSize = pread(file_id, (char *) _cacheBuff, blockSize, blockCandid * blockSize);
@@ -159,6 +158,7 @@ int CacheFS_pread(int file_id, void *buf, size_t count, off_t offset)
             {
                 break;
             }
+            cache_misses++;
             _algorithm->Set(key, _cacheBuff);
             addToOffset = std::min(_readSize - junkBits, (size_t)cur_count);
             memcpy((char *) buf + buf_offset, (char *) _cacheBuff + junkBits, addToOffset);

@@ -119,14 +119,14 @@ int LfuAlgorithm::Set(KeyType key, DataType data, int count, KeyType *old, void 
         if (count == 1 || _head == nullptr)
         {
             updateHead(key);
-            pos = _head->keys.end();
+            pos = _head->keys.begin();
         }
         else
         {
             pos = updateExisting(key, _head, count);
         }
         // add the key to the cache buffer.
-        Base::_cache.insert({key, {data, std::prev(pos)}});
+        Base::_cache.insert({key, {data, pos}});
     }
     return 0;
 }
@@ -135,8 +135,8 @@ std::list<KeyType>::iterator LfuAlgorithm::updateExisting(KeyType key, LfuNode *
 {
     if (node->count == count)
     {
-        node->keys.push_back(key);
-        return node->keys.end();
+        node->keys.push_front(key);
+        return node->keys.begin();
     }
         // if we have to add the key in the middle of the list
     else if (node->next != nullptr)
@@ -153,8 +153,8 @@ std::list<KeyType>::iterator LfuAlgorithm::updateExisting(KeyType key, LfuNode *
             node->next->prev = newNode;
             node->next = newNode;
             newNode->prev = node;
-            newNode->keys.push_back(key);
-            return newNode->keys.end();
+            newNode->keys.push_front(key);
+            return newNode->keys.begin();
         }
     }
 
@@ -163,8 +163,8 @@ std::list<KeyType>::iterator LfuAlgorithm::updateExisting(KeyType key, LfuNode *
         LfuNode *newNode = new LfuNode(count);
         node->next = newNode;
         newNode->prev = node;
-        newNode->keys.push_back(key);
-        return newNode->keys.end();
+        newNode->keys.push_front(key);
+        return newNode->keys.begin();
     }
 }
 
@@ -174,12 +174,12 @@ void LfuAlgorithm::updateHead(KeyType key)
     if (_head == nullptr)
     {
         _head = new LfuNode(1);
-        _head->keys.push_back(key);
+        _head->keys.push_front(key);
     }
         // if _head frequncy is 1 we add the key to it
     else if (_head->count == 1)
     {
-        _head->keys.push_back(key);
+        _head->keys.push_front(key);
     }
         // if head's frequency is higher than 1 - create a new head and add link the current head as it's next.
     else
@@ -188,7 +188,7 @@ void LfuAlgorithm::updateHead(KeyType key)
         _head->prev = newNode;
         newNode->next = _head;
         _head = newNode;
-        _head->keys.push_back(key);
+        _head->keys.push_front(key);
     }
 
     // add the new <key, _head node> pair to the LFU queue.
@@ -227,10 +227,10 @@ void LfuAlgorithm::removeOldNode(KeyType *oldKey, void (*freeData)(DataType))
     // if head's key list is not empty get the key and remove it from the head.
     if (!_head->keys.empty())
     {
-        f = _head->keys.front().first;
-        s = _head->keys.front().second;
-        oldKey = &_head->keys.front();
-        _head->keys.pop_front();
+        f = _head->keys.back().first;
+        s = _head->keys.back().second;
+        oldKey = &_head->keys.back();
+        _head->keys.pop_back();
     }
     // if head is empty now - remove it.
     if (_head->keys.empty()) removeNode(_head);

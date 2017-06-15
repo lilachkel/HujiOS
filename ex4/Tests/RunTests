@@ -31,10 +31,10 @@ g++ Test5.o -L. CacheFS.a -o Test5
 python3 Tests.py
 
 # Remove Files from /tmp
-rm -rf tmp/TheBoyWhoLived /tmp/TheVanishingGlass /var/tmp/TheVanishingGlass
+#rm -rf tmp/TheBoyWhoLived /tmp/TheVanishingGlass /var/tmp/TheVanishingGlass
 
 # Clear Test Files
-rm -rf Tests.py *.o Test1 Test2 Test3 Test4 Test5 FilesToRead ResultFiles TestFiles
+#rm -rf Tests.py *.o Test1 Test2 Test3 Test4 Test5 FilesToRead ResultFiles TestFiles
 
 # Clear Output Files
-rm -rf BufferOutput1 BufferOutput2 BufferOutput3 BufferOutput4 BufferOutput5 CacheLog1 CacheLog2 CacheLog3 CacheLog4 CacheLog5 StatLog1 StatLog2 StatLog3 StatLog4 StatLog5
+#rm -rf BufferOutput1 BufferOutput2 BufferOutput3 BufferOutput4 BufferOutput5 CacheLog1 CacheLog2 CacheLog3 CacheLog4 CacheLog5 StatLog1 StatLog2 StatLog3 StatLog4 StatLog5
