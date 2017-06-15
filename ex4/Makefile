@@ -14,7 +14,7 @@ CacheFS.o: $(SOURCES)
 	$(CC) $(CFLAGS) $(ADDFLAGS) -c $(SOURCES)
 
 tar:
-	tar cvf ex4.tar $(SOURCES) $(HEADERS) README Makefile
+	tar cvf ex4.tar $(SOURCES) $(HEADERS) README Answers.pdf Makefile
 
 clean:
 	rm -rf Search *.o *.a *.gch *.tar
