@@ -38,7 +38,9 @@ class FbrAlgorithm : public ICacheAlgorithm
 
     static void FreeFbrNode(DataType data)
     {
-        FbrNode* node = (FbrNode*)data;
+        FbrNode *node = static_cast<FbrNode *>(data);
+        if (!node)
+            return;
         free(node->_blockBuff);
         free(node);
     }

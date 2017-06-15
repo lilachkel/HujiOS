@@ -116,7 +116,7 @@ int LfuAlgorithm::Set(KeyType key, DataType data, int count, KeyType *old, void 
         }
 
         // add the key to the head because it has the lowest access count.
-        if (count == 1)
+        if (count == 1 || _head == nullptr)
         {
             updateHead(key);
             pos = _head->keys.end();

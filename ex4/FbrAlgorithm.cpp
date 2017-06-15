@@ -8,7 +8,7 @@ FbrAlgorithm::FbrAlgorithm(size_t size, double f_old, double f_new) : ICacheAlgo
     m_exist = (1 - (f_new + f_old) != 0);
     if (m_exist)
     {
-        m_Lru = new LruAlgorithm(size * ((size_t) (1 - (f_new + f_old))));
+        m_Lru = new LruAlgorithm((size_t) (size * (1 - (f_new + f_old))));
     }
 }
 

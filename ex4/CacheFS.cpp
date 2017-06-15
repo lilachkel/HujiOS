@@ -139,7 +139,7 @@ int CacheFS_pread(int file_id, void *buf, size_t count, off_t offset)
         if ((_cacheBuff = _algorithm->Get(key)) != nullptr)
         {
             cache_hits++;
-            addToOffset = std::min(blockSize - junkBits, (size_t) cur_count);
+            addToOffset = std::min(strlen((char *) _cacheBuff + junkBits), (size_t) cur_count);
             // buff cur offset, the wanted block part, size to copy
             memcpy((char *) buf + buf_offset, (char *) _cacheBuff + junkBits, addToOffset);
 
