@@ -144,7 +144,7 @@ int CacheFS_pread(int file_id, void *buf, size_t count, off_t offset)
             strlen((char*)_cacheBuff);
             addToOffset = std::min(strlen((char*)_cacheBuff) -junkBits, (size_t) cur_count);
             addToOffset = std::min(addToOffset,toRead-buf_offset);
-//
+
 //            size_t blockSize = GetBlockSize();
 //    size_t junkBits = offset % blockSize;
 //    size_t buf_offset = 0;
