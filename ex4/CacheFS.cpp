@@ -81,7 +81,7 @@ int CacheFS_open(const char *pathname)
     auto path = realpath(pathname, NULL);
     if (path == NULL)
         return RET_FAILURE;
-    int pos = std::string(path).find("/tmp");
+    size_t pos = std::string(path).find("/tmp");
     if (pos == std::string::npos || pos != 0)
         return RET_FAILURE;
     int fd = open(path, O_RDONLY | O_DIRECT | O_SYNC);
@@ -113,7 +113,6 @@ int CacheFS_pread(int file_id, void *buf, size_t count, off_t offset)
     if (offset < 0 || !buf)
     {
         return RET_FAILURE;
-
     }
 
     //checks, in O(1) if this file_id is valid
@@ -161,13 +160,12 @@ int CacheFS_pread(int file_id, void *buf, size_t count, off_t offset)
                 break;
             }
             _algorithm->Set(key, _cacheBuff);
-            long o =_readSize - junkBits;
             addToOffset = std::min(_readSize - junkBits, (size_t)cur_count);
             memcpy((char *) buf + buf_offset, (char *) _cacheBuff + junkBits, addToOffset);
         }
         buf_offset += addToOffset;
         junkBits = 0;
-        blockCandid ++;
+        blockCandid++;
         cur_count -= addToOffset;
     }
 

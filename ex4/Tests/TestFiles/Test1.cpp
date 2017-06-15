@@ -9,8 +9,7 @@
 #include <iostream>
 #include <fstream>
 #include <cstring>
-#include <string>
-#include "../../CacheFS.h"
+#include "CacheFS.h"
 
 
 #define BUFFER_SIZE 100000
