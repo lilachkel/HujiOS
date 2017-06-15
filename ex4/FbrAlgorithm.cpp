@@ -2,9 +2,10 @@
 #include "FbrAlgorithm.h"
 
 
-FbrAlgorithm::FbrAlgorithm(size_t size, double f_old, double f_new) : ICacheAlgorithm(0) {
+FbrAlgorithm::FbrAlgorithm(size_t size, double f_old, double f_new) : ICacheAlgorithm( 0 )
+{
     new_Lru = new LruAlgorithm(((size_t) (f_new * size)));
-    old_Lfu = new LfuAlgorithm(((size_t) (size * f_old)));
+    old_Lfu = new Lfu(((size_t) (size * f_old)));
     m_exist = (1 - (f_new + f_old) != 0);
     if (m_exist)
     {
@@ -12,11 +13,13 @@ FbrAlgorithm::FbrAlgorithm(size_t size, double f_old, double f_new) : ICacheAlgo
     }
 }
 
+
+
 FbrAlgorithm::~FbrAlgorithm()
 {
     delete new_Lru;
     delete m_Lru;
-    delete old_Lfu;
+//    delete old_Lfu;//todo
 }
 
 
@@ -40,7 +43,7 @@ DataType FbrAlgorithm::Get(KeyType key)
             return block_pair.second->_blockBuff;
         }
     }
-    auto temp = old_Lfu->FbrGet(key);
+    auto temp = GetOld(key);
     auto block_pair = std::make_pair(temp.first, static_cast<FbrNode *>(temp.second));
     if (block_pair.second != nullptr)
     {
@@ -86,7 +89,43 @@ void FbrAlgorithm::SetM(KeyType key, FbrNode *node)
 void FbrAlgorithm::SetOld(KeyType key, FbrNode *node)
 {
     node->_type = OLD;
-    old_Lfu->Set(key, node, node->_count, nullptr, FreeFbrNode);
+//    old_Lfu->Set(key, node, node->_count, nullptr, FreeFbrNode);
+//    try
+//    {
+//        old_Lfu->Cache.at(key);
+//    }catch (std::exception e)
+//    {
+//        return;
+//    }
+
+    old_Lfu->Cache[key] = node;
+    old_Lfu->lfu.insert({key,node->_count});
+    if(old_Lfu->lfu.size()>old_Lfu->_capacity)
+    {
+        auto temp = *(old_Lfu->lfu.rbegin());
+        FbrNode* oldnode = old_Lfu->Cache[temp.first];
+        free(oldnode);
+        old_Lfu->Cache.erase(temp.first);
+        old_Lfu->lfu.erase(temp);
+    }
+//    Base::_cache.insert(key,node);
+//    Base ::_cache[key] = *node;
+};
+
+std::pair<KeyType, FbrNode*> FbrAlgorithm::GetOld(KeyType key)
+{
+    FbrNode* node;
+    try
+    {
+        node = old_Lfu->Cache.at(key);
+    }catch (std::exception e)
+    {
+        return {nullptr, nullptr};
+    }
+    old_Lfu->lfu.erase({key,node->_count});
+    node->_count++;
+    old_Lfu->Cache.erase(key);
+    return std::make_pair(key, node);
 };
 
 int FbrAlgorithm::Set(KeyType key, DataType data)
@@ -103,5 +142,9 @@ void FbrAlgorithm::PrintCache()
     {
         m_Lru->PrintCache();
     }
-    old_Lfu->PrintCache();
+    for (auto &i : old_Lfu->lfu) {
+
+        std::cout << i.first.first << " " << i.first.second << std::endl;
+    }
+
 }

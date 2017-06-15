@@ -135,16 +135,16 @@ int CacheFS_pread(int file_id, void *buf, size_t count, off_t offset)
     long cur_count = count;
     int blockCandid = (int) (offset / blockSize);
     void *_cacheBuff;
-    while (buf_offset<toRead)
+    while (buf_offset<toRead && cur_count>0)
     {
         std::pair<std::string, int> key = std::make_pair(_openFiles[file_id], blockCandid);
         if ((_cacheBuff = _algorithm->Get(key)) != nullptr)
         {
             cache_hits++;
-            strlen((char*)_cacheBuff);
+
             addToOffset = std::min(strlen((char*)_cacheBuff) -junkBits, (size_t) cur_count);
             addToOffset = std::min(addToOffset,toRead-buf_offset);
-
+//
 //            size_t blockSize = GetBlockSize();
 //    size_t junkBits = offset % blockSize;
 //    size_t buf_offset = 0;

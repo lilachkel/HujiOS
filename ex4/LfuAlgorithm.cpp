@@ -87,6 +87,7 @@ std::pair<KeyType, DataType> LfuAlgorithm::FbrGet(KeyType key)
     DataType data = item->second.first;
 
     Base::_cache.erase(key);
+    //_lfu.erase(key);
 
     return std::make_pair(key, data);
 }
