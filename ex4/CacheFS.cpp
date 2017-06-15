@@ -124,22 +124,43 @@ int CacheFS_pread(int file_id, void *buf, size_t count, off_t offset)
     {
         return RET_FAILURE;
     }
+    off_t fsize = lseek(file_id, 0, SEEK_END);;
     size_t blockSize = GetBlockSize();
     size_t junkBits = offset % blockSize;
     size_t buf_offset = 0;
     size_t addToOffset = 0;
 
+    long toRead = std::min(fsize-junkBits, count);
+
     long cur_count = count;
     int blockCandid = (int) (offset / blockSize);
     void *_cacheBuff;
-    while (cur_count > 0)
+    while (buf_offset<toRead)
     {
         std::pair<std::string, int> key = std::make_pair(_openFiles[file_id], blockCandid);
         if ((_cacheBuff = _algorithm->Get(key)) != nullptr)
         {
             cache_hits++;
-            addToOffset = std::min(strlen((char *) _cacheBuff + junkBits), (size_t) cur_count);
-            // buff cur offset, the wanted block part, size to copy
+            strlen((char*)_cacheBuff);
+            addToOffset = std::min(strlen((char*)_cacheBuff) -junkBits, (size_t) cur_count);
+            addToOffset = std::min(addToOffset,toRead-buf_offset);
+//
+//            size_t blockSize = GetBlockSize();
+//    size_t junkBits = offset % blockSize;
+//    size_t buf_offset = 0;
+//    size_t addToOffset = 0;
+//
+//    long cur_count = count;
+//    int blockCandid = (int) (offset / blockSize);
+//    void *_cacheBuff;
+//    while (cur_count > 0)
+//    {
+//        std::pair<std::string, int> key = std::make_pair(_openFiles[file_id], blockCandid);
+//        if ((_cacheBuff = _algorithm->Get(key)) != nullptr)
+//        {
+//            cache_hits++;
+//            addToOffset = std::min(strlen((char *) _cacheBuff + junkBits), (size_t) cur_count);
+//            // buff cur offset, the wanted block part, size to copy
             memcpy((char *) buf + buf_offset, (char *) _cacheBuff + junkBits, addToOffset);
 
         }
@@ -156,6 +177,7 @@ int CacheFS_pread(int file_id, void *buf, size_t count, off_t offset)
 
             if (_readSize == 0)
             {
+//                free(_cacheBuff);
                 break;
             }
             cache_misses++;
