@@ -39,11 +39,8 @@ struct Lfu {
     {
         _capacity = capacity;
     }
-
 };
 
-
-//template<typename Key = std::pair<int, int>, typename Data = void *>
 class FbrAlgorithm : public ICacheAlgorithm
 {
     using Base = ICacheAlgorithm;

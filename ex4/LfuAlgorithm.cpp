@@ -1,3 +1,4 @@
+#include <cstring>
 #include "LfuAlgorithm.h"
 
 LfuAlgorithm::LfuAlgorithm(size_t size) : ICacheAlgorithm(size), _head(nullptr)
@@ -18,10 +19,8 @@ void LfuAlgorithm::DestroyLFU(LfuNode *node)
 
 void LfuAlgorithm::Update(CacheMap::iterator &cm)
 {
-    // Get the key
-    KeyType key = cm->first;
     // get the node we are working with
-    LfuNode *node = _lfu[key];
+    LfuNode *node = _lfu[cm->first];
     // delete the key from node's list of keys.
     node->keys.erase(cm->second.second);
 
@@ -30,12 +29,12 @@ void LfuAlgorithm::Update(CacheMap::iterator &cm)
     {
         node->next = new LfuNode(node->count + 1);
         node->next->prev = node;
-        node->next->keys.push_back(key);
+        node->next->keys.push_back(cm->first);
     }
         // if node has a next node we add the key to it
     else if (node->next->count == node->count + 1)
     {
-        node->next->keys.push_back(key);
+        node->next->keys.push_back(cm->first);
     }
         // final case is for when the node has more nodes we insert a new node to that list and add the key to it.
     else
@@ -45,14 +44,14 @@ void LfuAlgorithm::Update(CacheMap::iterator &cm)
         node->next->prev = newNode;
         newNode->prev = node;
         node->next = newNode;
-        node->next->keys.push_back(key);
+        node->next->keys.push_back(cm->first);
     }
     // update the key's position
     cm->second.second = std::prev(node->next->keys.end());
 
-    _lfu.erase(key);
+    _lfu.erase(cm->first);
     // add the <key, node> to the lfu cache
-    _lfu.insert({key, node->next});
+    _lfu.insert({cm->first, node->next});
 
     // if the original node doesn't hold any keys - remove it.
     if (node->keys.empty())
@@ -79,56 +78,46 @@ std::pair<KeyType, DataType> LfuAlgorithm::FbrGet(KeyType key)
     if (item == Base::_cache.end())
         return std::make_pair(key, nullptr);
 
+    auto node = _lfu.find(key);
+    if (node == _lfu.end())
+        return std::make_pair(key, nullptr);
     // get the node we are working with
-    LfuNode *node = _lfu[key];
     // delete the key from node's list of keys.
-    node->keys.erase(item->second.second);
-
+    node->second->keys.erase(item->second.second);
     DataType data = item->second.first;
-
-    Base::_cache.erase(key);
-    //_lfu.erase(key);
+    Base::_cache.erase(item);
+    _lfu.erase(node);
 
     return std::make_pair(key, data);
 }
 
 int LfuAlgorithm::Set(KeyType key, DataType data)
 {
-    return Set(key, data, 1, nullptr, free);
+    return Set(key, data, 1, free);
 }
 
-int LfuAlgorithm::Set(KeyType key, DataType data, int count, KeyType *old, void (*freeData)(DataType))
+int LfuAlgorithm::Set(KeyType key, DataType data, int count, void (*freeData)(DataType))
 {
-    // if the key already exists update it's access frequency and replace it's data.
-    auto item = Base::_cache.find(key);
-    if (item != Base::_cache.end())
+    typename std::list<KeyType>::iterator pos;
+    // if the key doesn't exist and there's no more room in the buffer - remove the LFU node first.
+    if (Base::_cache.size() == Base::_capacity)
     {
-        Update(item);
-        item->second.first = data;
+        removeOldNode(freeData);
     }
 
+    // add the key to the head because it has the lowest access count.
+    if (count == 1 || _head == nullptr)
+    {
+        updateHead(key);
+        pos = _head->keys.begin();
+    }
     else
     {
-        typename std::list<KeyType>::iterator pos;
-        // if the key doesn't exist and there's no more room in the buffer - remove the LFU node first.
-        if (Base::_cache.size() == Base::_capacity)
-        {
-            removeOldNode(old, freeData);
-        }
-
-        // add the key to the head because it has the lowest access count.
-        if (count == 1 || _head == nullptr)
-        {
-            updateHead(key);
-            pos = _head->keys.begin();
-        }
-        else
-        {
-            pos = updateExisting(key, _head, count);
-        }
-        // add the key to the cache buffer.
-        Base::_cache.insert({key, {data, pos}});
+        pos = updateExisting(key, _head, count);
     }
+    // add the key to the cache buffer.
+    Base::_cache.insert({key, {data, pos}});
+
     return 0;
 }
 
@@ -219,7 +208,7 @@ void LfuAlgorithm::removeNode(LfuNode *node)
     delete node;
 }
 
-void LfuAlgorithm::removeOldNode(KeyType *oldKey, void (*freeData)(DataType))
+void LfuAlgorithm::removeOldNode(void (*freeData)(DataType))
 {
     std::string f;
     int s;
@@ -230,11 +219,11 @@ void LfuAlgorithm::removeOldNode(KeyType *oldKey, void (*freeData)(DataType))
     {
         f = _head->keys.back().first;
         s = _head->keys.back().second;
-        oldKey = &_head->keys.back();
         _head->keys.pop_back();
     }
     // if head is empty now - remove it.
-    if (_head->keys.empty()) removeNode(_head);
+    if (_head->keys.empty())
+        removeNode(_head);
     // remove the old key from the buffer
     freeData(Base::_cache[{f, s}].first);
     Base::_cache.erase({f, s});

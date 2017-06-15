@@ -51,7 +51,7 @@ class LfuAlgorithm : public ICacheAlgorithm
     /**
      * Remove the node with lowest frequency.
      */
-    void removeOldNode(KeyType *old, void (*freeData)(DataType));
+    void removeOldNode(void (*freeData)(DataType));
 
     /**
      * Prints the cache state recursively
@@ -71,7 +71,7 @@ public:
 
     virtual int Set(KeyType key, DataType data);
 
-    virtual int Set(KeyType key, DataType data, int count, KeyType *old, void (*freeData)(DataType));
+    virtual int Set(KeyType key, DataType data, int count, void (*freeData)(DataType));
 
     virtual void PrintCache();
 };

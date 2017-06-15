@@ -14,7 +14,7 @@ struct PairHash
 {
     const size_t operator()(const std::pair<std::string, int> &key) const
     {
-        return std::hash<int>()(key.first.length()) ^ std::hash<int>()(key.second);
+        return std::hash<std::string>()(key.first) ^ std::hash<int>()(key.second);
     }
 };
 
@@ -22,7 +22,7 @@ struct PairEqual
 {
     bool operator()(const std::pair<std::string, int> &lhs, const std::pair<std::string, int> &rhs) const
     {
-        return lhs.first == rhs.first && lhs.second == rhs.second;
+        return lhs.first.compare(rhs.first) == 0 && lhs.second == rhs.second;
     }
 };
 

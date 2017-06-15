@@ -12,14 +12,11 @@ FbrAlgorithm::FbrAlgorithm(size_t size, double f_old, double f_new) : ICacheAlgo
         m_Lru = new LruAlgorithm((size_t) (size * (1 - (f_new + f_old))));
     }
 }
-//
-
 
 FbrAlgorithm::~FbrAlgorithm()
 {
     delete new_Lru;
     delete m_Lru;
-//    delete old_Lfu;//todo
 }
 
 
@@ -27,7 +24,7 @@ DataType FbrAlgorithm::Get(KeyType key)
 {
     FbrNode *node = static_cast<FbrNode *>(new_Lru->Get(key));
     // checks if new contains the  key, if true: regular lru get.
-    if (node != nullptr)//correct?
+    if (node != nullptr)
     {
         return node->_blockBuff;
     }
@@ -89,49 +86,40 @@ void FbrAlgorithm::SetM(KeyType key, FbrNode *node)
 void FbrAlgorithm::SetOld(KeyType key, FbrNode *node)
 {
     node->_type = OLD;
-//    old_Lfu->Set(key, node, node->_count, nullptr, FreeFbrNode);
-//    try
-//    {
-//        old_Lfu->Cache.at(key);
-//    }catch (std::exception e)
-//    {
-//        return;
-//    }
 
-    old_Lfu->Cache[key] = node;
-    old_Lfu->lfu.insert({key,node->_count});
-    if(old_Lfu->lfu.size()>old_Lfu->_capacity)
+    old_Lfu->Cache.insert({key, node});
+    old_Lfu->lfu.insert({key, node->_count});
+    if (old_Lfu->lfu.size() == old_Lfu->_capacity)
     {
         auto temp = *(old_Lfu->lfu.rbegin());
         FbrNode* oldnode = old_Lfu->Cache[temp.first];
-        free(oldnode);
+        FreeFbrNode(oldnode);
         old_Lfu->Cache.erase(temp.first);
         old_Lfu->lfu.erase(temp);
     }
-//    Base::_cache.insert(key,node);
-//    Base ::_cache[key] = *node;
 };
 
 std::pair<KeyType, FbrNode*> FbrAlgorithm::GetOld(KeyType key)
 {
-    FbrNode* node;
-    try
-    {
-        node = old_Lfu->Cache.at(key);
-    }catch (std::exception e)
-    {
-        return {key, nullptr};
-    }
+    auto item = old_Lfu->Cache.find(key);
+    if (item == old_Lfu->Cache.end())
+        return std::make_pair(key, (FbrNode *) nullptr);
+
+    std::cout << "before evict: " << std::endl;
+    PrintCache();
+    FbrNode *node = item->second;
     old_Lfu->lfu.erase({key, node->_count});
+    std::cout << "after evict: " << std::endl;
+    PrintCache();
+    std::cout << "evicted" << std::endl;
     node->_count++;
-    old_Lfu->Cache.erase(key);
+    old_Lfu->Cache.erase(item);
     return std::make_pair(key, node);
 };
 
 int FbrAlgorithm::Set(KeyType key, DataType data)
 {
-    FbrNode *node = new FbrNode(data);
-    SetNew(key, node);
+    SetNew(key, new FbrNode(data));
     return 0;
 };
 
