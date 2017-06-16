@@ -8,6 +8,7 @@
 #include "ICacheAlgorithm.hpp"
 #include "LruAlgorithm.h"
 #include "FbrAlgorithm.h"
+#include "LfuAlgorithm.h"
 #include <bitset>
 #include <cstring>
 #include <unordered_set>
@@ -124,6 +125,7 @@ int CacheFS_pread(int file_id, void *buf, size_t count, off_t offset)
     {
         return RET_FAILURE;
     }
+
     size_t blockSize = GetBlockSize();
     size_t junkBits = offset % blockSize;
     size_t buf_offset = 0;
@@ -138,10 +140,8 @@ int CacheFS_pread(int file_id, void *buf, size_t count, off_t offset)
         if ((_cacheBuff = _algorithm->Get(key)) != nullptr)
         {
             cache_hits++;
-            addToOffset = std::min(strlen((char *) _cacheBuff + junkBits), (size_t) cur_count);
-            // buff cur offset, the wanted block part, size to copy
+            addToOffset = std::min(strlen((char *) _cacheBuff) - junkBits, (size_t) cur_count);
             memcpy((char *) buf + buf_offset, (char *) _cacheBuff + junkBits, addToOffset);
-
         }
         else
         {
@@ -160,7 +160,7 @@ int CacheFS_pread(int file_id, void *buf, size_t count, off_t offset)
             }
             cache_misses++;
             _algorithm->Set(key, _cacheBuff);
-            addToOffset = std::min(_readSize - junkBits, (size_t)cur_count);
+            addToOffset = std::min(_readSize - junkBits, (size_t) cur_count);
             memcpy((char *) buf + buf_offset, (char *) _cacheBuff + junkBits, addToOffset);
         }
         buf_offset += addToOffset;

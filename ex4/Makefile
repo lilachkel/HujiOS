@@ -7,7 +7,7 @@ OBJECTS = CacheFS.o ICacheAlgorithm.hpp.gch LruAlgorithm.o LfuAlgorithm.o FbrAlg
 
 default: CacheFS.a
 
-CacheFS.a: CacheFS.o
+CacheFS.a: CacheFS.o $(OBJECTS)
 	ar rcs CacheFS.a $(OBJECTS)
 
 CacheFS.o: $(SOURCES)

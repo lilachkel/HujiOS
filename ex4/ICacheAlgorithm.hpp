@@ -22,7 +22,7 @@ struct PairEqual
 {
     bool operator()(const std::pair<std::string, int> &lhs, const std::pair<std::string, int> &rhs) const
     {
-        return lhs.first == rhs.first && lhs.second == rhs.second;
+        return lhs.first.compare(rhs.first) == 0 && lhs.second == rhs.second;
     }
 };
 

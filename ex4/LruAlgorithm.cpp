@@ -31,7 +31,7 @@ std::pair<KeyType, DataType> LruAlgorithm::FbrGet(KeyType key)
     DataType data = item->second.first;
 
     _lru.erase(item->second.second);
-    Base::_cache.erase(key);
+    Base::_cache.erase(item);
 
     return std::make_pair(key, data);
 }

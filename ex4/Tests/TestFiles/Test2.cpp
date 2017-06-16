@@ -109,7 +109,8 @@ int main(int argc, char *argv[])
 
             if (CacheFS_pread(f1, buf + 10150, 7000, 20000) != 5832)
             {
-                std::cerr << "Error in CacheFS_pread while reading with request that is larger then the file size" << std::endl;
+                std::cerr << "Error in CacheFS_pread while reading with request that is larger then the file size"
+                          << std::endl;
                 return -1;
             }
 
@@ -142,7 +143,8 @@ int main(int argc, char *argv[])
 
             if (CacheFS_pread(f3, buf + 16000, 4500, 16000) != 3090)
             {
-                std::cerr << "Error in CacheFS_pread while reading with request that is larger then the file size" << std::endl;
+                std::cerr << "Error in CacheFS_pread while reading with request that is larger then the file size"
+                          << std::endl;
                 return -1;
             }
 

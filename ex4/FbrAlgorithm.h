@@ -5,15 +5,14 @@
 #ifndef PROJECT_FBRALGORITHM_H
 #define PROJECT_FBRALGORITHM_H
 
-#include <cstring>
+#include <set>
 #include "ICacheAlgorithm.hpp"
-#include "LfuAlgorithm.h"
 #include "LruAlgorithm.h"
+//#include <list>
 
 #define NEW 0
 #define MIDDLE 1
 #define OLD 2
-
 
 struct FbrNode
 {
@@ -25,15 +24,30 @@ struct FbrNode
     {}
 
 };
+struct Comp
+{
+    const bool operator()(const std::pair<KeyType, size_t> &k1, const std::pair<KeyType, size_t> &k2)
+    {
+        return k1.second < k2.second;
+    }
+};
+struct Lfu {
+    size_t _capacity;
+    std::unordered_map<KeyType, FbrNode *, PairHash, PairEqual> Cache;
+    std::set<std::pair<KeyType, size_t>, Comp> lfu;
+    Lfu(size_t capacity)
+    {
+        _capacity = capacity;
+    }
+};
 
-//template<typename Key = std::pair<int, int>, typename Data = void *>
 class FbrAlgorithm : public ICacheAlgorithm
 {
     using Base = ICacheAlgorithm;
     LruAlgorithm *new_Lru = nullptr;
     LruAlgorithm *m_Lru = nullptr;
 
-    LfuAlgorithm *old_Lfu = nullptr;
+    Lfu *old_Lfu = nullptr;
 
     bool m_exist;
 
@@ -60,6 +74,9 @@ public:
     virtual int Set(KeyType key, DataType data);
 
     virtual void PrintCache();
+
+    std::pair<KeyType, FbrNode*> GetOld(KeyType key);
+
 
     void SetNew(KeyType key, FbrNode *node);
 
