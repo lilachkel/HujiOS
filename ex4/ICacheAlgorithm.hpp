@@ -6,6 +6,7 @@
 #include <list>
 #include <iostream>
 #include <unistd.h>
+#include <algorithm>
 
 typedef std::pair<std::string, int> KeyType;
 typedef void* DataType;
@@ -42,6 +43,16 @@ protected:
      */
     virtual void Update(CacheMap::iterator &cm) = 0;
 
+    void CleanCache()
+    {
+        for (auto &item : _cache)
+        {
+            free(item.second.first);
+        }
+
+        _cache.clear();
+    }
+
 public:
     ICacheAlgorithm(size_t size) : _capacity(size)
     {}
@@ -71,22 +82,12 @@ public:
         return *this;
     }
 
-    void CleanCache()
-    {
-        for (auto &item : _cache)
-        {
-            free(item.second.first);
-        }
-
-        _cache.clear();
-    }
-
     /**
      * Gets an item from the cache by a given key
      * @param key item key
      * @return Data item
      */
-    virtual void *Get(KeyType key) = 0;
+    virtual DataType Get(KeyType key) = 0;
 
     /**
      * Adds an item to the cache (buffer)

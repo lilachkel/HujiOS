@@ -8,9 +8,7 @@
 #include "ICacheAlgorithm.hpp"
 #include "LruAlgorithm.h"
 #include "FbrAlgorithm.h"
-#include "LfuAlgorithm.h"
 #include <bitset>
-#include <cstring>
 #include <unordered_set>
 #include <fstream>
 
@@ -84,10 +82,14 @@ int CacheFS_open(const char *pathname)
         return RET_FAILURE;
     size_t pos = std::string(path).find("/tmp");
     if (pos == std::string::npos || pos != 0)
+    {
+        free(path);
         return RET_FAILURE;
+    }
     int fd = open(path, O_RDONLY | O_DIRECT | O_SYNC);
     if (fd != -1)
         _openFiles.insert({fd, std::string(pathname)});
+    free(path);
     return fd;
 }
 
@@ -96,21 +98,20 @@ int CacheFS_close(int file_id)
     try
     {
         _openFiles.at(file_id);
-        close(file_id);
-        _openFiles.erase(file_id);
 
     }
     catch (std::exception e)
     {
         return RET_FAILURE;
     }
+    close(file_id);
+    _openFiles.erase(file_id);
 
     return RET_SUCCESS;
 }
 
 int CacheFS_pread(int file_id, void *buf, size_t count, off_t offset)
 {
-
     if (offset < 0 || !buf)
     {
         return RET_FAILURE;
@@ -130,10 +131,10 @@ int CacheFS_pread(int file_id, void *buf, size_t count, off_t offset)
     size_t junkBits = offset % blockSize;
     size_t buf_offset = 0;
     size_t addToOffset = 0;
-
     long cur_count = count;
     int blockCandid = (int) (offset / blockSize);
     void *_cacheBuff;
+
     while (cur_count > 0)
     {
         std::pair<std::string, int> key = std::make_pair(_openFiles[file_id], blockCandid);
@@ -141,13 +142,12 @@ int CacheFS_pread(int file_id, void *buf, size_t count, off_t offset)
         {
             cache_hits++;
             addToOffset = std::min(strlen((char *) _cacheBuff) - junkBits, (size_t) cur_count);
-            memcpy((char *) buf + buf_offset, (char *) _cacheBuff + junkBits, addToOffset);
         }
         else
         {
             _cacheBuff = aligned_alloc(blockSize, blockSize);
 
-            ssize_t _readSize = pread(file_id, (char *) _cacheBuff, blockSize, blockCandid * blockSize);
+            ssize_t _readSize = pread(file_id, _cacheBuff, blockSize, blockCandid * blockSize);
             if (_readSize == -1)
             {
                 free(_cacheBuff);
@@ -161,8 +161,8 @@ int CacheFS_pread(int file_id, void *buf, size_t count, off_t offset)
             cache_misses++;
             _algorithm->Set(key, _cacheBuff);
             addToOffset = std::min(_readSize - junkBits, (size_t) cur_count);
-            memcpy((char *) buf + buf_offset, (char *) _cacheBuff + junkBits, addToOffset);
         }
+        memcpy((char *) buf + buf_offset, (char *) (_cacheBuff) + junkBits, addToOffset);
         buf_offset += addToOffset;
         junkBits = 0;
         blockCandid++;
