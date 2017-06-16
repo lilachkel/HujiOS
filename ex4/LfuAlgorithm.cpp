@@ -79,55 +79,52 @@ std::pair<KeyType, DataType> LfuAlgorithm::FbrGet(KeyType key)
     if (item == Base::_cache.end())
         return std::make_pair(key, nullptr);
 
+    KeyType k = item->first;
+
     // get the node we are working with
-    LfuNode *node = _lfu[key];
+    LfuNode *node = _lfu[k];
+
     // delete the key from node's list of keys.
-    node->keys.erase(item->second.second);
 
     DataType data = item->second.first;
+    auto pos = item->second.second;
 
-    Base::_cache.erase(key);
 
-    return std::make_pair(key, data);
+    if (!node->keys.empty())
+        node->keys.erase(pos);
+    if (node->keys.empty()) removeNode(node);
+    Base::_cache.erase(item);
+    _lfu.erase(k);
+
+    return std::make_pair(k, data);
 }
 
 int LfuAlgorithm::Set(KeyType key, DataType data)
 {
-    return Set(key, data, 1, nullptr, free);
+    return Set(key, data, 1, free);
 }
 
-int LfuAlgorithm::Set(KeyType key, DataType data, int count, KeyType *old, void (*freeData)(DataType))
+int LfuAlgorithm::Set(KeyType key, DataType data, int count, void (*freeData)(DataType))
 {
-    // if the key already exists update it's access frequency and replace it's data.
-    auto item = Base::_cache.find(key);
-    if (item != Base::_cache.end())
+    typename std::list<KeyType>::iterator pos;
+    // if the key doesn't exist and there's no more room in the buffer - remove the LFU node first.
+    if (Base::_cache.size() == Base::_capacity)
     {
-        Update(item);
-        item->second.first = data;
+        removeOldNode(freeData);
     }
 
+    // add the key to the head because it has the lowest access count.
+    if (count == 1 || _head == nullptr)
+    {
+        updateHead(key);
+        pos = _head->keys.begin();
+    }
     else
     {
-        typename std::list<KeyType>::iterator pos;
-        // if the key doesn't exist and there's no more room in the buffer - remove the LFU node first.
-        if (Base::_cache.size() == Base::_capacity)
-        {
-            removeOldNode(old, freeData);
-        }
-
-        // add the key to the head because it has the lowest access count.
-        if (count == 1 || _head == nullptr)
-        {
-            updateHead(key);
-            pos = _head->keys.begin();
-        }
-        else
-        {
-            pos = updateExisting(key, _head, count);
-        }
-        // add the key to the cache buffer.
-        Base::_cache.insert({key, {data, pos}});
+        pos = updateExisting(key, _head, count);
     }
+    // add the key to the cache buffer.
+    Base::_cache.insert({key, {data, pos}});
     return 0;
 }
 
@@ -136,10 +133,11 @@ std::list<KeyType>::iterator LfuAlgorithm::updateExisting(KeyType key, LfuNode *
     if (node->count == count)
     {
         node->keys.push_front(key);
+        _lfu.insert({key, node});
         return node->keys.begin();
     }
         // if we have to add the key in the middle of the list
-    else if (node->next != nullptr)
+    else if (node->next != NULL)
     {
         // there are nodes with higher frequency
         if (node->next->count <= count)
@@ -154,6 +152,7 @@ std::list<KeyType>::iterator LfuAlgorithm::updateExisting(KeyType key, LfuNode *
             node->next = newNode;
             newNode->prev = node;
             newNode->keys.push_front(key);
+            _lfu.insert({key, newNode});
             return newNode->keys.begin();
         }
     }
@@ -164,8 +163,10 @@ std::list<KeyType>::iterator LfuAlgorithm::updateExisting(KeyType key, LfuNode *
         node->next = newNode;
         newNode->prev = node;
         newNode->keys.push_front(key);
+        _lfu.insert({key, newNode});
         return newNode->keys.begin();
     }
+
 }
 
 void LfuAlgorithm::updateHead(KeyType key)
@@ -218,7 +219,7 @@ void LfuAlgorithm::removeNode(LfuNode *node)
     delete node;
 }
 
-void LfuAlgorithm::removeOldNode(KeyType *oldKey, void (*freeData)(DataType))
+void LfuAlgorithm::removeOldNode(void (*freeData)(DataType))
 {
     std::string f;
     int s;
@@ -229,7 +230,6 @@ void LfuAlgorithm::removeOldNode(KeyType *oldKey, void (*freeData)(DataType))
     {
         f = _head->keys.back().first;
         s = _head->keys.back().second;
-        oldKey = &_head->keys.back();
         _head->keys.pop_back();
     }
     // if head is empty now - remove it.

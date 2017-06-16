@@ -3,12 +3,15 @@
 
 
 FbrAlgorithm::FbrAlgorithm(size_t size, double f_old, double f_new) : ICacheAlgorithm(0) {
-    new_Lru = new LruAlgorithm(((size_t) (f_new * size)));
-    old_Lfu = new LfuAlgorithm(((size_t) (size * f_old)));
-    m_exist = (1 - (f_new + f_old) != 0);
+    size_t new_size = (size_t) (f_new * size);
+    size_t old_size = (size_t) (size * f_old);
+    size_t middle_size = size - new_size - old_size;
+    new_Lru = new LruAlgorithm(new_size);
+    old_Lfu = new LfuAlgorithm(old_size);
+    m_exist = middle_size > 0;
     if (m_exist)
     {
-        m_Lru = new LruAlgorithm((size_t) (size * (1 - (f_new + f_old))));
+        m_Lru = new LruAlgorithm(middle_size);
     }
 }
 
@@ -24,7 +27,7 @@ DataType FbrAlgorithm::Get(KeyType key)
 {
     FbrNode *node = static_cast<FbrNode *>(new_Lru->Get(key));
     // checks if new contains the  key, if true: regular lru get.
-    if (node != nullptr)//correct?
+    if (node != NULL)//correct?
     {
         return node->_blockBuff;
     }
@@ -41,6 +44,7 @@ DataType FbrAlgorithm::Get(KeyType key)
         }
     }
     auto temp = old_Lfu->FbrGet(key);
+
     auto block_pair = std::make_pair(temp.first, static_cast<FbrNode *>(temp.second));
     if (block_pair.second != nullptr)
     {
@@ -86,7 +90,7 @@ void FbrAlgorithm::SetM(KeyType key, FbrNode *node)
 void FbrAlgorithm::SetOld(KeyType key, FbrNode *node)
 {
     node->_type = OLD;
-    old_Lfu->Set(key, node, node->_count, nullptr, FreeFbrNode);
+    old_Lfu->Set(key, node, node->_count, FreeFbrNode);
 };
 
 int FbrAlgorithm::Set(KeyType key, DataType data)

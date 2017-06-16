@@ -14,7 +14,7 @@ struct PairHash
 {
     const size_t operator()(const std::pair<std::string, int> &key) const
     {
-        return std::hash<int>()(key.first.length()) ^ std::hash<int>()(key.second);
+        return std::hash<std::string>()(key.first) ^ std::hash<int>()(key.second);
     }
 };
 
