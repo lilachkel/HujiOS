@@ -14,10 +14,10 @@ rm -rf Valgrind
 echo -e "Done.\nReview your ValgrindLog file."
 
 # Remove Files from /tmp
-rm -rf tmp/TheBoyWhoLived /tmp/TheVanishingGlass /var/tmp/TheVanishingGlass
+#rm -rf tmp/TheBoyWhoLived /tmp/TheVanishingGlass /var/tmp/TheVanishingGlass
 
 # Clear Test Files
-rm -rf Tests.py *.o FilesToRead ResultFiles TestFiles
+#rm -rf Tests.py *.o FilesToRead ResultFiles TestFiles
 
 # Clear Output Files
-rm -rf CacheLogValgrind StatLogValgrind
+#rm -rf CacheLogValgrind StatLogValgrind
