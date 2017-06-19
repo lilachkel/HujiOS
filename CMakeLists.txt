@@ -58,5 +58,5 @@ set(CMAKE_CPP_FLAGS "${CMAKE_CPP_FLAGS} -Wall -std=c++11 -DNDEBUG")
 #target_link_libraries(TestVal CacheFS)
 
 # ex5
-add_executable(Client ex5/Client.cpp ex5/definitions.h)
-add_executable(Server ex5/Server.cpp ex5/definitions.h)
+add_executable(Client ex5/whatsappClient.cpp ex5/definitions.h)
+add_executable(Server ex5/whatsappServer.cpp ex5/definitions.h)

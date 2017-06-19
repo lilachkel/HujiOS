@@ -8,7 +8,7 @@
  * Error message definitions
  */
 #define WRONG_SERVER_USAGE "Usage: whatsappServer portNum"
-#define WRONT_CLIENT_USAGE "Usage: whatsappClient clientName serverAddress portNum"
+#define WRONG_CLIENT_USAGE "Usage: whatsappClient clientName serverAddress portNum"
 #define INVALID_CMD "ERROR: Invalid input.\n"
 #define SYS_CALL_ERROR(func, errnum) "ERROR: " + std::string(func) + " " + std::string(errnum) + ".\n"
 
@@ -44,6 +44,7 @@
 #define SEND_CMD "send"
 #define WHO_CMD "who"
 #define EXIT_CMD "exit"
+#define INVALID_USERNAME "invalidusername"
 
 /**
  * Constraints
@@ -51,5 +52,10 @@
 #define MAX_CLIENT_NAME 30
 #define MAX_CLIENTS 30
 #define MAX_MESSAGE_LENGTH 256
+
+/**
+ * Constants
+ */
+#define MESSAGE_DELIMETER '#'
 
 #endif //PROJECT_DEFINITIONS_H
