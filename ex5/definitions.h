@@ -51,11 +51,15 @@
  */
 #define MAX_CLIENT_NAME 30
 #define MAX_CLIENTS 30
-#define MAX_MESSAGE_LENGTH 256
+#define MAX_MESSAGE_LENGTH 259 + sizeof(int)
 
 /**
  * Constants
  */
-#define MESSAGE_DELIMETER '#'
+#define MESSAGE_START 'S'
+#define MESSAGE_LENGTH_END '#'
+#define MESSAGE_END '\n'
+#define GROUP_UNAME_DELIM ','
+
 
 #endif //PROJECT_DEFINITIONS_H

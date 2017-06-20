@@ -7,6 +7,7 @@
 #include <netinet/in.h>
 #include <cstring>
 #include "definitions.h"
+#include "NetworkHandler.h"
 
 #define UID std::string
 #define GID std::string
@@ -46,60 +47,15 @@ int CreateServer(int port)
 }
 
 /**
- * Reads data from a given file descriptor
- * @param fd file descriptor to read from
- * @return string message
+ * Closes all of the open connections
+ * @param servfd server file descriptor
  */
-std::string ReadData(int fd)
+void ShutdownServer(int servfd)
 {
-    char buffer[MAX_MESSAGE_LENGTH + 1];
-    int result = recv(fd, buffer, sizeof(buffer), 0);
-    if (result < 0)
-    {
-        return "ERROR";
-    }
-    else if (result == 0)
-    {
-        return EXIT_CMD;
-    }
+    for (auto &c : uidToFd)
+        close(c.second);
 
-    return std::string(buffer);
-}
-
-/**
- * Sends message to the given file descriptor
- * @param fd destination file descriptor
- * @param message string message to send
- * @return -1 in case of an error; non-negative value otherwise.
- */
-int SendData(int fd, std::string message)
-{
-    if (message.length() > MAX_MESSAGE_LENGTH)
-        return -1;
-
-    char buffer[MAX_MESSAGE_LENGTH + 1];
-    buffer = message.c_str();
-
-    return send(fd, buffer, sizeof(buffer), 0);
-}
-
-/**
- * Splits the given data string using a pre-defined delimeter.
- * @param data string to parse
- * @return list of strings
- */
-std::list<std::string> ParseData(std::string data)
-{
-    std::list<std::string> splitData;
-    size_t pos = 0;
-    std::string token;
-    while ((pos = data.find(MESSAGE_DELIMETER)) != std::string::npos)
-    {
-        token = data.substr(0, pos);
-        splitData.push_back(token);
-        data.erase(0, pos + 1);
-    }
-    return splitData;
+    close(servfd);
 }
 
 /**
@@ -108,7 +64,7 @@ std::list<std::string> ParseData(std::string data)
  * @param servfd listening fd
  * @param maxfd pointer to the current max fd number
  */
-int GetNewConnections(fd_set *set, int servfd, int *maxfd)
+int AcceptConnections(fd_set *set, int servfd, int *maxfd)
 {
     int new_fd;
     std::string name;
@@ -139,7 +95,7 @@ int GetNewConnections(fd_set *set, int servfd, int *maxfd)
  * @param group list of parameters
  * @return -1 in case of failure; 0 otherwise.
  */
-int CreateGroup(int client, std::list<std::string> &group)
+int CreateGroup(int client, std::vector<std::string> &group)
 {
     // In case there are not enough members
     if (group.size() < 3)
@@ -210,20 +166,23 @@ int RunServer(int portNum)
                 // if listening fd then get all pending connections.
                 if (i == servfd)
                 {
-                    GetNewConnections(&masterfds, servfd, &maxfd);
+                    AcceptConnections(&masterfds, servfd, &maxfd);
                 }
-                else if (i == 0)
+                else if (i == STDIN_FILENO)
                 {
                     if (ReadData(i) == "EXIT")
                     {
-                        // TODO: close all connections and exit.
+                        ShutdownServer(servfd);
+                        return 0;
                     }
                 }
                 else
                 {
                     data = ReadData(i);
-                    std::list<std::string> command = ParseData(data);
-                    if (command.front() == CREATE_GROUP_CMD)
+
+                    std::tuple<std::string, std::string, std::string> parsedData = ParseData(data);
+                    std::string command = std::get<0>(parsedData); //TODO: continue here.
+                    if (std::get<0>(command) == CREATE_GROUP_CMD)
                     {
                         std::advance(command, 1);
                         if (CreateGroup(i, command) == -1)
@@ -234,7 +193,7 @@ int RunServer(int portNum)
         }
     } while (true);
 
-    close(servfd);
+    ShutdownServer(servfd);
     return 0;
 }
 
