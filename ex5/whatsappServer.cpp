@@ -182,7 +182,7 @@ int RunServer(int portNum)
 
                     std::tuple<std::string, std::string, std::string> parsedData = ParseData(data);
                     std::string command = std::get<0>(parsedData); //TODO: continue here.
-                    if (std::get<0>(command) == CREATE_GROUP_CMD)
+                    if (command == CREATE_GROUP_CMD)
                     {
                         std::advance(command, 1);
                         if (CreateGroup(i, command) == -1)
