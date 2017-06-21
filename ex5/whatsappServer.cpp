@@ -18,6 +18,25 @@ std::unordered_map<UID, GID> uidToGid;
 std::unordered_map<GID, fd_set> gidToFdSet;
 
 /**
+ * Splits a given string into a vector
+ * @param what the string to split
+ * @param delimeter delimeter to split by
+ * @return vector of strings
+ */
+std::vector<std::string> SplitString(std::string what, char delimeter = ',')
+{
+    std::vector<std::string> result;
+    int pos;
+    while ((pos = what.find(delimeter)) != std::string::npos)
+    {
+        result.push_back(what.substr(0, pos));
+        what.erase(0, pos + 1);
+    }
+
+    return result;
+}
+
+/**
  * Opens a new socket and starts listening for connections
  * @param port port number to listen on
  * @return new socket fd.
@@ -42,7 +61,7 @@ int CreateServer(int port)
         exit(EXIT_FAILURE);
     }
 
-    listen(lfd, 5);
+    listen(lfd, 10);
     return lfd;
 }
 
@@ -70,6 +89,7 @@ int AcceptConnections(fd_set *set, int servfd, int *maxfd)
     std::string name;
     do
     {
+        // proceed only if we can still add more clients.
         if (*maxfd < MAX_CLIENTS)
         {
             new_fd = accept(servfd, NULL, NULL);
@@ -83,32 +103,23 @@ int AcceptConnections(fd_set *set, int servfd, int *maxfd)
             }
             else
             {
-                SendData(new_fd, INVALID_USERNAME);
+                SendData(new_fd, readyForSend(INVALID_USERNAME));
             }
         }
     } while (new_fd != -1);
 }
 
-std::vector<std::string> SplitString(std::string what, char delimeter)
-{
-    std::vector<std::string> result;
-    int pos;
-    while ((pos = what.find(delimeter)) != std::string::npos)
-    {
-        result.push_back(what.substr(0, pos));
-        what.erase(0, pos + 1);
-    }
-
-    return result;
-}
-
 /**
  * Creates a new group with a given name and adds all the requested members to it.
+ * @param group pair of group name and its fd
+ * @param users string containing list of users split by a single comma.
  * @return -1 in case of failure; 0 otherwise.
  */
 int CreateGroup(std::pair<std::string, int> group, std::string users)
 {
     auto userList = SplitString(users, ',');
+    if (userList.size() <= 1)
+        return -1;
 
     fd_set groupfd;
     FD_ZERO(&groupfd);
@@ -194,7 +205,12 @@ int RunServer(int portNum)
                     {
                         auto item = uidToFd.find(args);
                         if (item != uidToFd.end())
-                            CreateGroup({item->first, item->second}, params);
+                        {
+                            if (CreateGroup({item->first, item->second}, params) == 0)
+                                std::cout << CREATE_GRP_SUCCESS(fdToUid[i], item->first) << std::endl;
+                            else
+                                std::cout << CREATE_GRP_FAILURE(fdToUid[i], item->first) << std::endl;
+                        }
                     }
                     else if (command.compare(SEND_CMD) == 0)
                     {
