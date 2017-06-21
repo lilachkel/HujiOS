@@ -2,10 +2,10 @@
 #include <iostream>
 #include <list>
 #include <unordered_map>
-#include <zconf.h>
+#include <unistd.h>
+#include <regex>
 #include <sys/socket.h>
 #include <netinet/in.h>
-#include <cstring>
 #include "definitions.h"
 #include "NetworkHandler.h"
 
@@ -89,28 +89,33 @@ int AcceptConnections(fd_set *set, int servfd, int *maxfd)
     } while (new_fd != -1);
 }
 
+std::vector<std::string> SplitString(std::string what, char delimeter)
+{
+    std::vector<std::string> result;
+    int pos;
+    while ((pos = what.find(delimeter)) != std::string::npos)
+    {
+        result.push_back(what.substr(0, pos));
+        what.erase(0, pos + 1);
+    }
+
+    return result;
+}
+
 /**
  * Creates a new group with a given name and adds all the requested members to it.
- * @param client file descriptor associated with the client who created the group
- * @param group list of parameters
  * @return -1 in case of failure; 0 otherwise.
  */
-int CreateGroup(int client, std::vector<std::string> &group)
+int CreateGroup(std::pair<std::string, int> group, std::string users)
 {
-    // In case there are not enough members
-    if (group.size() < 3)
-        return -1;
+    auto userList = SplitString(users, ',');
 
     fd_set groupfd;
     FD_ZERO(&groupfd);
-    FD_SET(client, &groupfd);
-    auto it = group.begin();
-    std::advance(it, 1);
-    std::string gid = *it;
-    std::advance(it, 1);
-    for (; it != group.end(); it++)
+    FD_SET(group.second, &groupfd);
+    for (auto &u : userList)
     {
-        auto item = uidToFd.find(*it);
+        auto item = uidToFd.find(u);
         if (item != uidToFd.end())
         {
             if (FD_ISSET(item->second, &groupfd) == 0)
@@ -120,7 +125,7 @@ int CreateGroup(int client, std::vector<std::string> &group)
         }
     }
 
-    gidToFdSet[gid] = groupfd;
+    gidToFdSet[group.first] = groupfd;
     return 0;
 }
 
@@ -178,15 +183,33 @@ int RunServer(int portNum)
                 }
                 else
                 {
+                    //TODO: refactor all this crap into a separate method!
                     data = ReadData(i);
+                    std::string command, args, params;
 
-                    std::tuple<std::string, std::string, std::string> parsedData = ParseData(data);
-                    std::string command = std::get<0>(parsedData); //TODO: continue here.
-                    if (command == CREATE_GROUP_CMD)
+                    std::tie(command, args, params) = ParseData(data);
+                    // In this block of code each condition checks what type of a command are we dealing with and
+                    // responds accordingly.
+                    if (command.compare(CREATE_GROUP_CMD) == 0)
                     {
-                        std::advance(command, 1);
-                        if (CreateGroup(i, command) == -1)
-                            std::cerr << CREATE_GRP_FAILURE(fdToUid[i], *std::next(command.begin())) << std::endl;
+                        auto item = uidToFd.find(args);
+                        if (item != uidToFd.end())
+                            CreateGroup({item->first, item->second}, params);
+                    }
+                    else if (command.compare(SEND_CMD) == 0)
+                    {
+                        // TODO: need to implement check if the message is being sent to a group.
+                        auto item = uidToFd.find(args);
+                        if (item != uidToFd.end())
+                        {
+                            std::string message = readyForSend(params);
+                            if (SendData(item->second, message) == 0)
+                                std::cout << SEND_SUCCESS(fdToUid[i], message, item->first) << std::endl;
+                            else
+                            {
+                                std::cout << SEND_FAILURE(fdToUid[i], message, item->first) << std::endl;
+                            }
+                        }
                     }
                 }
             }

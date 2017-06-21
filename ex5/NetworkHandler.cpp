@@ -2,8 +2,6 @@
 // Created by jenia90 on 6/20/17.
 //
 
-#include <sstream>
-#include <tuple>
 #include "NetworkHandler.h"
 
 
@@ -45,11 +43,11 @@ std::string readyForSend(std::string message)
 
 std::tuple<std::string, std::string, std::string> ParseData(std::string data)
 {
-    std::tuple<std::string, std::string, std::string> splitData;
-    size_t pos;
-    std::string token;
-    pos = data.find(MESSAGE_LENGTH_END);
+    std::vector<std::string> users;
+    std::regex recvReg("(create_group|send|who|exit)(?: ([a-zA-Z]+\\d*) (.*))?");
 
+    std::smatch m;
+    std::regex_search(data, m, recvReg);
 
-    return splitData;
+    return std::make_tuple(m[1].str(), m[2].str(), m[3].str());
 }

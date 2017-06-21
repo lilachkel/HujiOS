@@ -7,6 +7,9 @@
 
 #include <vector>
 #include <sys/socket.h>
+#include <sstream>
+#include <tuple>
+#include <regex>
 #include "definitions.h"
 
 /**

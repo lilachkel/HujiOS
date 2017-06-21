@@ -16,15 +16,15 @@
  * Server output messages
  */
 #define CREATE_GRP_SUCCESS(client, group) std::string(client) + ": Group " + std::string(group) + " was created "\
-                                            "successfully.\n"
+                                            "successfully."
 #define CREATE_GRP_FAILURE(client, group) std::string(client) + ": ERROR: failed to create group " + std::string\
-                                            (group) + ".\n"
+                                            (group) + "."
 #define SEND_SUCCESS(sender, message, name) std::string(sender) + ": " + std::string(message) + " was sent "\
-                                            "successfully to " + std::string(name) + ".\n"
-#define SEND_FAILURE(sender, message, name) std::string(sender) + ": ERROR: failed to send " + std::string(message) +\
-                                            " to " + std::string(name) ".\n"
+                                            "successfully to " + std::string(name) + "."
+#define SEND_FAILURE(sender, message, name) std::string(sender) + ": ERROR: failed to send"\
+                                            " " + std::string(message)+ " to " + std::string(name) + "."
 #define WHO_REQUEST(client) std::string(client) + ": Requests the currently connected client names.\n"
-#define EXIT_REQUEST(client) std::string(client) + ": Unregisterd successfully.\n"
+#define EXIT_REQUEST(client) std::string(client) + ": Unregisterd successfully."
 
 /**
  * Client output messages
@@ -40,11 +40,8 @@
 /**
  * Command strings definitions
  */
-#define CREATE_GROUP_CMD "create_group"
-#define SEND_CMD "send"
-#define WHO_CMD "who"
-#define EXIT_CMD "exit"
-#define INVALID_USERNAME "invalidusername"
+const std::string CREATE_GROUP_CMD = "create_group", SEND_CMD = "send",
+        WHO_CMD = "who", EXIT_CMD = "exit", INVALID_USERNAME = "invuname";
 
 /**
  * Constraints
