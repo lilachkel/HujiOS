@@ -1,15 +1,19 @@
 CC = g++
 CFLAGS = -Wall -g -std=c++11
 ADDFLAGS = -DNDEBUG
-SOURCES = whatsappServer.cpp whatsappClient.cpp definitions.h
+HEADERS = definitions.h NetworkHandler.h
+SOURCES = whatsappServer.cpp whatsappClient.cpp NetworkHandler.cpp
 
 default: whatsappServer whatsappClient
 
-whatsappServer: whatsappServer.cpp definitions.h
-	$(CC) $(CFLAGS) $(ADDFLAGS) -c whatsappServer.cpp $(HEADERS) -o whatsappServer
+whatsappServer: whatsappServer.cpp NetworkHandler.o
+	$(CC) $(CFLAGS) $(ADDFLAGS) NetworkHandler.o -c whatsappServer.cpp -o whatsappServer
 
-whatsappClient: whatsappClient.cpp definitions.h
-	$(CC) $(CFLAGS) $(ADDFLAGS) -c whatsappClient.cpp $(HEADERS) -o whatsappClient
+whatsappClient: whatsappClient.cpp NetworkHandler.o
+	$(CC) $(CFLAGS) $(ADDFLAGS) NetworkHandler.o -c whatsappClient.cpp -o whatsappClient
+
+NetworkHandler.o: NetworkHandler.cpp definitions.h
+	$(CC) $(CFLAGS) $(ADDFLAGS) -c definitions.h NetworkHandler.cpp
 
 tar:
 	tar cvf ex5.tar $(SOURCES) README Makefile

@@ -7,6 +7,9 @@
 
 std::string ReadData(int fd)
 {
+    std::stringstream pattern;
+    pattern << MESSAGE_START << "(\\d+)" << MESSAGE_LENGTH_END << "(.*)" << MESSAGE_END;
+    std::regex reg(pattern.str());
     char buffer[MAX_MESSAGE_LENGTH + 1];
     int result = recv(fd, buffer, sizeof(buffer), 0);
     if (result < 0)
@@ -27,7 +30,7 @@ int SendData(int fd, std::string message)
         return -1;
 
     char buffer[MAX_MESSAGE_LENGTH + 1];
-    buffer = message.c_str();
+    strcpy(buffer, message.c_str());
 
     return send(fd, buffer, sizeof(buffer), 0);
 }

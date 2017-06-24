@@ -41,7 +41,7 @@
  * Command strings definitions
  */
 const std::string CREATE_GROUP_CMD = "create_group", SEND_CMD = "send",
-        WHO_CMD = "who", EXIT_CMD = "exit", INVALID_USERNAME = "invuname";
+        WHO_CMD = "who", EXIT_CMD = "exit", CON_SUCCESS = "consucc", INVALID_USERNAME = "invuname";
 
 /**
  * Constraints

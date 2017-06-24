@@ -9,19 +9,27 @@
 #include "definitions.h"
 #include "NetworkHandler.h"
 
-enum NameType
+enum IdType
 {
     GROUP,
     USER
 };
 
+struct Comparator
+{
+    bool operator()(const std::string lhs, const std::string rhs)
+    {
+        return lhs < rhs;
+    }
+};
+
 #define UID std::string
 #define GID std::string
 
-std::unordered_map<UID, int> uidToFd;
-std::unordered_map<UID, GID> uidToGid;
+std::map<UID, int, Comparator> uidToFd;
 std::unordered_map<int, UID> fdToUid;
-std::unordered_map<UID, NameType> uidToType;
+std::unordered_map<UID, GID> uidToGid;
+std::unordered_map<UID, IdType> uidToType;
 std::unordered_map<GID, fd_set> gidToFdSet;
 
 /**
@@ -33,7 +41,7 @@ std::unordered_map<GID, fd_set> gidToFdSet;
 std::vector<std::string> SplitString(std::string what, char delimeter = ',')
 {
     std::vector<std::string> result;
-    int pos;
+    size_t pos;
     while ((pos = what.find(delimeter)) != std::string::npos)
     {
         result.push_back(what.substr(0, pos));
@@ -54,7 +62,7 @@ int CreateServer(int port)
     int lfd = socket(AF_INET, SOCK_STREAM, 0);
     if (lfd == -1)
     {
-        perror("ERROR: socket");
+        std::cerr << "ERROR: socket() " << errno << std::endl;
         exit(EXIT_FAILURE);
     }
 
@@ -63,7 +71,7 @@ int CreateServer(int port)
     addr.sin_family = AF_INET;
     if (bind(lfd, (struct sockaddr *) &addr, sizeof(addr)) == -1)
     {
-        perror("ERROR: bind(): ");
+        std::cerr << "ERROR: bind(): " << errno << std::endl;
         close(lfd);
         exit(EXIT_FAILURE);
     }
@@ -90,7 +98,7 @@ void ShutdownServer(int servfd)
  * @param servfd listening fd
  * @param maxfd pointer to the current max fd number
  */
-int AcceptConnections(fd_set *set, int servfd, int *maxfd)
+void AcceptConnections(fd_set *set, int servfd, int *maxfd)
 {
     int new_fd;
     std::string name;
@@ -149,19 +157,21 @@ int CreateGroup(std::pair<std::string, int> group, std::string users)
     return 0;
 }
 
-void UserLogout(int user, int maxfd, fd_set *fdSet)
+void UserLogout(int user, int *maxfd, fd_set *fdSet)
 {
     std::string username = fdToUid[user];
-    auto grp = gidToFdSet.find(username);
-    if (grp != gidToFdSet.end())
+    auto grp = uidToGid.find(username);
+    if (grp != uidToGid.end())
     {
-        FD_CLR(user, &grp->second);
-        gidToFdSet.erase(grp);
+        FD_CLR(user, &gidToFdSet[grp->second]);
     }
 
     FD_CLR(user, fdSet);
     fdToUid.erase(user);
+    if (user == *maxfd)
+        (*maxfd)--;
     std::cout << EXIT_REQUEST(username) << std::endl;
+
 }
 
 /**
@@ -172,7 +182,7 @@ void UserLogout(int user, int maxfd, fd_set *fdSet)
  * @param name destination/group name
  * @param args list of usernames or message
  */
-void ProcessCommand(int maxfd, int src, std::string cmd, std::string name, std::string args)
+void ExecuteCommand(int maxfd, int src, std::string cmd, std::string name, std::string args)
 {
     int result;
     if (cmd.compare(CREATE_GROUP_CMD) == 0)
@@ -196,7 +206,7 @@ void ProcessCommand(int maxfd, int src, std::string cmd, std::string name, std::
         auto type = uidToType.find(name);
         if (type != uidToType.end())
         {
-            std::string message = readyForSend(args):
+            std::string message = readyForSend(fdToUid[src] + ": " + args);
             switch (type->second)
             {
                 case USER:
@@ -205,9 +215,12 @@ void ProcessCommand(int maxfd, int src, std::string cmd, std::string name, std::
                 case GROUP:
                     for (int i = 0; i <= maxfd; i++)
                     {
-                        if (FD_ISSET(i, &gidToFdSet[name]))
+                        if (FD_ISSET(i, &gidToFdSet[name]) && i != src)
                         {
-                            if ((result = SendData(i, message)) != 0) break;
+                            if ((result = SendData(i, message)) != 0)
+                            {
+                                std::cout << SEND_FAILURE(name, message, fdToUid[i]);
+                            }
                         }
                     }
                     break;
@@ -229,6 +242,7 @@ void ProcessCommand(int maxfd, int src, std::string cmd, std::string name, std::
         result = SendData(src, args);
     }
 
+    //TODO: printing it here might be problematic. Check during debug session.
     if (result == 0)
         std::cout << SEND_SUCCESS(fdToUid[src], args, name) << std::endl;
     else
@@ -260,7 +274,8 @@ int RunServer(int portNum)
         if (result < 0)
         {
             perror("ERROR: select(): ");
-            break;
+            ShutdownServer(servfd);
+            return EXIT_FAILURE;
         }
             // Timeout case
         else if (result == 0)
@@ -281,10 +296,10 @@ int RunServer(int portNum)
                 }
                 else if (i == STDIN_FILENO)
                 {
-                    if (ReadData(i) == "EXIT")
+                    if (ReadData(i).compare("EXIT") == 0)
                     {
                         ShutdownServer(servfd);
-                        return 0;
+                        return EXIT_SUCCESS;
                     }
                 }
                 else
@@ -294,16 +309,13 @@ int RunServer(int portNum)
 
                     std::tie(command, name, args) = ParseData(data);
                     if (command.compare(EXIT_CMD) == 0)
-                        UserLogout(i, maxfd, &masterfds);
+                        UserLogout(i, &maxfd, &masterfds);
                     else
-                        ProcessCommand(maxfd, i, command, name, args);
+                        ExecuteCommand(maxfd, i, command, name, args);
                 }
             }
         }
     } while (true);
-
-    ShutdownServer(servfd);
-    return 0;
 }
 
 int main(int argc, char **argv)
