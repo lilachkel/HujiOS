@@ -7,9 +7,9 @@
 
 std::string ReadData(int fd)
 {
-    std::stringstream pattern;
-    pattern << MESSAGE_START << "(\\d+)" << MESSAGE_LENGTH_END << "(.*)" << MESSAGE_END;
-    std::regex reg(pattern.str());
+//    std::stringstream pattern;
+//    pattern << MESSAGE_START << "(\\d+)" << MESSAGE_LENGTH_END << "(.*)" << MESSAGE_END;
+//    std::regex reg(pattern.str());
     char buffer[MAX_MESSAGE_LENGTH + 1];
     int result = recv(fd, buffer, sizeof(buffer), 0);
     if (result < 0)
@@ -21,6 +21,9 @@ std::string ReadData(int fd)
         return EXIT_CMD;
     }
 
+//    std::cmatch m;
+//    std::regex_search(buffer, m, reg);
+
     return std::string(buffer);
 }
 
@@ -31,11 +34,11 @@ int SendData(int fd, std::string message)
 
     char buffer[MAX_MESSAGE_LENGTH + 1];
     strcpy(buffer, message.c_str());
-
-    return send(fd, buffer, sizeof(buffer), 0);
+    int result = send(fd, buffer, sizeof(buffer), 0);
+    return result;
 }
 
-std::string readyForSend(std::string message)
+std::string Encode(std::string message)
 {
     std::stringstream ss;
 
@@ -44,7 +47,7 @@ std::string readyForSend(std::string message)
     return ss.str();
 }
 
-std::tuple<std::string, std::string, std::string> ParseData(std::string data)
+std::tuple<std::string, std::string, std::string> Decode(std::string data)
 {
     std::vector<std::string> users;
     std::regex recvReg("(create_group|send|who|exit)(?: ([a-zA-Z]+\\d*) (.*))?");

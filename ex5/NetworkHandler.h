@@ -12,6 +12,7 @@
 #include <regex>
 #include "definitions.h"
 
+
 /**
  * Reads data from a given file descriptor
  * @param fd file descriptor to read from
@@ -32,13 +33,13 @@ int SendData(int fd, std::string message);
  * @param message string to send
  * @return readied string.
  */
-std::string readyForSend(std::string message);
+std::string Encode(std::string message);
 
 /**
  * Splits the given data string using a pre-defined delimeter.
  * @param data string to parse
  * @return list of strings
  */
-std::tuple<std::string, std::string, std::string> ParseData(std::string data);
+std::tuple<std::string, std::string, std::string> Decode(std::string data);
 
 #endif //PROJECT_NETWORKHANDLER_H

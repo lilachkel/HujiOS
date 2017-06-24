@@ -7,13 +7,13 @@ SOURCES = whatsappServer.cpp whatsappClient.cpp NetworkHandler.cpp
 default: whatsappServer whatsappClient
 
 whatsappServer: whatsappServer.cpp NetworkHandler.o
-	$(CC) $(CFLAGS) $(ADDFLAGS) NetworkHandler.o -c whatsappServer.cpp -o whatsappServer
+	$(CC) $(CFLAGS) $(ADDFLAGS) NetworkHandler.o whatsappServer.cpp -o whatsappServer
 
 whatsappClient: whatsappClient.cpp NetworkHandler.o
-	$(CC) $(CFLAGS) $(ADDFLAGS) NetworkHandler.o -c whatsappClient.cpp -o whatsappClient
+	$(CC) $(CFLAGS) $(ADDFLAGS) NetworkHandler.o whatsappClient.cpp -o whatsappClient
 
-NetworkHandler.o: NetworkHandler.cpp definitions.h
-	$(CC) $(CFLAGS) $(ADDFLAGS) -c definitions.h NetworkHandler.cpp
+NetworkHandler.o: NetworkHandler.cpp
+	$(CC) $(CFLAGS) $(ADDFLAGS) -c NetworkHandler.cpp
 
 tar:
 	tar cvf ex5.tar $(SOURCES) README Makefile
