@@ -9,12 +9,19 @@
 #include "definitions.h"
 #include "NetworkHandler.h"
 
+enum NameType
+{
+    GROUP,
+    USER
+};
+
 #define UID std::string
 #define GID std::string
 
 std::unordered_map<UID, int> uidToFd;
-std::unordered_map<int, UID> fdToUid;
 std::unordered_map<UID, GID> uidToGid;
+std::unordered_map<int, UID> fdToUid;
+std::unordered_map<UID, NameType> uidToType;
 std::unordered_map<GID, fd_set> gidToFdSet;
 
 /**
@@ -98,6 +105,7 @@ int AcceptConnections(fd_set *set, int servfd, int *maxfd)
             {
                 FD_SET(new_fd, set);
                 uidToFd[name] = new_fd;
+                uidToType[name] = USER;
                 if (*maxfd < new_fd)
                     *maxfd = new_fd;
             }
@@ -137,7 +145,94 @@ int CreateGroup(std::pair<std::string, int> group, std::string users)
     }
 
     gidToFdSet[group.first] = groupfd;
+    uidToType[group.first] = GROUP;
     return 0;
+}
+
+void UserLogout(int user, int maxfd, fd_set *fdSet)
+{
+    std::string username = fdToUid[user];
+    auto grp = gidToFdSet.find(username);
+    if (grp != gidToFdSet.end())
+    {
+        FD_CLR(user, &grp->second);
+        gidToFdSet.erase(grp);
+    }
+
+    FD_CLR(user, fdSet);
+    fdToUid.erase(user);
+    std::cout << EXIT_REQUEST(username) << std::endl;
+}
+
+/**
+ * Executes the given command
+ * @param maxfd maximal fd count
+ * @param src source file descriptor
+ * @param cmd command string
+ * @param name destination/group name
+ * @param args list of usernames or message
+ */
+void ProcessCommand(int maxfd, int src, std::string cmd, std::string name, std::string args)
+{
+    int result;
+    if (cmd.compare(CREATE_GROUP_CMD) == 0)
+    {
+        auto item = uidToFd.find(name);
+        if (item != uidToFd.end())
+        {
+            if (CreateGroup({item->first, item->second}, args) == 0)
+            {
+                std::cout << CREATE_GRP_SUCCESS(fdToUid[src], item->first) << std::endl;
+            }
+            else
+            {
+                std::cout << CREATE_GRP_FAILURE(fdToUid[src], item->first) << std::endl;
+            }
+        }
+        return;
+    }
+    else if (cmd.compare(SEND_CMD) == 0)
+    {
+        auto type = uidToType.find(name);
+        if (type != uidToType.end())
+        {
+            std::string message = readyForSend(args):
+            switch (type->second)
+            {
+                case USER:
+                    result = SendData(uidToFd[name], message);
+                    break;
+                case GROUP:
+                    for (int i = 0; i <= maxfd; i++)
+                    {
+                        if (FD_ISSET(i, &gidToFdSet[name]))
+                        {
+                            if ((result = SendData(i, message)) != 0) break;
+                        }
+                    }
+                    break;
+            }
+        }
+    }
+    else if (cmd.compare(WHO_CMD) == 0)
+    {
+        name = fdToUid[src];
+        std::cout << WHO_REQUEST(name);
+        std::stringstream ss;
+        for (auto &uid : uidToFd)
+        {
+            ss << uid.first << ',';
+        }
+        args = ss.str();
+        args.pop_back();
+
+        result = SendData(src, args);
+    }
+
+    if (result == 0)
+        std::cout << SEND_SUCCESS(fdToUid[src], args, name) << std::endl;
+    else
+        std::cout << SEND_FAILURE(fdToUid[src], args, name) << std::endl;
 }
 
 /**
@@ -194,39 +289,14 @@ int RunServer(int portNum)
                 }
                 else
                 {
-                    //TODO: refactor all this crap into a separate method!
                     data = ReadData(i);
-                    std::string command, args, params;
+                    std::string command, name, args;
 
-                    std::tie(command, args, params) = ParseData(data);
-                    // In this block of code each condition checks what type of a command are we dealing with and
-                    // responds accordingly.
-                    if (command.compare(CREATE_GROUP_CMD) == 0)
-                    {
-                        auto item = uidToFd.find(args);
-                        if (item != uidToFd.end())
-                        {
-                            if (CreateGroup({item->first, item->second}, params) == 0)
-                                std::cout << CREATE_GRP_SUCCESS(fdToUid[i], item->first) << std::endl;
-                            else
-                                std::cout << CREATE_GRP_FAILURE(fdToUid[i], item->first) << std::endl;
-                        }
-                    }
-                    else if (command.compare(SEND_CMD) == 0)
-                    {
-                        // TODO: need to implement check if the message is being sent to a group.
-                        auto item = uidToFd.find(args);
-                        if (item != uidToFd.end())
-                        {
-                            std::string message = readyForSend(params);
-                            if (SendData(item->second, message) == 0)
-                                std::cout << SEND_SUCCESS(fdToUid[i], message, item->first) << std::endl;
-                            else
-                            {
-                                std::cout << SEND_FAILURE(fdToUid[i], message, item->first) << std::endl;
-                            }
-                        }
-                    }
+                    std::tie(command, name, args) = ParseData(data);
+                    if (command.compare(EXIT_CMD) == 0)
+                        UserLogout(i, maxfd, &masterfds);
+                    else
+                        ProcessCommand(maxfd, i, command, name, args);
                 }
             }
         }
