@@ -60,7 +60,7 @@ std::vector<std::string> SplitString(std::string what, char delimeter = ',')
 int CreateServer(int port)
 {
     int lfd;
-    if ((lfd = socket(AF_INET, SOCK_STREAM, IPPROTO_TCP)) < 0)
+    if ((lfd = socket(AF_INET, SOCK_STREAM, 0)) < 0)
     {
         std::cerr << "ERROR: socket() " << errno << std::endl;
         exit(EXIT_FAILURE);
@@ -112,32 +112,29 @@ void AcceptConnections(fd_set *set, int servfd, int *maxfd)
     struct sockaddr_storage remoteHost;
     socklen_t addrlen = sizeof(remoteHost);
 
-    do
+    // proceed only if we can still add more clients.
+    if (*maxfd < MAX_CLIENTS)
     {
-        // proceed only if we can still add more clients.
-        if (*maxfd < MAX_CLIENTS)
+        if ((new_fd = accept(servfd, (struct sockaddr *) &remoteHost, &addrlen)) != -1)
         {
-            if ((new_fd = accept(servfd, (struct sockaddr *) &remoteHost, &addrlen) != -1))
+            if ((name = ReadData(new_fd)).compare("ERROR"))
             {
-                if ((name = ReadData(new_fd)).compare(""))
+                if (uidToFd.find(name) == uidToFd.end() && name.length() < MAX_CLIENT_NAME)
                 {
-                    if (uidToFd.find(name) == uidToFd.end())
-                    {
-                        FD_SET(new_fd, set);
-                        uidToFd[name] = new_fd;
-                        uidToType[name] = USER;
-                        SendData(new_fd, Encode(CON_SUCCESS));
-                        if (*maxfd < new_fd)
-                            *maxfd = new_fd;
-                    }
-                    else
-                    {
-                        SendData(new_fd, Encode(INVALID_USERNAME));
-                    }
+                    FD_SET(new_fd, set);
+                    uidToFd.insert({name, new_fd});
+                    uidToType.insert({name, USER});
+                    SendData(new_fd, Encode(name));
+                    if (*maxfd < new_fd)
+                        *maxfd = new_fd;
+                }
+                else
+                {
+                    SendData(new_fd, Encode(INVALID_USERNAME));
                 }
             }
         }
-    } while (new_fd != -1);
+    }
 }
 
 /**
@@ -277,14 +274,13 @@ int RunServer(int portNum)
     FD_ZERO(&workingfds);
     FD_SET(STDIN_FILENO, &masterfds);
     FD_SET(servfd, &masterfds);
-    int mfd, maxfd = servfd;
+    int maxfd = servfd;
 
     do
     {
         std::string data;
-        mfd = maxfd;
         memcpy(&workingfds, &masterfds, sizeof(masterfds));
-        result = select(mfd + 1, &workingfds, NULL, NULL, NULL);
+        result = select(maxfd + 1, &workingfds, NULL, NULL, NULL);
 
         // Error case
         if (result < 0)
@@ -293,13 +289,13 @@ int RunServer(int portNum)
             ShutdownServer(servfd);
             return EXIT_FAILURE;
         }
-            // Timeout case
-        else if (result == 0)
+        // Timeout case
+        if (result == 0)
         {
             continue;
         }
 
-        for (int i = 0; i < maxfd; ++i)
+        for (int i = 0; i <= maxfd; ++i)
         {
             if (FD_ISSET(i, &workingfds))
             {
@@ -311,6 +307,10 @@ int RunServer(int portNum)
                         return EXIT_SUCCESS;
                     }
                 }
+                else if (i == servfd)
+                {
+                    AcceptConnections(&masterfds, servfd, &maxfd);
+                }
                 else
                 {
                     data = ReadData(i);
@@ -318,12 +318,15 @@ int RunServer(int portNum)
 
                     std::tie(command, name, args) = Decode(data);
                     if (command.compare(EXIT_CMD) == 0)
+                    {
                         UserLogout(i, &maxfd, &masterfds);
+                    }
                     else
+                    {
                         ExecuteCommand(maxfd, i, command, name, args);
+                    }
                 }
             }
-            AcceptConnections(&masterfds, servfd, &maxfd);
         }
     } while (true);
 }

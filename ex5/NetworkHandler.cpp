@@ -34,24 +34,14 @@ std::string ReadData(int fd)
 {
     char buffer[MAX_MESSAGE_LENGTH];
     FILE *in = fdopen(fd, "r");
-
+    if (in == NULL)
+        return "ERROR";
     GetNextMsg(in, buffer, MAX_MESSAGE_LENGTH);
 
     if (buffer == NULL)
-        return "";
-//
-//    fclose(in);
+        return "ERROR";
 
-//    char buffer[MAX_MESSAGE_LENGTH + 1];
-//    int result = recv(fd, buffer, sizeof(buffer), 0);
-//    if (result < 0)
-//    {
-//        return "ERROR";
-//    }
-//    else if (result == 0)
-//    {
-//        return EXIT_CMD;
-//    }
+    fclose(in);
 
     return std::string(buffer);
 }
@@ -67,6 +57,8 @@ int PutMsg(char *buf, size_t msgSize, FILE *out)
 int SendData(int fd, std::string message)
 {
     FILE *out = fdopen(fd, "w");
+    if (out == NULL)
+        return -1;
     char buf[message.length()];
     strcpy(buf, message.c_str());
     return PutMsg(buf, message.length(), out);
@@ -92,13 +84,14 @@ std::string Encode(std::string message)
 {
     std::stringstream ss;
 
-    ss << message.length() << message << MESSAGE_END;
+    ss << message << MESSAGE_END;
 
     return ss.str();
 }
 
 std::tuple<std::string, std::string, std::string> Decode(std::string data)
 {
+
     std::vector<std::string> users;
     std::regex recvReg("(create_group|send|who|exit)(?: ([a-zA-Z]+\\d*) (.*))?");
 

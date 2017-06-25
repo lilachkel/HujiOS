@@ -3,6 +3,8 @@
 #include <cstring>
 #include <string>
 #include <arpa/inet.h>
+#include <iostream>
+#include <unistd.h>
 #include "NetworkHandler.h"
 
 int main(int argc, char **argv)
@@ -24,9 +26,14 @@ int main(int argc, char **argv)
         return -1;
     }
 
-    std::string m("hello, world");
+    std::string m("hello");
     std::string enc = Encode(m);
-    while (SendData(sock, enc) != -1);
+    while (SendData(sock, enc) != -1)
+    {
+        std::cout << ReadData(sock) << std::endl;
+    }
+    SendData(sock, Encode("exit"));
+    close(sock);
 
     return 0;
 }
