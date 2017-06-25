@@ -185,6 +185,8 @@ void UserLogout(int user, int *maxfd, fd_set *fdSet)
 
     FD_CLR(user, fdSet);
     fdToUid.erase(user);
+    uidToFd.erase(username);
+    uidToType.erase(username);
     if (user == *maxfd)
         (*maxfd)--;
     std::cout << EXIT_REQUEST(username) << std::endl;
@@ -201,7 +203,6 @@ void UserLogout(int user, int *maxfd, fd_set *fdSet)
  */
 void ExecuteCommand(int maxfd, int src, std::string cmd, std::string name, std::string args)
 {
-    int result;
     if (cmd.compare(CREATE_GROUP_CMD) == 0)
     {
         auto item = uidToFd.find(name);
@@ -218,6 +219,11 @@ void ExecuteCommand(int maxfd, int src, std::string cmd, std::string name, std::
                 std::cout << CREATE_GRP_FAILURE(fdToUid[src], item->first) << std::endl;
             }
         }
+        else
+        {
+            SendData(src, Encode(CREATE_GROUP_CMD + " FAIL!"));
+            std::cout << CREATE_GRP_FAILURE(fdToUid[src], item->first) << std::endl;
+        }
         return;
     }
     else if (cmd.compare(SEND_CMD) == 0)
@@ -229,13 +235,15 @@ void ExecuteCommand(int maxfd, int src, std::string cmd, std::string name, std::
             switch (type->second)
             {
                 case USER:
-                    if ((result = SendData(uidToFd[name], message)) == 0)
+                    if (SendData(uidToFd[name], message) == 0)
                     {
                         SendData(src, Encode(SEND_CMD + " " + name + " OK!"));
+                        std::cout << "sent message from " << fdToUid[src] << " to " << name << std::endl;
                     }
                     else
                     {
                         SendData(src, Encode(SEND_CMD + " " + name + " OK!"));
+                        std::cout << "failed to message from " << fdToUid[src] << " to " << name << std::endl;
                     }
                     break;
                 case GROUP:
@@ -243,13 +251,14 @@ void ExecuteCommand(int maxfd, int src, std::string cmd, std::string name, std::
                     {
                         if (FD_ISSET(i, &gidToFdSet[name]) && i != src)
                         {
-                            if ((result = SendData(i, message)) != 0)
+                            if (SendData(i, message) == 0)
+                            {
+                                SendData(src, Encode(SEND_CMD + " OK!"));
+                                std::cout << SEND_SUCCESS(name, message, fdToUid[i]);
+                            } else
                             {
                                 SendData(src, Encode(SEND_CMD + " FAIL!"));
                                 std::cout << SEND_FAILURE(name, message, fdToUid[i]);
-                            } else
-                            {
-                                SendData(src, Encode(SEND_CMD + " OK!"));
                             }
                         }
                     }
@@ -271,9 +280,13 @@ void ExecuteCommand(int maxfd, int src, std::string cmd, std::string name, std::
         args = ss.str();
         args.pop_back();
 
-        if ((result = SendData(src, Encode(cmd + args))) == 0)
+        if (SendData(src, Encode(cmd + args)) == 0)
         {
-            return;
+            SendData(src, Encode(cmd + " OK!"));
+        }
+        else
+        {
+            SendData(src, Encode(cmd + "FAIL!"));
         }
     }
 }
