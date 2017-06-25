@@ -229,6 +229,14 @@ void ExecuteCommand(int maxfd, int src, std::string cmd, std::string name, std::
             {
                 case USER:
                     result = SendData(uidToFd[name], message);
+                    if(result<0)
+                    {
+                        SendData(src, Encode(SEND_CMD + " FAIL!"));
+                    } else
+                    {
+                        SendData(src, Encode(SEND_CMD + " OK!"));
+                    }
+
                     break;
                 case GROUP:
                     for (int i = 0; i <= maxfd; i++)
@@ -237,8 +245,11 @@ void ExecuteCommand(int maxfd, int src, std::string cmd, std::string name, std::
                         {
                             if ((result = SendData(i, message)) != 0)
                             {
-                                SendData(src, Encode(SEND_CMD + " to " + fdToUid[i] + " FAIL!"));
+                                SendData(src, Encode(SEND_CMD + " FAIL!"));
                                 std::cout << SEND_FAILURE(name, message, fdToUid[i]);
+                            } else
+                            {
+                                SendData(src, Encode(SEND_CMD + " OK!"));
                             }
                         }
                     }
@@ -260,19 +271,20 @@ void ExecuteCommand(int maxfd, int src, std::string cmd, std::string name, std::
         args.pop_back();
 
         result = SendData(src, Encode(cmd + args));
+
     }
 
-    //TODO: printing it here might be problematic. Check during debug session.
-    if (result == 0)
-    {
-        SendData(src, Encode(cmd + " OK!"));
-        std::cout << SEND_SUCCESS(fdToUid[src], args, name) << std::endl;
-    }
-    else
-    {
-        SendData(src, Encode(cmd + " FAIL!"));
-        std::cout << SEND_FAILURE(fdToUid[src], args, name) << std::endl;
-    }
+//    //TODO: printing it here might be problematic. Check during debug session.
+//    if (result == 0)
+//    {
+//        SendData(src, Encode(cmd + " OK!"));
+//        std::cout << SEND_SUCCESS(fdToUid[src], args, name) << std::endl;
+//    }
+//    else
+//    {
+//        SendData(src, Encode(cmd + " FAIL!"));
+//        std::cout << SEND_FAILURE(fdToUid[src], args, name) << std::endl;
+//    }
 }
 
 /**
@@ -328,7 +340,6 @@ int RunServer(int portNum)
                 {
                     AcceptConnections(&masterfds, servfd, &maxfd);
                 }
-                    // check what command was sent from the client and execute it.
                 else
                 {
                     data = ReadData(i);

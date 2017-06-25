@@ -28,6 +28,8 @@
 /**
  * Client output messages
  */
+#define CREATE_SOCK_FAILURE_CLI(system_call_name, errno) "ERROR: "+std::string(system_call_name)+" "+std::string(errno)+".\n"
+
 #define CREATE_GRP_SUCCESS_CLI(group) "Group " + std::string(group) + " was created successfully.\n"
 #define CREATE_GRP_FAILURE_CLI(group) "ERROR: failed to create group " + std::string(group) ".\n"
 #define SEND_SUCCESS_CLI "Sent successfully.\n"
@@ -40,7 +42,7 @@
  * Command strings definitions
  */
 const std::string CREATE_GROUP_CMD = "create_group", SEND_CMD = "send", SERVER_SHUTDOWN = "EXIT",
-        WHO_CMD = "who", EXIT_CMD = "exit", CON_SUCCESS = "consucc", INVALID_USERNAME = "invuname";
+        WHO_CMD = "who", EXIT_CMD = "exit", CON_SUCCESS = "Connected successfully.", INVALID_USERNAME = "Client name is already in use.";
 
 /**
  * Constraints
