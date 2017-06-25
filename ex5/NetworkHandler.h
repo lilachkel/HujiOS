@@ -36,8 +36,8 @@ int SendData(int fd, std::string message);
 std::string Encode(std::string message);
 
 /**
- * Splits the given data string using a pre-defined delimeter.
- * @param data string to parse
+ * Extracts from a given string the command, name and argument strings and returns a tuple of them.
+ * @param data string to decode
  * @return list of strings
  */
 std::tuple<std::string, std::string, std::string> Decode(std::string data);

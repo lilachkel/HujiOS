@@ -6,26 +6,33 @@
 #include "NetworkHandler.h"
 
 
-int GetNextMsg(FILE *f, char *buf, size_t bufsize)
+/**
+ * Gets a message from the given file stream and write it to the given buffer.
+ * @param in FILE pointer from which we want to read
+ * @param buf char array buffer that is going to be populated with the received message
+ * @param bufsize buffer size
+ * @return number of chars read.
+ */
+int GetNextMsg(FILE *in, char *buf, size_t bufsize)
 {
-    if (f == NULL)
+    if (in == NULL)
         return -1;
     int count = 0;
     int nextChar;
     while (count < bufsize)
     {
-        nextChar = getc(f);
+        nextChar = getc(in);
         if (nextChar == EOF)
         {
             if (count > 0) return -1;
         }
-        if (nextChar == '\n')
+        if (nextChar == MESSAGE_END)
         {
             break;
         }
         buf[count++] = nextChar;
     }
-    if (nextChar != '\n')
+    if (nextChar != MESSAGE_END)
         return -1;
     return count;
 }
@@ -46,6 +53,13 @@ std::string ReadData(int fd)
     return std::string(buffer);
 }
 
+/**
+ * Writes the data from the buffer to the output stremm (FILE pointer)
+ * @param buf char array to be sent
+ * @param msgSize length of message
+ * @param out output file pointer
+ * @return number of chars sent.
+ */
 int PutMsg(char *buf, size_t msgSize, FILE *out)
 {
     if (fwrite(buf, 1, msgSize, out) != msgSize)
@@ -62,22 +76,6 @@ int SendData(int fd, std::string message)
     char buf[message.length()];
     strcpy(buf, message.c_str());
     return PutMsg(buf, message.length(), out);
-//    if (fwrite(message.c_str(), sizeof(message.c_str()), 1, out) != 1)
-//    {
-//        std::cerr << "ERROR: send(): " << errno << std::endl;
-//        return -1;
-//    }
-//
-//    fflush(out);
-//    fclose(out);
-//    return 0;
-//    if (message.length() > MAX_MESSAGE_LENGTH)
-//        return -1;
-//
-//    char buffer[MAX_MESSAGE_LENGTH + 1];
-//    strcpy(buffer, message.c_str());
-//    int result = send(fd, buffer, sizeof(buffer), 0);
-//    return result;
 }
 
 std::string Encode(std::string message)

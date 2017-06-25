@@ -39,7 +39,7 @@
 /**
  * Command strings definitions
  */
-const std::string CREATE_GROUP_CMD = "create_group", SEND_CMD = "send",
+const std::string CREATE_GROUP_CMD = "create_group", SEND_CMD = "send", SERVER_SHUTDOWN = "EXIT",
         WHO_CMD = "who", EXIT_CMD = "exit", CON_SUCCESS = "consucc", INVALID_USERNAME = "invuname";
 
 /**

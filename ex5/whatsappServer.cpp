@@ -27,11 +27,11 @@ struct Comparator
 #define UID std::string
 #define GID std::string
 
-std::map<UID, int, Comparator> uidToFd;
-std::unordered_map<int, UID> fdToUid;
-std::unordered_map<UID, GID> uidToGid;
-std::unordered_map<UID, IdType> uidToType;
-std::unordered_map<GID, fd_set> gidToFdSet;
+std::map<UID, int, Comparator> uidToFd; // UserID to its file descriptor
+std::unordered_map<int, UID> fdToUid; // File descriptor to its UserID
+std::unordered_map<UID, GID> uidToGid; // UserID to the groupID it belongs to
+std::unordered_map<std::string, IdType> uidToType; // ID to its type
+std::unordered_map<GID, fd_set> gidToFdSet; // GroupID to its FD_SET
 
 /**
  * Splits a given string into a vector
@@ -39,7 +39,7 @@ std::unordered_map<GID, fd_set> gidToFdSet;
  * @param delimeter delimeter to split by
  * @return vector of strings
  */
-std::vector<std::string> SplitString(std::string what, char delimeter = ',')
+std::vector<std::string> SplitString(std::string what, char delimeter = GROUP_UNAME_DELIM)
 {
     std::vector<std::string> result;
     size_t pos;
@@ -117,14 +117,15 @@ void AcceptConnections(fd_set *set, int servfd, int *maxfd)
     {
         if ((new_fd = accept(servfd, (struct sockaddr *) &remoteHost, &addrlen)) != -1)
         {
-            if ((name = ReadData(new_fd)).compare("ERROR"))
+            if ((name = ReadData(new_fd)).compare("ERROR")) // check if name we got is not error
             {
-                if (uidToFd.find(name) == uidToFd.end() && name.length() < MAX_CLIENT_NAME)
+                if (uidToFd.find(name) == uidToFd.end() && name.length() < MAX_CLIENT_NAME) // check if it doesnt
+                    // exist and not too long
                 {
                     FD_SET(new_fd, set);
                     uidToFd.insert({name, new_fd});
                     uidToType.insert({name, USER});
-                    SendData(new_fd, Encode(name));
+                    SendData(new_fd, Encode(CON_SUCCESS));
                     if (*maxfd < new_fd)
                         *maxfd = new_fd;
                 }
@@ -145,10 +146,11 @@ void AcceptConnections(fd_set *set, int servfd, int *maxfd)
  */
 int CreateGroup(std::pair<std::string, int> group, std::string users)
 {
-    auto userList = SplitString(users, ',');
+    auto userList = SplitString(users, GROUP_UNAME_DELIM);
     if (userList.size() <= 1)
         return -1;
 
+    // create new fd_set and populate it with a list of user's FD
     fd_set groupfd;
     FD_ZERO(&groupfd);
     FD_SET(group.second, &groupfd);
@@ -157,8 +159,10 @@ int CreateGroup(std::pair<std::string, int> group, std::string users)
         auto item = uidToFd.find(u);
         if (item != uidToFd.end())
         {
-            if (FD_ISSET(item->second, &groupfd) == 0)
+            if (!FD_ISSET(item->second, &groupfd))
             {
+                // add it to a group
+                uidToGid[item->first] = group.first;
                 FD_SET(item->second, &groupfd);
             }
         }
@@ -183,7 +187,7 @@ void UserLogout(int user, int *maxfd, fd_set *fdSet)
     if (user == *maxfd)
         (*maxfd)--;
     std::cout << EXIT_REQUEST(username) << std::endl;
-
+    SendData(user, Encode("exit OK!"));
 }
 
 /**
@@ -204,10 +208,12 @@ void ExecuteCommand(int maxfd, int src, std::string cmd, std::string name, std::
         {
             if (CreateGroup({item->first, item->second}, args) == 0)
             {
+                SendData(src, Encode(CREATE_GROUP_CMD + " OK!"));
                 std::cout << CREATE_GRP_SUCCESS(fdToUid[src], item->first) << std::endl;
             }
             else
             {
+                SendData(src, Encode(CREATE_GROUP_CMD + " FAIL!"));
                 std::cout << CREATE_GRP_FAILURE(fdToUid[src], item->first) << std::endl;
             }
         }
@@ -231,6 +237,7 @@ void ExecuteCommand(int maxfd, int src, std::string cmd, std::string name, std::
                         {
                             if ((result = SendData(i, message)) != 0)
                             {
+                                SendData(src, Encode(SEND_CMD + " to " + fdToUid[i] + " FAIL!"));
                                 std::cout << SEND_FAILURE(name, message, fdToUid[i]);
                             }
                         }
@@ -244,6 +251,7 @@ void ExecuteCommand(int maxfd, int src, std::string cmd, std::string name, std::
         name = fdToUid[src];
         std::cout << WHO_REQUEST(name);
         std::stringstream ss;
+        ss << " ";
         for (auto &uid : uidToFd)
         {
             ss << uid.first << ',';
@@ -251,14 +259,20 @@ void ExecuteCommand(int maxfd, int src, std::string cmd, std::string name, std::
         args = ss.str();
         args.pop_back();
 
-        result = SendData(src, args);
+        result = SendData(src, Encode(cmd + args));
     }
 
     //TODO: printing it here might be problematic. Check during debug session.
     if (result == 0)
+    {
+        SendData(src, Encode(cmd + " OK!"));
         std::cout << SEND_SUCCESS(fdToUid[src], args, name) << std::endl;
+    }
     else
+    {
+        SendData(src, Encode(cmd + " FAIL!"));
         std::cout << SEND_FAILURE(fdToUid[src], args, name) << std::endl;
+    }
 }
 
 /**
@@ -295,22 +309,26 @@ int RunServer(int portNum)
             continue;
         }
 
+        // iterate over all file descriptors and check if they were set.
         for (int i = 0; i <= maxfd; ++i)
         {
             if (FD_ISSET(i, &workingfds))
             {
+                // if STDIN set check if EXIT was typed
                 if (i == STDIN_FILENO)
                 {
-                    if (ReadData(i).compare("EXIT") == 0)
+                    if (ReadData(i).compare(SERVER_SHUTDOWN) == 0)
                     {
                         ShutdownServer(servfd);
                         return EXIT_SUCCESS;
                     }
                 }
+                    // if server fd was raised - check for new connections
                 else if (i == servfd)
                 {
                     AcceptConnections(&masterfds, servfd, &maxfd);
                 }
+                    // check what command was sent from the client and execute it.
                 else
                 {
                     data = ReadData(i);
