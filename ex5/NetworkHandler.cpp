@@ -2,47 +2,97 @@
 // Created by jenia90 on 6/20/17.
 //
 
+#include <iostream>
 #include "NetworkHandler.h"
 
 
+int GetNextMsg(FILE *f, char *buf, size_t bufsize)
+{
+    if (f == NULL)
+        return -1;
+    int count = 0;
+    int nextChar;
+    while (count < bufsize)
+    {
+        nextChar = getc(f);
+        if (nextChar == EOF)
+        {
+            if (count > 0) return -1;
+        }
+        if (nextChar == '\n')
+        {
+            break;
+        }
+        buf[count++] = nextChar;
+    }
+    if (nextChar != '\n')
+        return -1;
+    return count;
+}
+
 std::string ReadData(int fd)
 {
-//    std::stringstream pattern;
-//    pattern << MESSAGE_START << "(\\d+)" << MESSAGE_LENGTH_END << "(.*)" << MESSAGE_END;
-//    std::regex reg(pattern.str());
-    char buffer[MAX_MESSAGE_LENGTH + 1];
-    int result = recv(fd, buffer, sizeof(buffer), 0);
-    if (result < 0)
-    {
-        return "ERROR";
-    }
-    else if (result == 0)
-    {
-        return EXIT_CMD;
-    }
+    char buffer[MAX_MESSAGE_LENGTH];
+    FILE *in = fdopen(fd, "r");
 
-//    std::cmatch m;
-//    std::regex_search(buffer, m, reg);
+    GetNextMsg(in, buffer, MAX_MESSAGE_LENGTH);
+
+    if (buffer == NULL)
+        return "";
+//
+//    fclose(in);
+
+//    char buffer[MAX_MESSAGE_LENGTH + 1];
+//    int result = recv(fd, buffer, sizeof(buffer), 0);
+//    if (result < 0)
+//    {
+//        return "ERROR";
+//    }
+//    else if (result == 0)
+//    {
+//        return EXIT_CMD;
+//    }
 
     return std::string(buffer);
 }
 
+int PutMsg(char *buf, size_t msgSize, FILE *out)
+{
+    if (fwrite(buf, 1, msgSize, out) != msgSize)
+        return -1;
+    fflush(out);
+    return msgSize;
+}
+
 int SendData(int fd, std::string message)
 {
-    if (message.length() > MAX_MESSAGE_LENGTH)
-        return -1;
-
-    char buffer[MAX_MESSAGE_LENGTH + 1];
-    strcpy(buffer, message.c_str());
-    int result = send(fd, buffer, sizeof(buffer), 0);
-    return result;
+    FILE *out = fdopen(fd, "w");
+    char buf[message.length()];
+    strcpy(buf, message.c_str());
+    return PutMsg(buf, message.length(), out);
+//    if (fwrite(message.c_str(), sizeof(message.c_str()), 1, out) != 1)
+//    {
+//        std::cerr << "ERROR: send(): " << errno << std::endl;
+//        return -1;
+//    }
+//
+//    fflush(out);
+//    fclose(out);
+//    return 0;
+//    if (message.length() > MAX_MESSAGE_LENGTH)
+//        return -1;
+//
+//    char buffer[MAX_MESSAGE_LENGTH + 1];
+//    strcpy(buffer, message.c_str());
+//    int result = send(fd, buffer, sizeof(buffer), 0);
+//    return result;
 }
 
 std::string Encode(std::string message)
 {
     std::stringstream ss;
 
-    ss << MESSAGE_START << message.length() << MESSAGE_LENGTH_END << message << MESSAGE_END;
+    ss << message.length() << message << MESSAGE_END;
 
     return ss.str();
 }

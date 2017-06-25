@@ -119,8 +119,8 @@ void AcceptConnections(fd_set *set, int servfd, int *maxfd)
         {
             if ((new_fd = accept(servfd, (struct sockaddr *) &remoteHost, &addrlen) != -1))
             {
-                name = ReadData(new_fd);
-                if (name.compare("ERROR") != 0)
+                if ((name = ReadData(new_fd)).compare(""))
+                {
                     if (uidToFd.find(name) == uidToFd.end())
                     {
                         FD_SET(new_fd, set);
@@ -134,6 +134,7 @@ void AcceptConnections(fd_set *set, int servfd, int *maxfd)
                     {
                         SendData(new_fd, Encode(INVALID_USERNAME));
                     }
+                }
             }
         }
     } while (new_fd != -1);

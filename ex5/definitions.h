@@ -47,13 +47,11 @@ const std::string CREATE_GROUP_CMD = "create_group", SEND_CMD = "send",
  */
 #define MAX_CLIENT_NAME 30
 #define MAX_CLIENTS 30
-#define MAX_MESSAGE_LENGTH 259 + sizeof(int)
+#define MAX_MESSAGE_LENGTH 255
 
 /**
  * Constants
  */
-#define MESSAGE_START 'S'
-#define MESSAGE_LENGTH_END '#'
 #define MESSAGE_END '\n'
 #define GROUP_UNAME_DELIM ','
 
