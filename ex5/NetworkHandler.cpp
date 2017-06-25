@@ -1,8 +1,3 @@
-//
-// Created by jenia90 on 6/20/17.
-//
-
-#include <iostream>
 #include "NetworkHandler.h"
 
 
@@ -39,18 +34,21 @@ int GetNextMsg(FILE *in, char *buf, size_t bufsize)
 
 std::string ReadData(int fd)
 {
-    char buffer[MAX_MESSAGE_LENGTH];
+    char buffer[MAX_MESSAGE_LENGTH], ret[MAX_MESSAGE_LENGTH];
+    int count;
     FILE *in = fdopen(fd, "r");
     if (in == NULL)
         return "ERROR";
-    GetNextMsg(in, buffer, MAX_MESSAGE_LENGTH);
+    if ((count = GetNextMsg(in, buffer, MAX_MESSAGE_LENGTH)) == -1)
+        return "ERROR";
 
     if (buffer == NULL)
         return "ERROR";
 
-    fclose(in);
+    strncpy(ret, buffer, count);
+    ret[count] = '\0';
 
-    return std::string(buffer);
+    return std::string(ret);
 }
 
 /**

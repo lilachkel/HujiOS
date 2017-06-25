@@ -124,6 +124,7 @@ void AcceptConnections(fd_set *set, int servfd, int *maxfd)
                 {
                     FD_SET(new_fd, set);
                     uidToFd.insert({name, new_fd});
+                    fdToUid.insert({new_fd, name});
                     uidToType.insert({name, USER});
                     SendData(new_fd, Encode(CON_SUCCESS));
                     if (*maxfd < new_fd)
@@ -228,15 +229,14 @@ void ExecuteCommand(int maxfd, int src, std::string cmd, std::string name, std::
             switch (type->second)
             {
                 case USER:
-                    result = SendData(uidToFd[name], message);
-                    if(result<0)
+                    if ((result = SendData(uidToFd[name], message)) == 0)
                     {
-                        SendData(src, Encode(SEND_CMD + " FAIL!"));
-                    } else
-                    {
-                        SendData(src, Encode(SEND_CMD + " OK!"));
+                        SendData(src, Encode(SEND_CMD + " " + name + " OK!"));
                     }
-
+                    else
+                    {
+                        SendData(src, Encode(SEND_CMD + " " + name + " OK!"));
+                    }
                     break;
                 case GROUP:
                     for (int i = 0; i <= maxfd; i++)
@@ -253,6 +253,7 @@ void ExecuteCommand(int maxfd, int src, std::string cmd, std::string name, std::
                             }
                         }
                     }
+                    SendData(src, Encode(cmd + name + " OK!"));
                     break;
             }
         }
@@ -270,21 +271,11 @@ void ExecuteCommand(int maxfd, int src, std::string cmd, std::string name, std::
         args = ss.str();
         args.pop_back();
 
-        result = SendData(src, Encode(cmd + args));
-
+        if ((result = SendData(src, Encode(cmd + args))) == 0)
+        {
+            return;
+        }
     }
-
-//    //TODO: printing it here might be problematic. Check during debug session.
-//    if (result == 0)
-//    {
-//        SendData(src, Encode(cmd + " OK!"));
-//        std::cout << SEND_SUCCESS(fdToUid[src], args, name) << std::endl;
-//    }
-//    else
-//    {
-//        SendData(src, Encode(cmd + " FAIL!"));
-//        std::cout << SEND_FAILURE(fdToUid[src], args, name) << std::endl;
-//    }
 }
 
 /**
@@ -304,7 +295,7 @@ int RunServer(int portNum)
 
     do
     {
-        std::string data;
+        std::string data = std::string();
         memcpy(&workingfds, &masterfds, sizeof(masterfds));
         result = select(maxfd + 1, &workingfds, NULL, NULL, NULL);
 
@@ -340,6 +331,7 @@ int RunServer(int portNum)
                 {
                     AcceptConnections(&masterfds, servfd, &maxfd);
                 }
+                    // check what command was sent from the client and execute it.
                 else
                 {
                     data = ReadData(i);
@@ -350,7 +342,7 @@ int RunServer(int portNum)
                     {
                         UserLogout(i, &maxfd, &masterfds);
                     }
-                    else
+                    else if (command.length() > 0)
                     {
                         ExecuteCommand(maxfd, i, command, name, args);
                     }
