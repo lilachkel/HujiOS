@@ -94,7 +94,7 @@ std::string Encode(std::string message)
 std::tuple<std::string, std::string, std::string> Decode(std::string data)
 {
 
-    std::vector<std::string> users;
+//    std::vector<std::string> users;
     std::regex recvReg("(create_group|send|who|exit)(?: ([a-zA-Z]+\\d*) (.*))?");
 
     std::smatch m;
