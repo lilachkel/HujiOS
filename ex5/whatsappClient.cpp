@@ -277,7 +277,7 @@ int Comunicat(int soket_Cfd, std::string name)
                 default: // < 0
                     std::cout << INVALID_CMD << std::endl;
                     continue;
-                    // all cases for easy debug...
+                // all cases for easy debug...
             }
 
             sendRequest(soket_Cfd, data);
