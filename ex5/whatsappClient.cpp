@@ -19,16 +19,6 @@
 int GetSocket(char *serverAddress,  unsigned short portnum)
 {
     struct sockaddr_in Caddr;
-//    struct hostent *hp;
-//    if ((hp= gethostbyname (hostname)) == NULL) {
-//        exit(EXIT_FAILURE);//todo:error mess
-//    }
-//    in_addr_t inaddr = inet_addr(serverAddress);
-//    Caddr.sin_addr.s_addr=inaddr;
-//    Caddr.sin_family = AF_INET;
-//    Caddr.sin_port = htons(portnum);
-
-
     int fd = socket(AF_INET, SOCK_STREAM, 0);
     if (fd < 0)
     {
@@ -58,12 +48,13 @@ int sendRequest(int fd, std::string message)
     message = Encode(message);
     return SendData(fd, message);
 }
+
 void ExpecConnCom(int soket_Cfd , fd_set *tempset,fd_set *readset)
 {
     //wait for connect serv mess: CON_SUCCESS \INVALID_USERNAME
     std::string data;
     memcpy(tempset, readset, sizeof(readset));
-    int result = select( 1, tempset, NULL, NULL, NULL);//correct?
+    int result = select( FD_SETSIZE, tempset, NULL, NULL, NULL);//correct?
 
     // Error case
     if (result < 0) {
@@ -87,14 +78,55 @@ void ExpecConnCom(int soket_Cfd , fd_set *tempset,fd_set *readset)
         }
     }
 }
-int ExpecComunicat()
-{
-}
-int paramValidation(std::string param)
-{
 
-
+bool ExpecAnAnswer(int soket_Cfd,std::vector<std::string> *serverMessToPrint, std::string ExpectedData )
+{
+    std::string data2;
+    int result2;
+    fd_set tempset2, readset2;
+    FD_ZERO(&readset2);
+    FD_ZERO(&tempset2);
+    FD_SET(soket_Cfd, &readset2);
+    result2 = select(FD_SETSIZE, &tempset2, NULL, NULL, NULL);//maybe maxfd == 1?
+    if (result2 < 0) {
+        std::cout << "ERROR: select "<<errno <<std::endl;
+        close(soket_Cfd);
+        //send exit to server?
+        exit(EXIT_FAILURE);
+    }
+    else if (result2 == 0) {
+        //the server closed the socket
+        std::cout << "The server is off. Exiting..." <<std::endl; // ok?
+        close(soket_Cfd);
+        exit(EXIT_FAILURE);
+    }
+    else
+    {
+        data2 = ReadData(soket_Cfd);
+        std::string commandType;
+        std::size_t firstPos;
+        std::string WithoutCommandType;
+        firstPos  = data2.find(" ");
+        commandType = data2.substr(0,firstPos);
+        WithoutCommandType = data2.substr(firstPos+1, data2.size());
+        // SEND "send"  WHO "who" EXIT "exit"
+        if(commandType.compare(ExpectedData))
+        {
+            std::cout << WithoutCommandType <<std::endl;
+            if(commandType.compare(EXIT))
+            {
+                exit(0);
+            }
+        }
+        else
+        {
+            serverMessToPrint->push_back(WithoutCommandType);
+            return false;
+        }
+    }
+    return true;
 }
+
 int commandValidation(std::string comm)
 {
 //    std::regex recvReg("(create_group|send|who|exit)");
@@ -197,7 +229,7 @@ int Comunicat(int soket_Cfd, std::string input)
         std::vector<std::string> serverMessToPrint;
         std::string data;
         memcpy(&tempset, &readset, sizeof(readset));
-        result = select(maxfd + 1, &tempset, NULL, NULL, NULL);//maybe just 2? 3?
+        result = select(FD_SETSIZE, &tempset, NULL, NULL, NULL);//maybe just 2? 3?
 
         // Error case
         if (result < 0) {
@@ -215,12 +247,13 @@ int Comunicat(int soket_Cfd, std::string input)
 
         if (FD_ISSET(STDIN_FILENO, &tempset))
         {
-            std::string ExpectedData;
+
             data = ReadData(STDIN_FILENO);
             int commType = RequestValidation(data); //  commType == 11: invalid group name
                                                     //  commType == 12: invalid users name
             //checks the comm type:
             // CREATE_GROUP_COMM 1 SEND_COMM 2  WHO_COMM 3  EXIT_COMM 4
+            std::string ExpectedData;
             switch (commType)
             {
                 case 1: //CREATE_GROUP_COMM 1
@@ -256,56 +289,12 @@ int Comunicat(int soket_Cfd, std::string input)
 // exit :"exit OK!"
 //WHO_CMD:
             sendRequest(soket_Cfd, data);
-
-            //todo: send the data to the server, or print relevant mess and return to the select position
-
             //after sending a message - waits for 'OK'
-            std::string data2;
-            int result2;
-            fd_set tempset2, readset2;
-            FD_ZERO(&readset2);
-            FD_ZERO(&tempset2);
-            FD_SET(soket_Cfd, &readset2);
-            result2 = select(maxfd + 1, &tempset2, NULL, NULL, NULL);//maybe maxfd == 1?
-            if (result2 < 0) {
-                std::cout << "ERROR: select "<<errno <<std::endl;
-                close(soket_Cfd);
-                //send exit to server?
-                exit(EXIT_FAILURE);
-            }
-            else if (result2 == 0) {
-                //the server closed the socket
-                std::cout << "The server is off. Exiting..." <<std::endl; // ok?
-                close(soket_Cfd);
-                exit(EXIT_FAILURE);
-            }
-            else
+            bool gotAnswer = false;
+            do
             {
-                data2 = ReadData(soket_Cfd);
-//                if (ExpectedData == CREATE_GROUP)
-//
-                std::string commandType;
-                std::size_t firstPos;
-                std::string WithoutCommandType;
-                firstPos  = data2.find(" ");
-                commandType = data2.substr(0,firstPos);
-                WithoutCommandType = data2.substr(firstPos+1, data2.size());
-                // SEND "send"  WHO "who" EXIT "exit"
-                if(commandType.compare(CREATE_GROUP)||commandType.compare(SEND)||commandType.compare(WHO))
-                {
-                    std::cout << WithoutCommandType <<std::endl;
-                }
-                else if(commandType.compare(EXIT))
-                {
-                    std::cout << WithoutCommandType <<std::endl;
-                    exit(0);
-                } else
-                {
-                    serverMessToPrint.push_back(WithoutCommandType);
-                }
-//                serverMessToPrint
-
-            }
+                gotAnswer = ExpecAnAnswer(soket_Cfd, &serverMessToPrint, ExpectedData);
+            }while (!gotAnswer);
         }
         if (FD_ISSET(soket_Cfd, &tempset))
         {
@@ -327,7 +316,7 @@ int main(int argn, char **argv)
     char* userName = argv[1];
     if (argn != 4 || (portNum = atoi(argv[3])) < IPPORT_RESERVED  || isNameValid(userName) < 0)
     {
-        std::cout << "Usage: whatsappClient clientName serverAddress serverPort" << std::endl;//todo error mess
+        std::cout << "Usage: whatsappClient clientName serverAddress serverPort" << std::endl;
         exit(EXIT_FAILURE);
     }
 
