@@ -1,7 +1,3 @@
-//
-// Created by jenia90 on 6/20/17.
-//
-
 #ifndef PROJECT_NETWORKHANDLER_H
 #define PROJECT_NETWORKHANDLER_H
 

@@ -9,7 +9,7 @@
  */
 #define WRONG_SERVER_USAGE "Usage: whatsappServer portNum"
 #define WRONG_CLIENT_USAGE "Usage: whatsappClient clientName serverAddress portNum"
-#define INVALID_CMD "ERROR: Invalid input.\n"
+#define INVALID_CMD "ERROR: Invalid input."
 #define SYS_CALL_FAIL(system_call_name) std::cout << "ERROR: " << system_call_name << " " << errno << std::endl
 
 /**

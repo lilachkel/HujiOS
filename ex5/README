@@ -36,7 +36,8 @@ ANSWERS:
 
 3)	P2P sharing platforms such as bittorrent and video and music streaming. UDP is much faster when
 	communicating because it drops the whole validation and correction technics. So, if for example
-	we are streaming a movie or a song and we lose couple of packets it won't matter much (except maybe for some pixalation in the video frame).
+	we are streaming a movie or a song and we lose couple of packets it won't matter much
+	(except maybe for some pixalation in the video frame).
 
 4)	For example we could implement some kind of database for storing messages and user profiles. 
 	That way if we shutdown the server or if it is shutdown unexpectedly most of the recent data 

@@ -16,7 +16,7 @@ NetworkHandler.o: NetworkHandler.cpp
 	$(CC) $(CFLAGS) $(ADDFLAGS) -c NetworkHandler.cpp
 
 tar:
-	tar cvf ex5.tar $(SOURCES) README Makefile
+	tar cvf ex5.tar $(SOURCES) $(HEADERS) README Makefile
 
 clean:
 	rm -rf whatsappClient whatsappServer *.o *.a *.gch *.tar
