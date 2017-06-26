@@ -6,7 +6,6 @@
 #include <unistd.h>
 #include <netdb.h>
 #include <arpa/inet.h>
-#include <libltdl/lt_system.h>
 
 
 int GetSocket(char *serverAddress,  unsigned short portnum)
@@ -15,7 +14,7 @@ int GetSocket(char *serverAddress,  unsigned short portnum)
     int fd = socket(AF_INET, SOCK_STREAM, 0);
     if (fd < 0)
     {
-        std::cout << "ERROR: socket "<< errno << ".\n"<<std::endl;
+        std::cout << "ERROR: socket " << errno << std::endl;
         exit(EXIT_FAILURE);
     }
 
@@ -76,11 +75,10 @@ bool ExpecAnAnswer(int soket_Cfd,std::vector<std::string> *serverMessToPrint, st
 {
     std::string data2;
     int result2;
-    fd_set tempset2, readset2;
+    fd_set readset2;
     FD_ZERO(&readset2);
-    FD_ZERO(&tempset2);
     FD_SET(soket_Cfd, &readset2);
-    result2 = select(FD_SETSIZE, &tempset2, NULL, NULL, NULL);//maybe maxfd == 1?
+    result2 = select(FD_SETSIZE, &readset2, NULL, NULL, NULL);//maybe maxfd == 1?
     if (result2 < 0) {
         std::cout << "ERROR: select "<<errno <<std::endl;
         close(soket_Cfd);
@@ -103,7 +101,7 @@ bool ExpecAnAnswer(int soket_Cfd,std::vector<std::string> *serverMessToPrint, st
         commandType = data2.substr(0,firstPos);
         WithoutCommandType = data2.substr(firstPos+1, data2.size());
         // SEND "send"  WHO "who" EXIT "exit"
-        if(commandType.compare(ExpectedData) == 0 )
+        if (commandType.compare(ExpectedData) == 0)
         {
             std::cout << WithoutCommandType <<std::endl;
             if(commandType.compare(EXIT_CMD) == 0)
@@ -144,16 +142,15 @@ int commandValidation(std::string comm)
     // CREATE_GROUP_COMM 1 SEND_COMM 2  WHO_COMM 3  EXIT_COMM 4
 }
 
-int isNameValid(const char *userName)
+int isNameValid(std::string name)
 {
-    size_t nameLen = strlen(userName);
-    for(int i =0 ;i < nameLen; i++ )
-    {
-        if (isalnum(userName[i]))
-            continue;
-        return -1;
-    }
-    return 0;
+    std::regex nameReg("([a-zA-Z]+\\d*)");
+
+    std::smatch m;
+
+    std::regex_match(name, m, nameReg);
+
+    return std::regex_match(name, m, nameReg);;
 }
 
 /*
@@ -174,7 +171,7 @@ int RequestValidation(std::string data)
     {
         if (tokens.size() < 3)
             return -1;
-        if (isNameValid(tokens[1].c_str())<1)//<group_name
+        if (!isNameValid(tokens[1]))//<group_name
             return 11;
         //tokens[2] contains <list_of_client_names>
         std::replace( tokens[2].begin(), tokens[2].end(), ',', ' '); // replace all ',' to ' '
@@ -183,7 +180,7 @@ int RequestValidation(std::string data)
         std::vector<std::string> names2(beg2, end2);
         for (std::string name : names2)
         {
-            if (isNameValid(tokens[1].c_str())<1)//<group_name
+            if (!isNameValid(name))//<group_name
                 return 12;
         }
         return 1;
@@ -191,7 +188,7 @@ int RequestValidation(std::string data)
     {
         if (tokens.size() < 3)
             return -1;
-        if (isNameValid(tokens[1].c_str())<1)// a client name
+        if (!isNameValid(tokens[1]))// a client name
             return 21;
         return 2;
     }else if(commandVal==3)

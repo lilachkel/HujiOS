@@ -22,12 +22,10 @@
 #define SEND_FAILURE(sender, message, name) sender + ": ERROR: failed to send \"" + message + "\" to " + name + "."
 #define WHO_REQUEST(client) client + ": Requests the currently connected client names."
 #define EXIT_REQUEST(client) client + ": Unregisterd successfully."
-#define COMMAND_SUCCESS(command) command + " OK!"
-#define COMMAND_FAILURE(command) command + " FAIL!"
+
 /**
  * Client output messages
  */
-
 #define CREATE_GRP_SUCCESS_CLI(group) "Group " + group + " was created successfully."
 #define CREATE_GRP_FAILURE_CLI(group) "ERROR: failed to create group " + group + "."
 #define SEND_SUCCESS_CLI "Sent successfully."
