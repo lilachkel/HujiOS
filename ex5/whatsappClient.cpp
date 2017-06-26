@@ -6,6 +6,7 @@
 #include <unistd.h>
 #include <netdb.h>
 #include <arpa/inet.h>
+#include <libltdl/lt_system.h>
 
 
 int GetSocket(char *serverAddress,  unsigned short portnum)
@@ -262,9 +263,10 @@ int Comunicat(int soket_Cfd, std::string name)
                     continue;
                 case 3://WHO_COMM 3
                     ExpectedData = WHO_CMD;
-
+                    break;
                 case 4://EXIT_COMM 4
                     ExpectedData = EXIT_CMD;
+                    break;
                 case 21:
                     std::cout <<  "ERROR: Invalid client name. A client name can only include letters and digits." <<std::endl;
                     continue;
