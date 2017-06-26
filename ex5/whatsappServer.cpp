@@ -155,11 +155,13 @@ void AcceptConnections(fd_set *set, int servfd, int *maxfd)
 int CreateGroup(std::pair<std::string, int> group, std::string users)
 {
     auto userList = SplitString(users, GROUP_UNAME_DELIM);
-    if (userList.size() <= 1)
+    if (userList.size() < 1)
         return -1;
 
     // Get admin name
     std::string admin = _fdToUid[group.second];
+    if (userList.size() == 1 && admin.compare(userList.front()) == 0)
+        return -1;
 
     // create new fd_set and populate it with a list of user's FD
     fd_set groupfd;
