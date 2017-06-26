@@ -56,7 +56,6 @@ int main(int argc, char **argv)
                 }
             }
         }
-//        std::cout << ReadData(sock) << std::endl;
     } while (connected && result != -1);
 
     close(sock);

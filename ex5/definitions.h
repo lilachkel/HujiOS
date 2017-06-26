@@ -10,25 +10,23 @@
 #define WRONG_SERVER_USAGE "Usage: whatsappServer portNum"
 #define WRONG_CLIENT_USAGE "Usage: whatsappClient clientName serverAddress portNum"
 #define INVALID_CMD "ERROR: Invalid input.\n"
+#define SYS_CALL_FAIL(system_call_name) std::cout << "ERROR: " << system_call_name << " " << errno << std::endl
 
 /**
  * Server output messages
  */
-#define CREATE_GRP_SUCCESS(client, group) std::string(client) + ": Group " + std::string(group) + " was created "\
-                                            "successfully."
-#define CREATE_GRP_FAILURE(client, group) std::string(client) + ": ERROR: failed to create group " + std::string\
-                                            (group) + "."
-#define SEND_SUCCESS(sender, message, name) std::string(sender) + ": " + std::string(message) + " was sent "\
-                                            "successfully to " + std::string(name) + "."
-#define SEND_FAILURE(sender, message, name) std::string(sender) + ": ERROR: failed to send"\
-                                            " " + std::string(message)+ " to " + std::string(name) + "."
-#define WHO_REQUEST(client) std::string(client) + ": Requests the currently connected client names.\n"
-#define EXIT_REQUEST(client) std::string(client) + ": Unregisterd successfully."
+#define CREATE_GRP_SUCCESS(client, group) client + ": Group " + group + " was created successfully."
+#define CREATE_GRP_FAILURE(client, group) client + ": ERROR: failed to create group " + group + "."
+#define SEND_SUCCESS(sender, message, name) sender + ": " + message + " was sent successfully to " + name + "."
+#define SEND_FAILURE(sender, message, name) sender + ": ERROR: failed to send " + message + " to " + name + "."
+#define WHO_REQUEST(client) client + ": Requests the currently connected client names.\n"
+#define EXIT_REQUEST(client) client + ": Unregisterd successfully."
+#define COMMAND_SUCCESS(command) command + " OK!"
 
+#define COMMAND_FAILURE(command) command + " FAIL!"
 /**
  * Client output messages
  */
-#define CREATE_SOCK_FAILURE_CLI(system_call_name, errno) "ERROR: "+std::string(system_call_name)+" "+std::string(errno)+".\n"
 
 #define CREATE_GRP_SUCCESS_CLI(group) "Group " + std::string(group) + " was created successfully.\n"
 #define CREATE_GRP_FAILURE_CLI(group) "ERROR: failed to create group " + std::string(group) ".\n"

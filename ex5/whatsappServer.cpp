@@ -27,11 +27,11 @@ struct Comparator
 #define UID std::string
 #define GID std::string
 
-std::map<UID, int, Comparator> uidToFd; // UserID to its file descriptor
-std::unordered_map<int, UID> fdToUid; // File descriptor to its UserID
-std::unordered_map<UID, GID> uidToGid; // UserID to the groupID it belongs to
-std::unordered_map<std::string, IdType> uidToType; // ID to its type
-std::unordered_map<GID, fd_set> gidToFdSet; // GroupID to its FD_SET
+std::map<UID, int, Comparator> _uidToFd; // UserID to its file descriptor
+std::unordered_map<int, UID> _fdToUid; // File descriptor to its UserID
+std::unordered_map<UID, GID> _uidToGid; // UserID to the groupID it belongs to
+std::unordered_map<std::string, IdType> _uidToType; // ID to its type
+std::unordered_map<GID, fd_set> _gidToFdSet; // GroupID to its FD_SET
 
 /**
  * Splits a given string into a vector
@@ -49,6 +49,8 @@ std::vector<std::string> SplitString(std::string what, char delimeter = GROUP_UN
         what.erase(0, pos + 1);
     }
 
+    result.push_back(what);
+
     return result;
 }
 
@@ -62,7 +64,7 @@ int CreateServer(int port)
     int lfd;
     if ((lfd = socket(AF_INET, SOCK_STREAM, 0)) < 0)
     {
-        std::cerr << "ERROR: socket() " << errno << std::endl;
+        SYS_CALL_FAIL("socket");
         exit(EXIT_FAILURE);
     }
 
@@ -73,14 +75,14 @@ int CreateServer(int port)
     addr.sin_addr.s_addr = htonl(INADDR_ANY);
     if (bind(lfd, (struct sockaddr *) &addr, sizeof(addr)) < 0)
     {
-        std::cerr << "ERROR: bind(): " << errno << std::endl;
+        SYS_CALL_FAIL("bind");
         close(lfd);
         exit(EXIT_FAILURE);
     }
 
     if (listen(lfd, MAX_PENDING) < 0)
     {
-        std::cerr << "ERROR: listen(): " << errno << std::endl;
+        SYS_CALL_FAIL("listen");
         close(lfd);
         exit(EXIT_FAILURE);
     }
@@ -93,7 +95,7 @@ int CreateServer(int port)
  */
 void ShutdownServer(int servfd)
 {
-    for (auto &c : uidToFd)
+    for (auto &c : _uidToFd)
         close(c.second);
 
     close(servfd);
@@ -119,13 +121,13 @@ void AcceptConnections(fd_set *set, int servfd, int *maxfd)
         {
             if ((name = ReadData(new_fd)).compare("ERROR")) // check if name we got is not error
             {
-                if (uidToFd.find(name) == uidToFd.end() && name.length() < MAX_CLIENT_NAME) // check if it doesnt
+                if (_uidToFd.find(name) == _uidToFd.end() && name.length() < MAX_CLIENT_NAME) // check if it doesnt
                     // exist and not too long
                 {
                     FD_SET(new_fd, set);
-                    uidToFd.insert({name, new_fd});
-                    fdToUid.insert({new_fd, name});
-                    uidToType.insert({name, USER});
+                    _uidToFd.insert({name, new_fd});
+                    _fdToUid.insert({new_fd, name});
+                    _uidToType.insert({name, USER});
                     SendData(new_fd, Encode(CON_SUCCESS));
                     if (*maxfd < new_fd)
                         *maxfd = new_fd;
@@ -141,7 +143,7 @@ void AcceptConnections(fd_set *set, int servfd, int *maxfd)
 
 /**
  * Creates a new group with a given name and adds all the requested members to it.
- * @param group pair of group name and its fd
+ * @param group pair of group name and its creator's FD
  * @param users string containing list of users split by a single comma.
  * @return -1 in case of failure; 0 otherwise.
  */
@@ -155,38 +157,45 @@ int CreateGroup(std::pair<std::string, int> group, std::string users)
     fd_set groupfd;
     FD_ZERO(&groupfd);
     FD_SET(group.second, &groupfd);
+    _uidToGid[_fdToUid[group.second]] = group.first;
     for (auto &u : userList)
     {
-        auto item = uidToFd.find(u);
-        if (item != uidToFd.end())
+        auto item = _uidToFd.find(u);
+        if (item != _uidToFd.end())
         {
             if (!FD_ISSET(item->second, &groupfd))
             {
                 // add it to a group
-                uidToGid[item->first] = group.first;
+                _uidToGid[item->first] = group.first;
                 FD_SET(item->second, &groupfd);
             }
         }
     }
 
-    gidToFdSet[group.first] = groupfd;
-    uidToType[group.first] = GROUP;
+    _gidToFdSet[group.first] = groupfd;
+    _uidToType[group.first] = GROUP;
     return 0;
 }
 
+/**
+ * Remove the users from all the records and removes its file descriptor from the fdSets associated with it.
+ * @param user user's fild descriptor
+ * @param maxfd maximal file descriptor
+ * @param fdSet
+ */
 void UserLogout(int user, int *maxfd, fd_set *fdSet)
 {
-    std::string username = fdToUid[user];
-    auto grp = uidToGid.find(username);
-    if (grp != uidToGid.end())
+    std::string username = _fdToUid[user];
+    auto grp = _uidToGid.find(username);
+    if (grp != _uidToGid.end())
     {
-        FD_CLR(user, &gidToFdSet[grp->second]);
+        FD_CLR(user, &_gidToFdSet[grp->second]);
     }
 
     FD_CLR(user, fdSet);
-    fdToUid.erase(user);
-    uidToFd.erase(username);
-    uidToType.erase(username);
+    _fdToUid.erase(user);
+    _uidToFd.erase(username);
+    _uidToType.erase(username);
     if (user == *maxfd)
         (*maxfd)--;
     std::cout << EXIT_REQUEST(username) << std::endl;
@@ -205,88 +214,91 @@ void ExecuteCommand(int maxfd, int src, std::string cmd, std::string name, std::
 {
     if (cmd.compare(CREATE_GROUP_CMD) == 0)
     {
-        auto item = uidToFd.find(name);
-        if (item != uidToFd.end())
+        auto item = _uidToFd.find(name);
+        if (item == _uidToFd.end())
         {
-            if (CreateGroup({item->first, item->second}, args) == 0)
+            if (CreateGroup({name, src}, args) == 0)
             {
-                SendData(src, Encode(CREATE_GROUP_CMD + " OK!"));
-                std::cout << CREATE_GRP_SUCCESS(fdToUid[src], item->first) << std::endl;
+                SendData(src, Encode(COMMAND_SUCCESS(CREATE_GROUP_CMD)));
+                std::cout << CREATE_GRP_SUCCESS(_fdToUid[src], item->first) << std::endl;
             }
             else
             {
-                SendData(src, Encode(CREATE_GROUP_CMD + " FAIL!"));
-                std::cout << CREATE_GRP_FAILURE(fdToUid[src], item->first) << std::endl;
+                SendData(src, Encode(COMMAND_FAILURE(CREATE_GROUP_CMD)));
+                std::cout << CREATE_GRP_FAILURE(_fdToUid[src], item->first) << std::endl;
             }
         }
         else
         {
-            SendData(src, Encode(CREATE_GROUP_CMD + " FAIL!"));
-            std::cout << CREATE_GRP_FAILURE(fdToUid[src], item->first) << std::endl;
+            SendData(src, Encode(COMMAND_FAILURE(CREATE_GROUP_CMD)));
+            std::cout << CREATE_GRP_FAILURE(_fdToUid[src], item->first) << std::endl;
         }
         return;
     }
     else if (cmd.compare(SEND_CMD) == 0)
     {
-        auto type = uidToType.find(name);
-        if (type != uidToType.end())
+        auto type = _uidToType.find(name);
+        if (type != _uidToType.end())
         {
-            std::string message = Encode(fdToUid[src] + ": " + args);
+            std::string message = Encode(_fdToUid[src] + ": " + args);
             switch (type->second)
             {
                 case USER:
-                    if (SendData(uidToFd[name], message) == 0)
+                    if (SendData(_uidToFd[name], message) == message.length())
                     {
-                        SendData(src, Encode(SEND_CMD + " " + name + " OK!"));
-                        std::cout << "sent message from " << fdToUid[src] << " to " << name << std::endl;
+                        SendData(src, Encode(COMMAND_SUCCESS(SEND_CMD + name)));
+                        std::cout << "sent message from " << _fdToUid[src] << " to " << name << std::endl;
                     }
                     else
                     {
-                        SendData(src, Encode(SEND_CMD + " " + name + " OK!"));
-                        std::cout << "failed to message from " << fdToUid[src] << " to " << name << std::endl;
+                        SendData(src, Encode(COMMAND_FAILURE(SEND_CMD + name)));
+                        std::cout << "failed to message from " << _fdToUid[src] << " to " << name << std::endl;
                     }
                     break;
                 case GROUP:
+                    fd_set temp;
+                    memcpy(&temp, &_gidToFdSet[name], sizeof(&_gidToFdSet[name]));
                     for (int i = 0; i <= maxfd; i++)
                     {
-                        if (FD_ISSET(i, &gidToFdSet[name]) && i != src)
+                        if (FD_ISSET(i, &_gidToFdSet[name]) && i != src)
                         {
-                            if (SendData(i, message) == 0)
+                            if (SendData(i, message) == message.length())
                             {
-                                SendData(src, Encode(SEND_CMD + " OK!"));
-                                std::cout << SEND_SUCCESS(name, message, fdToUid[i]);
-                            } else
-                            {
-                                SendData(src, Encode(SEND_CMD + " FAIL!"));
-                                std::cout << SEND_FAILURE(name, message, fdToUid[i]);
+                                SendData(src, Encode(COMMAND_SUCCESS(SEND_CMD + name)));
+                                std::cout << SEND_SUCCESS(name, message, _fdToUid[i]);
                             }
                         }
                     }
-                    SendData(src, Encode(cmd + name + " OK!"));
+                    SendData(src, Encode(COMMAND_SUCCESS(cmd + name)));
                     break;
             }
         }
     }
     else if (cmd.compare(WHO_CMD) == 0)
     {
-        name = fdToUid[src];
+        name = _fdToUid[src];
         std::cout << WHO_REQUEST(name);
+
+        // These few lines create a list of all users currently connected.
         std::stringstream ss;
         ss << " ";
-        for (auto &uid : uidToFd)
+        for (auto &uid : _uidToFd)
         {
-            ss << uid.first << ',';
+            ss << uid.first << GROUP_UNAME_DELIM;
         }
         args = ss.str();
         args.pop_back();
 
-        if (SendData(src, Encode(cmd + args)) == 0)
+        // Cretae encoded message
+        std::string message = Encode(cmd + args);
+
+        if (SendData(src, message) == message.length())
         {
-            SendData(src, Encode(cmd + " OK!"));
+            SendData(src, Encode(COMMAND_SUCCESS(cmd)));
         }
         else
         {
-            SendData(src, Encode(cmd + "FAIL!"));
+            SendData(src, Encode(COMMAND_FAILURE(cmd)));
         }
     }
 }
@@ -315,7 +327,7 @@ int RunServer(int portNum)
         // Error case
         if (result < 0)
         {
-            perror("ERROR: select(): ");
+            SYS_CALL_FAIL("select");
             ShutdownServer(servfd);
             return EXIT_FAILURE;
         }

@@ -71,9 +71,13 @@ int SendData(int fd, std::string message)
     FILE *out = fdopen(fd, "w");
     if (out == NULL)
         return -1;
-    char buf[message.length()];
+
+    size_t msgSize = message.length();
+    char buf[MAX_MESSAGE_LENGTH];
+    memset(buf, 0, MAX_MESSAGE_LENGTH);
     strcpy(buf, message.c_str());
-    return PutMsg(buf, message.length(), out);
+
+    return PutMsg(buf, msgSize, out);
 }
 
 std::string Encode(std::string message)
