@@ -58,7 +58,7 @@ void ExpecConnCom(int soket_Cfd , fd_set *tempset,fd_set *readset)
     if (FD_ISSET(soket_Cfd, tempset))
     {
         data = ReadData(soket_Cfd);
-        if (data.compare(CON_SUCCESS))
+        if (data.compare(CON_SUCCESS) == 0)
         {
             std::cout << "Connected successfully." << std::endl;
         }
@@ -102,10 +102,10 @@ bool ExpecAnAnswer(int soket_Cfd,std::vector<std::string> *serverMessToPrint, st
         commandType = data2.substr(0,firstPos);
         WithoutCommandType = data2.substr(firstPos+1, data2.size());
         // SEND "send"  WHO "who" EXIT "exit"
-        if(commandType.compare(ExpectedData))
+        if(commandType.compare(ExpectedData) == 0 )
         {
             std::cout << WithoutCommandType <<std::endl;
-            if(commandType.compare(EXIT_CMD))
+            if(commandType.compare(EXIT_CMD) == 0)
             {
                 exit(0);
             }
@@ -123,19 +123,19 @@ int commandValidation(std::string comm)
 {
 //    std::regex recvReg("(create_group|send|who|exit)");
 
-    if(comm.compare(CREATE_GROUP_CMD))
+    if(comm.compare(CREATE_GROUP_CMD) == 0)
     {
         return 1;
     }
-    else if(comm.compare("send"))
+    else if(comm.compare(SEND_CMD) == 0)
     {
         return 2;
     }
-    else if(comm.compare("who"))
+    else if(comm.compare(WHO_CMD) == 0)
     {
         return 3;
     }
-    else if(comm.compare("exit"))
+    else if(comm.compare(EXIT_CMD) == 0)
     {
         return 4;
     }
