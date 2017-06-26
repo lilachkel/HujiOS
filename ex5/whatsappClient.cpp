@@ -169,7 +169,7 @@ int RequestValidation(std::string data)
     std::istream_iterator<std::string> beg(buf), end;
     std::vector<std::string> tokens(beg, end);
     int commandVal = commandValidation(tokens.front());
-    if(commandVal==1)
+    if(commandVal == 1)
     {
         if (tokens.size() < 3)
             return -1;
