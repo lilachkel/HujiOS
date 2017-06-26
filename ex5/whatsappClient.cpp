@@ -203,7 +203,7 @@ int RequestValidation(std::string data)
     return -1;
 }
 
-int Comunicat(int soket_Cfd, std::string input)
+int Comunicat(int soket_Cfd, std::string name)
 {
     int result;
     fd_set tempset, readset;
@@ -211,7 +211,7 @@ int Comunicat(int soket_Cfd, std::string input)
     FD_ZERO(&tempset);
     FD_SET(soket_Cfd, &readset);
     int maxfd = soket_Cfd;
-    sendRequest(soket_Cfd, input);// problem? since we do it outside of the loop... maybe it wont be fast enough
+    sendRequest(soket_Cfd, name);// problem? since we do it outside of the loop... maybe it wont be fast enough
     ExpecConnCom(soket_Cfd , &tempset, &readset);
     FD_SET(STDIN_FILENO, &readset);
 
@@ -295,7 +295,7 @@ int Comunicat(int soket_Cfd, std::string input)
         }
 
     }
-
+    return 0;
 }
 
 int main(int argn, char **argv)
@@ -312,6 +312,5 @@ int main(int argn, char **argv)
     }
 
     int soket_Cfd = GetSocket(hostName, (unsigned short)portNum);
-
-    return EXIT_SUCCESS;
+    return Comunicat(soket_Cfd, std::string(userName));
 }
