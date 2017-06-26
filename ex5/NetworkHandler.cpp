@@ -12,7 +12,8 @@ int GetNextMsg(FILE *in, char *buf, size_t bufsize)
 {
     if (in == NULL)
         return -1;
-    int count = 0;
+
+    size_t count = 0;
     int nextChar;
     while (count < bufsize)
     {
@@ -29,6 +30,7 @@ int GetNextMsg(FILE *in, char *buf, size_t bufsize)
     }
     if (nextChar != MESSAGE_END)
         return -1;
+
     return count;
 }
 

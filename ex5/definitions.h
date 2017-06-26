@@ -15,26 +15,25 @@
 /**
  * Server output messages
  */
-#define CREATE_GRP_SUCCESS(client, group) client + ": Group " + group + " was created successfully."
+#define SERVER_SHUTDOWN_MESSAGE "EXIT command is typed: server is shutting down"
+#define CREATE_GRP_SUCCESS(client, group) client + ": Group \"" + group + "\" was created successfully."
 #define CREATE_GRP_FAILURE(client, group) client + ": ERROR: failed to create group " + group + "."
-#define SEND_SUCCESS(sender, message, name) sender + ": " + message + " was sent successfully to " + name + "."
-#define SEND_FAILURE(sender, message, name) sender + ": ERROR: failed to send " + message + " to " + name + "."
-#define WHO_REQUEST(client) client + ": Requests the currently connected client names.\n"
+#define SEND_SUCCESS(sender, message, name) sender + ": \"" + message + "\" was sent successfully to " + name + "."
+#define SEND_FAILURE(sender, message, name) sender + ": ERROR: failed to send \"" + message + "\" to " + name + "."
+#define WHO_REQUEST(client) client + ": Requests the currently connected client names."
 #define EXIT_REQUEST(client) client + ": Unregisterd successfully."
 #define COMMAND_SUCCESS(command) command + " OK!"
-
 #define COMMAND_FAILURE(command) command + " FAIL!"
 /**
  * Client output messages
  */
 
-#define CREATE_GRP_SUCCESS_CLI(group) "Group " + std::string(group) + " was created successfully.\n"
-#define CREATE_GRP_FAILURE_CLI(group) "ERROR: failed to create group " + std::string(group) ".\n"
-#define SEND_SUCCESS_CLI "Sent successfully.\n"
-#define SEND_FAILURE_CLI "ERROR: failed to send.\n"
-#define CLIENT_WHO_REPLY(clients) clients.join(',') + ".\n"
-#define CLIENT_WHO_FAIL "ERROR: failed to receive list of connected clients.\n"
-#define CLIENT_EXIT "Unregistered successfully.\n"
+#define CREATE_GRP_SUCCESS_CLI(group) "Group " + group + " was created successfully."
+#define CREATE_GRP_FAILURE_CLI(group) "ERROR: failed to create group " + group + "."
+#define SEND_SUCCESS_CLI "Sent successfully."
+#define SEND_FAILURE_CLI "ERROR: failed to send."
+#define CLIENT_WHO_FAIL "ERROR: failed to receive list of connected clients."
+#define CLIENT_EXIT "Unregistered successfully."
 
 /**
  * Command strings definitions

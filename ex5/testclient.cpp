@@ -50,7 +50,15 @@ int main(int argc, char **argv)
                     std::cout << ReadData(sock) << std::endl;
                     if (!message.empty())
                     {
-                        SendData(sock, Encode(message));
+//                        SendData(sock, Encode(message));
+                        std::string cmd, dest, args;
+                        std::tie(cmd, dest, args) = Decode(ReadData(i));
+                        if (cmd.compare(EXIT_CMD))
+                        {
+                            close(sock);
+                            exit(EXIT_SUCCESS);
+                        }
+
                         std::cout << ReadData(sock) << std::endl;
                     }
                 }

@@ -8,14 +8,38 @@ README - This file.
 
 Makefile
 
-definitions.h
+definitions.h - definitions of the possible messages and macros also the communication strings
 
-NetworkHandler.cpp/.h
+NetworkHandler.cpp/.h - Source file and header containing the implementation of the Send, Read,
+						Encode and Decode functions used for communicating over the network.
 
-whatsappServer.cpp
+whatsappServer.cpp - Chat server implementation.
 
-whatsappClient.cpp
+whatsappClient.cpp - Chat client implementation.
 
 REMARKS:
+In our implementation in order for the receiving side to know when a message is terminated we 
+add the '\n' char (new-line). This way whenever we read a message from a socket and reach '\n'
+we know this is the end of a message.
+
+We use couple of maps for storing the usernames and groups they belong to or their associated
+file descriptors.
 
 ANSWERS:
+1) 	a. In the client side we would add the ability to parse and validate such command.
+	b. In the server side we would add removing the user from a group (similar to what we are doing
+	   in the UserLogout function) and checking if the group is empty.
+
+2)	We prefer TCP because data integrity is important to us and TCP assures it by checking if the 
+	data we received is complete and intact, whereas UDP just sends the datagrams without validation
+	and error correction.
+
+3)	P2P sharing platforms such as bittorrent and video and music streaming. UDP is much faster when
+	communicating because it drops the whole validation and correction technics. So, if for example
+	we are streaming a movie or a song and we lose couple of packets it won't matter much (except maybe for some pixalation in the video frame).
+
+4)	For example we could implement some kind of database for storing messages and user profiles. 
+	That way if we shutdown the server or if it is shutdown unexpectedly most of the recent data 
+	be intact (except maybe for the data that hasn't been saved prior to the crash). This approach 
+	is used by such platforms as Telegram or Facebook Messenger. So, after the server is booted it
+	can just load the data from the backup\database and continue from where it left off.
