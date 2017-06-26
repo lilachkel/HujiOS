@@ -254,10 +254,11 @@ void ExecuteCommand(int maxfd, int src, std::string cmd, std::string name, std::
         if (type != _idToType.end())
         {
             std::string message = Encode(sender + ": " + args);
+            int msgSize = message.length();
             switch (type->second)
             {
                 case USER:
-                    if (SendData(_uidToFd[name], message) == message.length())
+                    if (SendData(_uidToFd[name], message) == msgSize)
                     {
                         SendData(src, Encode(cmd + " " + SEND_SUCCESS_CLI));
                         std::cout << SEND_SUCCESS(sender, args, name) << std::endl;
@@ -271,13 +272,13 @@ void ExecuteCommand(int maxfd, int src, std::string cmd, std::string name, std::
                 case GROUP:
                     int users = 0, successCount = 0;
                     fd_set temp;
-                    memcpy(&temp, &_gidToFdSet[name], sizeof(&_gidToFdSet[name]));
+                    memcpy(&temp, &_gidToFdSet[name], sizeof(_gidToFdSet[name]));
                     for (int i = 0; i <= maxfd; i++)
                     {
                         if (FD_ISSET(i, &_gidToFdSet[name]) && i != src)
                         {
                             users++;
-                            if (SendData(i, message) == message.length())
+                            if (SendData(i, message) == msgSize)
                             {
                                 successCount++;
                             }
@@ -314,8 +315,9 @@ void ExecuteCommand(int maxfd, int src, std::string cmd, std::string name, std::
 
         // Create encoded message
         std::string message = Encode(cmd + args);
+        int msgSize = message.length();
 
-        if (SendData(src, message) != message.length())
+        if (SendData(src, message) != msgSize)
         {
             SendData(src, Encode(cmd + " " + CLIENT_WHO_FAIL));
         }
