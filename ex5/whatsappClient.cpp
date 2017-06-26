@@ -6,14 +6,6 @@
 #include <unistd.h>
 #include <netdb.h>
 #include <arpa/inet.h>
-#include < locale>
-#include <backward/strstream>
-
-#define CREATE_GROUP "create_group"
-#define SEND "send"
-#define WHO "who"
-#define EXIT "exit"
-
 
 
 int GetSocket(char *serverAddress,  unsigned short portnum)
@@ -113,7 +105,7 @@ bool ExpecAnAnswer(int soket_Cfd,std::vector<std::string> *serverMessToPrint, st
         if(commandType.compare(ExpectedData))
         {
             std::cout << WithoutCommandType <<std::endl;
-            if(commandType.compare(EXIT))
+            if(commandType.compare(EXIT_CMD))
             {
                 exit(0);
             }
@@ -131,7 +123,7 @@ int commandValidation(std::string comm)
 {
 //    std::regex recvReg("(create_group|send|who|exit)");
 
-    if(comm.compare(CREATE_GROUP))
+    if(comm.compare(CREATE_GROUP_CMD))
     {
         return 1;
     }
@@ -176,38 +168,37 @@ int RequestValidation(std::string data)
     std::istringstream buf(data);
     std::istream_iterator<std::string> beg(buf), end;
     std::vector<std::string> tokens(beg, end);
-
-    switch (commandValidation(tokens.front()))
+    int commandVal = commandValidation(tokens.front());
+    if(commandVal==1)
     {
-        case 1: //CREATE_GROUP 1
-            if (tokens.size() < 3)
-                break;
+        if (tokens.size() < 3)
+            return -1;
+        if (isNameValid(tokens[1].c_str())<1)//<group_name
+            return 11;
+        //tokens[2] contains <list_of_client_names>
+        std::replace( tokens[2].begin(), tokens[2].end(), ',', ' '); // replace all ',' to ' '
+        std::istringstream buf2(tokens[2]);
+        std::istream_iterator<std::string> beg2(buf2), end2;
+        std::vector<std::string> names2(beg2, end2);
+        for (std::string name : names2)
+        {
             if (isNameValid(tokens[1].c_str())<1)//<group_name
-                return 11;
-            //tokens[2] contains <list_of_client_names>
-            std::replace( tokens[2].begin(), tokens[2].end(), ',', ' '); // replace all ',' to ' '
-            std::istringstream buf2(tokens[2]);
-            std::istream_iterator<std::string> beg2(buf2), end2;
-            std::vector<std::string> names2(beg2, end2);
-            for (std::string name : names2)
-            {
-                if (isNameValid(tokens[1].c_str())<1)//<group_name
-                    return 12;
-            }
-            return 1;
-        case 2: //SEND 2
-            if (tokens.size() < 3)
-                break;
-            if (isNameValid(tokens[1].c_str())<1)// a client name
-                return 21;
-            return 2;
-        case 3://WHO 3
-            return 3;
-        case 4://EXIT 4
-            return 4;
-        default: //null
-            break;
-
+                return 12;
+        }
+        return 1;
+    }else if(commandVal==2)
+    {
+        if (tokens.size() < 3)
+            return -1;
+        if (isNameValid(tokens[1].c_str())<1)// a client name
+            return 21;
+        return 2;
+    }else if(commandVal==3)
+    {
+        return 3;
+    }else if(commandVal==4)
+    {
+        return 4;
     }
     return -1;
 }
@@ -257,23 +248,23 @@ int Comunicat(int soket_Cfd, std::string input)
             switch (commType)
             {
                 case 1: //CREATE_GROUP_COMM 1
-                    ExpectedData = CREATE_GROUP;
+                    ExpectedData = CREATE_GROUP_CMD;
 
                     break;
                 case 11://  commType == 11: invalid group name
                     std::cout <<  "ERROR: Invalid group name. A group name can only include letters and digits." <<std::endl;
                     continue;
                 case 2: //SEND_COMM 2
-                    ExpectedData = SEND;
+                    ExpectedData = SEND_CMD;
                     break;
                 case 12://  commType == 12: invalid users name
                     std::cout <<  "ERROR: Invalid client names. A client name can only include letters and digits." <<std::endl;
                     continue;
                 case 3://WHO_COMM 3
-                    ExpectedData = WHO;
+                    ExpectedData = WHO_CMD;
 
                 case 4://EXIT_COMM 4
-                    ExpectedData = EXIT;
+                    ExpectedData = EXIT_CMD;
                 case 21:
                     std::cout <<  "ERROR: Invalid client name. A client name can only include letters and digits." <<std::endl;
                     continue;
