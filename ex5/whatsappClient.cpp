@@ -103,11 +103,11 @@ bool ExpecAnAnswer(int soket_Cfd, std::vector<std::string> *serverMessToPrint, s
         // SEND "send"  WHO "who" EXIT "exit"
         if (commandType.compare(ExpectedData) == 0)
         {
-            std::cout << WithoutCommandType << std::endl;
             if (commandType.compare(EXIT_CMD) == 0)
             {
                 exit(0);
             }
+            std::cout << WithoutCommandType << std::endl;
         }
         else
         {
