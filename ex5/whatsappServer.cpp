@@ -297,6 +297,11 @@ void ExecuteCommand(int maxfd, int src, std::string cmd, std::string name, std::
                     break;
             }
         }
+        else
+        {
+            SendData(src, Encode(cmd + " " + SEND_FAILURE_CLI));
+            std::cout << SEND_FAILURE(sender, args, name) << std::endl;
+        }
     }
     else if (cmd.compare(WHO_CMD) == 0)
     {
