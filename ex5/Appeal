@@ -1,0 +1,9 @@
+Fixes in whatsappServer:
+Added 'else' in ExecuteCommand so that the server will output an error upon
+trying to send a message to non-existent user\group.
+
+Fixes in whatsappClient:
+Changed the logic for receiving messages from the server. Before we were
+printing the message right away and only then checking if exit command was sent.
+Now we first check if its an exit command - if yes, we exit; otherwise continue
+with execution (printing the message and so on).
